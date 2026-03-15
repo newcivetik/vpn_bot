@@ -14,7 +14,7 @@ export const envValidationSchema = Joi.object({
   // Telegram
   BOT_TOKEN: Joi.string().required(),
   MINI_APP_URL: Joi.string().required(),
-  WEBHOOK_DOMAIN: Joi.string().optional(),
+  WEBHOOK_DOMAIN: Joi.string().optional().allow(''),
 
   // 3X-UI
   XUI_HOST: Joi.string().required(),
@@ -24,7 +24,7 @@ export const envValidationSchema = Joi.object({
   XUI_INBOUND_ID: Joi.number().default(1),
 
   // YooKassa
-  YOKASSA_SHOP_ID: Joi.string().optional(),
-  YOKASSA_SECRET_KEY: Joi.string().optional(),
-  YOKASSA_RETURN_URL: Joi.string().optional(),
+  YOKASSA_SHOP_ID: Joi.string().optional().allow(''),
+  YOKASSA_SECRET_KEY: Joi.string().optional().allow(''),
+  YOKASSA_RETURN_URL: Joi.string().optional().allow(''),
 });
