@@ -1,0 +1,210 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
+import { Server } from '../server/server.entity';
+import { XuiApiResponse, XuiClientTraffic } from './vpn.types';
+
+@Injectable()
+export class VpnService {
+  private readonly logger = new Logger(VpnService.name);
+  private sessionCookies = new Map<number, string>(); // serverId -> cookie
+
+  private async login(server: Server): Promise<string> {
+    const url = `http://${server.host}:${server.apiPort}/login`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `username=${encodeURIComponent(server.username)}&password=${encodeURIComponent(server.password)}`,
+    });
+
+    const cookies = res.headers.getSetCookie?.() || [];
+    const sessionCookie = cookies
+      .map((c) => c.split(';')[0])
+      .join('; ');
+
+    if (!sessionCookie) {
+      throw new Error(`Не удалось авторизоваться в 3X-UI: ${server.host}`);
+    }
+
+    this.sessionCookies.set(server.id, sessionCookie);
+    return sessionCookie;
+  }
+
+  private async apiCall<T>(
+    server: Server,
+    path: string,
+    body?: any,
+    method = 'POST',
+  ): Promise<XuiApiResponse<T>> {
+    let cookie = this.sessionCookies.get(server.id);
+    if (!cookie) {
+      cookie = await this.login(server);
+    }
+
+    const url = `http://${server.host}:${server.apiPort}${path}`;
+    const options: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: cookie,
+      },
+    };
+
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+
+    let res = await fetch(url, options);
+
+    // Если сессия истекла, перелогиниваемся
+    if (res.status === 401 || res.status === 307) {
+      cookie = await this.login(server);
+      options.headers = { ...options.headers as any, Cookie: cookie };
+      res = await fetch(url, options);
+    }
+
+    return res.json();
+  }
+
+  async createClient(
+    server: Server,
+    options: {
+      telegramId: number;
+      trafficLimitGB: number;
+      expiryDays: number;
+      maxDevices: number;
+    },
+  ): Promise<{ clientId: string; email: string; connectionLink: string }> {
+    const clientId = uuidv4();
+    const email = `tg_${options.telegramId}_${Date.now()}`;
+    const totalBytes =
+      options.trafficLimitGB > 0
+        ? options.trafficLimitGB * 1024 * 1024 * 1024
+        : 0;
+    const expiryTime =
+      options.expiryDays > 0
+        ? Date.now() + options.expiryDays * 24 * 60 * 60 * 1000
+        : 0;
+
+    const clientSettings = {
+      id: clientId,
+      flow: '',
+      email,
+      limitIp: options.maxDevices,
+      totalGB: totalBytes,
+      expiryTime,
+      enable: true,
+      tgId: String(options.telegramId),
+      subId: '',
+    };
+
+    const result = await this.apiCall(
+      server,
+      `/panel/api/inbounds/addClient`,
+      {
+        id: server.inboundId,
+        settings: JSON.stringify({ clients: [clientSettings] }),
+      },
+    );
+
+    if (!result.success) {
+      throw new Error(`Ошибка создания VPN-клиента: ${result.msg}`);
+    }
+
+    // Получаем настройки inbound для генерации ссылки
+    const connectionLink = await this.generateConnectionLink(
+      server,
+      clientId,
+    );
+
+    this.logger.log(`Создан VPN-клиент: ${email} на сервере ${server.name}`);
+
+    return { clientId, email, connectionLink };
+  }
+
+  async deleteClient(server: Server, clientId: string): Promise<void> {
+    const result = await this.apiCall(
+      server,
+      `/panel/api/inbounds/${server.inboundId}/delClient/${clientId}`,
+    );
+
+    if (!result.success) {
+      this.logger.warn(`Ошибка удаления клиента ${clientId}: ${result.msg}`);
+    }
+  }
+
+  async toggleClient(
+    server: Server,
+    clientId: string,
+    email: string,
+    enable: boolean,
+  ): Promise<void> {
+    const result = await this.apiCall(
+      server,
+      `/panel/api/inbounds/updateClient/${clientId}`,
+      {
+        id: server.inboundId,
+        settings: JSON.stringify({
+          clients: [{ id: clientId, email, enable }],
+        }),
+      },
+    );
+
+    if (!result.success) {
+      this.logger.warn(
+        `Ошибка ${enable ? 'включения' : 'выключения'} клиента ${clientId}: ${result.msg}`,
+      );
+    }
+  }
+
+  async getClientTraffic(
+    server: Server,
+    email: string,
+  ): Promise<XuiClientTraffic | null> {
+    const result = await this.apiCall<XuiClientTraffic>(
+      server,
+      `/panel/api/inbounds/getClientTraffics/${email}`,
+      undefined,
+      'GET',
+    );
+
+    if (!result.success || !result.obj) return null;
+    return result.obj;
+  }
+
+  private async generateConnectionLink(
+    server: Server,
+    clientId: string,
+  ): Promise<string> {
+    // Получаем inbound для параметров подключения
+    const result = await this.apiCall<any>(
+      server,
+      `/panel/api/inbounds/get/${server.inboundId}`,
+      undefined,
+      'GET',
+    );
+
+    if (!result.success || !result.obj) {
+      return `vless://${clientId}@${server.host}:${server.port}?type=tcp&security=reality&flow=xtls-rprx-vision#VPN`;
+    }
+
+    const inbound = result.obj;
+    const stream = JSON.parse(inbound.streamSettings || '{}');
+    const reality = stream?.realitySettings || {};
+    const serverNames = reality?.serverNames?.[0] || 'google.com';
+    const publicKey = reality?.settings?.publicKey || '';
+    const shortId = reality?.shortIds?.[0] || '';
+    const fingerprint = stream?.tlsSettings?.fingerprint || reality?.settings?.fingerprint || 'chrome';
+
+    const params = new URLSearchParams({
+      type: stream?.network || 'tcp',
+      security: 'reality',
+      pbk: publicKey,
+      fp: fingerprint,
+      sni: serverNames,
+      sid: shortId,
+      flow: 'xtls-rprx-vision',
+    });
+
+    return `vless://${clientId}@${server.host}:${server.port}?${params.toString()}#VPN-${server.location}`;
+  }
+}
