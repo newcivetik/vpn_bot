@@ -422,6 +422,16 @@ export class BotService implements OnModuleInit {
       return;
     }
 
+    // Если уже есть активная подписка — триал не нужен
+    const existing = await this.subscriptionService.getActiveSubscription(user.id);
+    if (existing) {
+      await ctx.editMessageText(
+        'У тебя уже есть активная подписка! 😊\nТриал доступен только для новых пользователей.',
+        { reply_markup: backToMenuKeyboard() },
+      );
+      return;
+    }
+
     const plan = await this.planService.findCheapest();
     if (!plan) {
       await ctx.editMessageText(messages.noPlans, {
