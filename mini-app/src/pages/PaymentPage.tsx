@@ -49,10 +49,18 @@ export function PaymentPage() {
   };
 
   const handleYokassa = async () => {
+    if (paying || !plan) return;
     haptic?.impactOccurred('medium');
-    // Откроется ссылка на оплату ЮKassa
-    // Пока показываем заглушку
-    alert('Оплата картой скоро будет доступна');
+    setPaying(true);
+
+    try {
+      const { confirmationUrl } = await api.createYokassaPayment(plan.id, initData);
+      window.open(confirmationUrl, '_blank');
+    } catch {
+      alert('Ошибка создания платежа');
+    } finally {
+      setPaying(false);
+    }
   };
 
   if (loading || !plan) {

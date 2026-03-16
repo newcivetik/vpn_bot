@@ -49,4 +49,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ planId, initData }),
     }),
+
+  createYokassaPayment: (planId: number, initData: string) =>
+    request<{ confirmationUrl: string }>('/create-yokassa-payment', {
+      method: 'POST',
+      body: JSON.stringify({ planId, initData }),
+    }),
 };

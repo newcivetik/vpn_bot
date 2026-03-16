@@ -76,6 +76,29 @@ export class SubscriptionController {
     return { invoiceLink };
   }
 
+  @Post('create-yokassa-payment')
+  async createYokassaPayment(
+    @Body() body: { planId: number; initData: string },
+  ) {
+    const telegramUser = this.validateAndExtractUser(body.initData);
+    const plan = await this.planService.findById(body.planId);
+    if (!plan) throw new UnauthorizedException('Тариф не найден');
+
+    const user = await this.userService.findOrCreate({
+      telegramId: telegramUser.id,
+      username: telegramUser.username,
+      firstName: telegramUser.first_name,
+    });
+
+    const { confirmationUrl } = await this.paymentService.createYokassaPayment(
+      user.id,
+      plan.id,
+      plan.price,
+    );
+
+    return { confirmationUrl };
+  }
+
   private validateAndExtractUser(initData: string) {
     const botToken = process.env.BOT_TOKEN;
     if (!botToken || !initData) {
