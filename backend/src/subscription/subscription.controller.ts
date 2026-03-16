@@ -68,6 +68,7 @@ export class SubscriptionController {
       `VPN ${plan.name}`,
       `Подписка на ${plan.durationDays} дней`,
       String(payment.id),
+      '',
       'XTR',
       [{ label: plan.name, amount: plan.priceStars }],
     );
