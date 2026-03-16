@@ -95,13 +95,22 @@ export class PaymentService {
     });
 
     const yokassaPayment = await res.json();
+
+    if (!res.ok) {
+      this.logger.error(`ЮKassa API ошибка: ${JSON.stringify(yokassaPayment)}`);
+      throw new Error(`ЮKassa: ${yokassaPayment.description || 'Ошибка создания платежа'}`);
+    }
+
+    const confirmationUrl = yokassaPayment.confirmation?.confirmation_url;
+    if (!confirmationUrl) {
+      this.logger.error(`ЮKassa: нет confirmation_url: ${JSON.stringify(yokassaPayment)}`);
+      throw new Error('ЮKassa: не получена ссылка на оплату');
+    }
+
     saved.externalId = yokassaPayment.id;
     await this.paymentRepo.save(saved);
 
-    return {
-      payment: saved,
-      confirmationUrl: yokassaPayment.confirmation?.confirmation_url || '',
-    };
+    return { payment: saved, confirmationUrl };
   }
 
   async handleYokassaWebhook(body: any): Promise<void> {

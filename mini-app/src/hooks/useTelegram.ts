@@ -50,6 +50,7 @@ interface TelegramWebApp {
     selectionChanged: () => void;
   };
   openInvoice: (url: string, cb?: (status: string) => void) => void;
+  openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
 }
 
 export function useTelegram() {

@@ -55,9 +55,14 @@ export function PaymentPage() {
 
     try {
       const { confirmationUrl } = await api.createYokassaPayment(plan.id, initData);
-      window.open(confirmationUrl, '_blank');
-    } catch {
-      alert('Ошибка создания платежа');
+      if (tg?.openLink) {
+        tg.openLink(confirmationUrl);
+      } else {
+        window.open(confirmationUrl, '_blank');
+      }
+    } catch (err) {
+      console.error('YooKassa payment error:', err);
+      alert('Ошибка создания платежа. Попробуйте позже или выберите оплату Stars.');
     } finally {
       setPaying(false);
     }
