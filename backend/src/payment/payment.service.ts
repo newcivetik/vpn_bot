@@ -91,6 +91,19 @@ export class PaymentService {
         capture: true,
         description: `VPN подписка #${saved.id}`,
         metadata: { paymentId: saved.id },
+        receipt: {
+          customer: { email: 'vpn@sellwhy.ru' },
+          items: [
+            {
+              description: `VPN подписка #${saved.id}`,
+              quantity: '1.00',
+              amount: { value: `${amount}.00`, currency: 'RUB' },
+              vat_code: 1,
+              payment_subject: 'service',
+              payment_mode: 'full_payment',
+            },
+          ],
+        },
       }),
     });
 
