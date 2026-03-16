@@ -413,31 +413,14 @@ export class BotService implements OnModuleInit {
     const plan = await this.planService.findById(planId);
     if (!plan) return;
 
-    const from = ctx.callbackQuery.from;
-    const user = await this.userService.findOrCreate({
-      telegramId: from.id,
-      username: from.username,
-      firstName: from.first_name,
+    const miniAppUrl = this.config.getOrThrow<string>('MINI_APP_URL');
+
+    await ctx.editMessageText(messages.yokassaPay(plan.name, plan.price), {
+      reply_markup: new InlineKeyboard()
+        .webApp('💳 Оплатить', `${miniAppUrl}/plans/${planId}/pay`)
+        .row()
+        .text('« Назад', 'menu'),
     });
-
-    try {
-      const result = await this.paymentService.createYokassaPayment(
-        user.id,
-        plan.id,
-        plan.price,
-      );
-
-      await ctx.editMessageText(messages.yokassaPay(plan.name, plan.price), {
-        reply_markup: new InlineKeyboard()
-          .url('💳 Оплатить', result.confirmationUrl!)
-          .row()
-          .text('« Назад', 'menu'),
-      });
-    } catch {
-      await ctx.editMessageText(messages.yokassaError, {
-        reply_markup: backToMenuKeyboard(),
-      });
-    }
   }
 
   async sendNotification(telegramId: number, text: string): Promise<void> {
