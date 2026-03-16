@@ -52,7 +52,7 @@ export const api = {
     }),
 
   createYokassaPayment: (planId: number, initData: string, promoCode?: string) =>
-    request<{ confirmationToken: string }>('/create-yokassa-payment', {
+    request<{ confirmationUrl: string }>('/create-yokassa-payment', {
       method: 'POST',
       body: JSON.stringify({ planId, initData, promoCode }),
     }),

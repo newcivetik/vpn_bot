@@ -1,32 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { PlanDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { Star, CreditCard, ArrowLeft, Tag, Check, X } from 'lucide-react';
 
-declare global {
-  interface Window {
-    YooMoneyCheckoutWidget?: new (config: {
-      confirmation_token: string;
-      return_url?: string;
-      error_callback: (error: { error: string }) => void;
-    }) => {
-      render: (containerId: string) => Promise<void>;
-      destroy: () => void;
-    };
-  }
-}
-
 export function PaymentPage() {
   const { planId } = useParams<{ planId: string }>();
   const [plan, setPlan] = useState<PlanDTO | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showWidget, setShowWidget] = useState(false);
   const [paying, setPaying] = useState(false);
   const navigate = useNavigate();
   const { tg, haptic, backButton, initData } = useTelegram();
-  const widgetRef = useRef<{ destroy: () => void } | null>(null);
 
   // Promo state
   const [showPromo, setShowPromo] = useState(false);
@@ -41,15 +26,7 @@ export function PaymentPage() {
 
   useEffect(() => {
     backButton?.show();
-    const goBack = () => {
-      if (showWidget) {
-        widgetRef.current?.destroy();
-        widgetRef.current = null;
-        setShowWidget(false);
-      } else {
-        navigate('/plans');
-      }
-    };
+    const goBack = () => navigate('/plans');
     backButton?.onClick(goBack);
 
     api.getPlans().then((plans) => {
@@ -61,9 +38,8 @@ export function PaymentPage() {
     return () => {
       backButton?.offClick(goBack);
       backButton?.hide();
-      widgetRef.current?.destroy();
     };
-  }, [planId, navigate, backButton, showWidget]);
+  }, [planId, navigate, backButton]);
 
   const handleValidatePromo = async () => {
     if (!promoCode.trim() || validating) return;
@@ -98,47 +74,19 @@ export function PaymentPage() {
     }
   };
 
-  const loadYokassaScript = (): Promise<void> => {
-    if (window.YooMoneyCheckoutWidget) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://yookassa.ru/checkout-widget/v1/checkout-widget.js';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load YooKassa widget'));
-      document.head.appendChild(script);
-    });
-  };
-
   const handleYokassa = async () => {
     if (paying || !plan) return;
     haptic?.impactOccurred('medium');
     setPaying(true);
 
     try {
-      const [{ confirmationToken }] = await Promise.all([
-        api.createYokassaPayment(plan.id, initData, promoResult?.valid ? promoCode : undefined),
-        loadYokassaScript(),
-      ]);
-
-      setShowWidget(true);
-      await new Promise((r) => setTimeout(r, 100));
-
-      const checkout = new window.YooMoneyCheckoutWidget!({
-        confirmation_token: confirmationToken,
-        return_url: `${window.location.origin}/`,
-        error_callback: (error) => {
-          console.error('YooKassa widget error:', error);
-          setShowWidget(false);
-          setPaying(false);
-          alert('Ошибка оплаты. Попробуйте позже.');
-        },
-      });
-
-      widgetRef.current = checkout;
-      await checkout.render('yokassa-widget');
+      const { confirmationUrl } = await api.createYokassaPayment(
+        plan.id, initData, promoResult?.valid ? promoCode : undefined,
+      );
+      // Open YoKassa payment page in external browser
+      tg?.openLink(confirmationUrl);
     } catch (err) {
       console.error('YooKassa payment error:', err);
-      setShowWidget(false);
       alert('Ошибка создания платежа. Попробуйте позже или выберите оплату Stars.');
     } finally {
       setPaying(false);
@@ -155,18 +103,6 @@ export function PaymentPage() {
     );
   }
 
-  if (showWidget) {
-    return (
-      <div className="p-4 pb-8 space-y-4">
-        <div className="bg-gradient-primary rounded-3xl p-5 text-white text-center">
-          <CreditCard size={28} className="mx-auto mb-2" />
-          <h2 className="text-lg font-bold">Оплата картой</h2>
-          <div className="text-sm text-white/80">{plan.name} — {plan.price} ₽</div>
-        </div>
-        <div id="yokassa-widget" />
-      </div>
-    );
-  }
 
   const trafficLabel =
     plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : 'Безлимит';

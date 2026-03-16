@@ -104,14 +104,14 @@ export class SubscriptionController {
       }
     }
 
-    const { confirmationToken } = await this.paymentService.createYokassaPayment(
+    const { confirmationUrl } = await this.paymentService.createYokassaPayment(
       user.id,
       plan.id,
       finalPrice,
-      { embedded: true, promoCode: body.promoCode },
+      { promoCode: body.promoCode },
     );
 
-    return { confirmationToken };
+    return { confirmationUrl };
   }
 
   @Get('servers')
