@@ -58,7 +58,8 @@ export class PaymentService {
     userId: number,
     planId: number,
     amount: number,
-  ): Promise<{ payment: Payment; confirmationToken: string }> {
+    options?: { embedded?: boolean },
+  ): Promise<{ payment: Payment; confirmationToken?: string; confirmationUrl?: string }> {
     const shopId = process.env.YOKASSA_SHOP_ID;
     const secretKey = process.env.YOKASSA_SECRET_KEY;
     const returnUrl = process.env.YOKASSA_RETURN_URL;
@@ -66,6 +67,8 @@ export class PaymentService {
     if (!shopId || !secretKey) {
       throw new Error('ЮKassa не настроена');
     }
+
+    const embedded = options?.embedded ?? false;
 
     const payment = this.paymentRepo.create({
       userId,
@@ -75,6 +78,10 @@ export class PaymentService {
       status: PaymentStatus.PENDING,
     });
     const saved = await this.paymentRepo.save(payment);
+
+    const confirmation = embedded
+      ? { type: 'embedded' }
+      : { type: 'redirect', return_url: returnUrl || 'https://t.me' };
 
     // Создаём платёж в ЮKassa
     const idempotencyKey = `vpn_${saved.id}_${Date.now()}`;
@@ -87,7 +94,7 @@ export class PaymentService {
       },
       body: JSON.stringify({
         amount: { value: `${amount}.00`, currency: 'RUB' },
-        confirmation: { type: 'embedded' },
+        confirmation,
         capture: true,
         description: `VPN подписка #${saved.id}`,
         metadata: { paymentId: saved.id },
@@ -114,16 +121,24 @@ export class PaymentService {
       throw new Error(`ЮKassa: ${yokassaPayment.description || 'Ошибка создания платежа'}`);
     }
 
-    const confirmationToken = yokassaPayment.confirmation?.confirmation_token;
-    if (!confirmationToken) {
-      this.logger.error(`ЮKassa: нет confirmation_token: ${JSON.stringify(yokassaPayment)}`);
-      throw new Error('ЮKassa: не получен токен оплаты');
-    }
-
     saved.externalId = yokassaPayment.id;
     await this.paymentRepo.save(saved);
 
-    return { payment: saved, confirmationToken };
+    if (embedded) {
+      const confirmationToken = yokassaPayment.confirmation?.confirmation_token;
+      if (!confirmationToken) {
+        this.logger.error(`ЮKassa: нет confirmation_token: ${JSON.stringify(yokassaPayment)}`);
+        throw new Error('ЮKassa: не получен токен оплаты');
+      }
+      return { payment: saved, confirmationToken };
+    } else {
+      const confirmationUrl = yokassaPayment.confirmation?.confirmation_url;
+      if (!confirmationUrl) {
+        this.logger.error(`ЮKassa: нет confirmation_url: ${JSON.stringify(yokassaPayment)}`);
+        throw new Error('ЮKassa: не получена ссылка на оплату');
+      }
+      return { payment: saved, confirmationUrl };
+    }
   }
 
   async handleYokassaWebhook(body: any): Promise<void> {

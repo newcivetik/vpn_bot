@@ -94,6 +94,7 @@ export class SubscriptionController {
       user.id,
       plan.id,
       plan.price,
+      { embedded: true },
     );
 
     return { confirmationToken };

@@ -310,7 +310,7 @@ export class BotService implements OnModuleInit {
     });
 
     try {
-      const { confirmationUrl } = await this.paymentService.createYokassaPayment(
+      const result = await this.paymentService.createYokassaPayment(
         user.id,
         plan.id,
         plan.price,
@@ -320,7 +320,7 @@ export class BotService implements OnModuleInit {
         `💳 Оплата тарифа "${plan.name}" — ${plan.price}₽\n\nНажмите кнопку для перехода к оплате:`,
         {
           reply_markup: new (await import('grammy')).InlineKeyboard()
-            .url('Оплатить', confirmationUrl)
+            .url('Оплатить', result.confirmationUrl!)
             .row()
             .text('« Назад', 'menu'),
         },
