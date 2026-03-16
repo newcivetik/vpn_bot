@@ -9,6 +9,7 @@ import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
 import { VpnService } from '../vpn/vpn.service';
 import { BotService } from '../bot/bot.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 @Injectable()
 export class AdminService {
@@ -23,6 +24,7 @@ export class AdminService {
     @InjectRepository(PromoCode) private readonly promoRepo: Repository<PromoCode>,
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   // ─── Dashboard ─────────────────────────────────────────
@@ -181,6 +183,12 @@ export class AdminService {
     });
 
     return { data, total };
+  }
+
+  async grantSubscription(userId: number, planId: number) {
+    const sub = await this.subscriptionService.createSubscription(userId, planId);
+    this.logger.log(`Admin granted subscription #${sub.id} to user #${userId}, plan #${planId}`);
+    return sub;
   }
 
   async extendSubscription(id: number, days: number) {

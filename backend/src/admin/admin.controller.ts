@@ -24,6 +24,7 @@ import {
   UpdateServerDto,
   CreatePromoDto,
   UpdatePromoDto,
+  CreateSubscriptionDto,
   ExtendSubscriptionDto,
   BroadcastDto,
   SubscriptionFilterQuery,
@@ -95,6 +96,12 @@ export class AdminController {
       query.status,
       query.userId,
     );
+  }
+
+  @Post('subscriptions/grant')
+  @UseGuards(AdminAuthGuard)
+  grantSubscription(@Body() dto: CreateSubscriptionDto) {
+    return this.adminService.grantSubscription(dto.userId, dto.planId);
   }
 
   @Post('subscriptions/:id/extend')

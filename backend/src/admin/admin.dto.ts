@@ -238,6 +238,14 @@ export class UpdatePromoDto {
   isActive?: boolean;
 }
 
+export class CreateSubscriptionDto {
+  @IsInt()
+  userId: number;
+
+  @IsInt()
+  planId: number;
+}
+
 export class ExtendSubscriptionDto {
   @IsInt()
   @Min(1)

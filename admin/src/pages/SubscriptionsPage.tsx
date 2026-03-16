@@ -7,7 +7,8 @@ import { Pagination } from '../components/Pagination.tsx';
 import { Modal } from '../components/Modal.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
-import type { Subscription } from '../api/types.ts';
+import type { Subscription, Plan } from '../api/types.ts';
+import { Plus } from 'lucide-react';
 
 export function SubscriptionsPage() {
   const [data, setData] = useState<Subscription[]>([]);
@@ -19,6 +20,14 @@ export function SubscriptionsPage() {
   const [extendId, setExtendId] = useState<number | null>(null);
   const [extendDays, setExtendDays] = useState('30');
   const [cancelId, setCancelId] = useState<number | null>(null);
+
+  // Grant subscription state
+  const [showGrant, setShowGrant] = useState(false);
+  const [grantUserId, setGrantUserId] = useState('');
+  const [grantPlanId, setGrantPlanId] = useState('');
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [granting, setGranting] = useState(false);
+  const [grantError, setGrantError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,6 +51,33 @@ export function SubscriptionsPage() {
     await adminApi.cancelSubscription(cancelId);
     setCancelId(null);
     load();
+  };
+
+  const openGrant = async () => {
+    setShowGrant(true);
+    setGrantError('');
+    if (plans.length === 0) {
+      const p = await adminApi.getPlans();
+      setPlans(p.filter((pl) => pl.isActive));
+      if (p.length > 0 && !grantPlanId) setGrantPlanId(String(p[0].id));
+    }
+  };
+
+  const handleGrant = async () => {
+    if (!grantUserId || !grantPlanId) return;
+    setGranting(true);
+    setGrantError('');
+    try {
+      await adminApi.grantSubscription(Number(grantUserId), Number(grantPlanId));
+      setShowGrant(false);
+      setGrantUserId('');
+      load();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ошибка создания подписки';
+      setGrantError(msg);
+    } finally {
+      setGranting(false);
+    }
   };
 
   const columns: Column<Subscription>[] = [
@@ -88,20 +124,79 @@ export function SubscriptionsPage() {
     <>
       <Header title="Подписки" />
       <div className="p-6 space-y-4">
-        <select
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
-        >
-          <option value="">Все статусы</option>
-          <option value="active">Active</option>
-          <option value="expired">Expired</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openGrant}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+          >
+            <Plus size={16} /> Выдать подписку
+          </button>
+          <select
+            value={status}
+            onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+          >
+            <option value="">Все статусы</option>
+            <option value="active">Active</option>
+            <option value="expired">Expired</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
         <DataTable columns={columns} data={data} loading={loading} />
         <Pagination page={page} total={total} limit={20} onChange={setPage} />
       </div>
 
+      {/* Grant subscription modal */}
+      <Modal
+        title="Выдать подписку"
+        open={showGrant}
+        onClose={() => setShowGrant(false)}
+        footer={
+          <>
+            <button onClick={() => setShowGrant(false)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg">Отмена</button>
+            <button
+              onClick={handleGrant}
+              disabled={granting || !grantUserId || !grantPlanId}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg disabled:opacity-50"
+            >
+              {granting ? 'Создание...' : 'Выдать'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm text-slate-600 mb-1">ID пользователя (из таблицы Users)</label>
+            <input
+              type="number"
+              value={grantUserId}
+              onChange={(e) => setGrantUserId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              placeholder="Например: 1"
+              min={1}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-600 mb-1">Тариф</label>
+            <select
+              value={grantPlanId}
+              onChange={(e) => setGrantPlanId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+            >
+              {plans.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — {p.price} ₽ / {p.durationDays} дн.
+                </option>
+              ))}
+            </select>
+          </div>
+          {grantError && (
+            <p className="text-sm text-red-600">{grantError}</p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Extend modal */}
       <Modal
         title="Продлить подписку"
         open={extendId !== null}

@@ -13,6 +13,7 @@ import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
 import { VpnModule } from '../vpn/vpn.module';
 import { BotModule } from '../bot/bot.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { BotModule } from '../bot/bot.module';
     TypeOrmModule.forFeature([User, Subscription, Payment, Plan, Server, PromoCode]),
     VpnModule,
     forwardRef(() => BotModule),
+    forwardRef(() => SubscriptionModule),
   ],
   controllers: [AdminController],
   providers: [AdminService, AdminAuthGuard],
