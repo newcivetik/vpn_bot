@@ -43,10 +43,23 @@ export function PlanCard({ plan, onSelect, popular, current }: Props) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="text-lg font-bold text-tg-text">{plan.name}</h3>
-          <div className="text-2xl font-bold text-tg-text mt-1">
-            {plan.price} ₽
-            <span className="text-sm font-normal text-tg-hint"> / мес</span>
-          </div>
+          {current && plan.renewalDiscountPercent ? (
+            <div className="mt-1">
+              <span className="text-sm text-tg-hint line-through">{plan.price} ₽</span>
+              <div className="text-2xl font-bold text-brand-green">
+                {Math.round(plan.price * (1 - plan.renewalDiscountPercent / 100))} ₽
+                <span className="text-sm font-normal text-tg-hint"> / мес</span>
+                <span className="ml-2 text-xs font-medium bg-brand-green/10 text-brand-green px-2 py-0.5 rounded-full">
+                  -{plan.renewalDiscountPercent}%
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-2xl font-bold text-tg-text mt-1">
+              {plan.price} ₽
+              <span className="text-sm font-normal text-tg-hint"> / мес</span>
+            </div>
+          )}
         </div>
       </div>
 

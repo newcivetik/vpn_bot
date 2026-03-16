@@ -71,6 +71,12 @@ export class AdminController {
     return this.adminService.getUserGrowthChart(Number(days) || 30);
   }
 
+  @Get('analytics')
+  @UseGuards(AdminAuthGuard)
+  getAnalytics() {
+    return this.adminService.getAnalytics();
+  }
+
   // ─── Users ────────────────────────────────────────────
 
   @Get('users')

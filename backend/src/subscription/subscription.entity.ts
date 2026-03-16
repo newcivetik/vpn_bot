@@ -70,6 +70,13 @@ export class Subscription {
   @OneToMany(() => Payment, (p) => p.subscription)
   payments: Payment[];
 
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    comment: 'Last time trafficUsedGB changed (for inactivity detection)',
+  })
+  lastTrafficUpdateAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -35,6 +35,9 @@ export class User {
   @Column({ type: 'int', default: 0, comment: 'Накопленные бонусные дни от рефералов' })
   referralBonusDays: number;
 
+  @Column({ default: false, comment: 'Использовал ли пользователь бесплатный пробный период' })
+  hasUsedTrial: boolean;
+
   @Column({ default: true })
   notifyBeforeExpiry: boolean;
 

@@ -13,6 +13,7 @@ import type {
   PaginatedResponse,
   ServerHealth,
   BroadcastResult,
+  Analytics,
 } from './types.ts';
 
 const api = axios.create({
@@ -114,4 +115,7 @@ export const adminApi = {
 
   broadcast: (text: string, onlyActive = false) =>
     api.post<BroadcastResult>('/broadcast', { text, onlyActive }).then((r) => r.data),
+
+  getAnalytics: () =>
+    api.get<Analytics>('/analytics').then((r) => r.data),
 };

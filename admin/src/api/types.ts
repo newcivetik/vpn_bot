@@ -124,3 +124,16 @@ export interface BroadcastResult {
   failed: number;
   total: number;
 }
+
+export interface Analytics {
+  conversionRate: number;
+  churnRate: number;
+  avgLTV: number;
+  avgCheck: number;
+  payingUsers: number;
+  totalUsers: number;
+  totalReferrals: number;
+  expiredLast30: number;
+  renewedCount: number;
+  funnelChart: { date: string; buyers: number }[];
+}

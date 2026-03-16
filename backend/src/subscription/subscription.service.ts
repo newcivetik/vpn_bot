@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { LessThan, Not, IsNull, Repository } from 'typeorm';
 import { Subscription, SubscriptionStatus } from './subscription.entity';
 import { VpnService } from '../vpn/vpn.service';
 import { ServerService } from '../server/server.service';
@@ -23,7 +23,7 @@ export class SubscriptionService {
   async createSubscription(
     userId: number,
     planId: number,
-    options?: { bonusDays?: number },
+    options?: { bonusDays?: number; trialDays?: number },
   ): Promise<Subscription> {
     const user = await this.userService.findById(userId);
     if (!user) throw new Error('Пользователь не найден');
@@ -34,7 +34,8 @@ export class SubscriptionService {
     const server = await this.serverService.findAvailable();
     if (!server) throw new Error('Нет доступных серверов');
 
-    const totalDays = plan.durationDays + (options?.bonusDays || 0);
+    const baseDays = options?.trialDays || plan.durationDays;
+    const totalDays = baseDays + (options?.bonusDays || 0);
 
     // Создаём клиента в 3X-UI
     const vpnClient = await this.vpnService.createClient(server, {
@@ -61,12 +62,19 @@ export class SubscriptionService {
     const saved = await this.subRepo.save(subscription);
     await this.serverService.incrementClients(server.id);
 
-    // Реферальный бонус — продлеваем подписку реферера
+    // Реферальный бонус — продлеваем подписку реферера + бонус приглашённому
     const refBonusDays = parseInt(process.env.REFERRAL_BONUS_DAYS || '3', 10);
     if (user.referrerId && refBonusDays > 0) {
       await this.userService.addReferralBonus(user.referrerId, refBonusDays);
       await this.extendActiveSubscription(user.referrerId, refBonusDays);
       this.logger.log(`Реферальный бонус ${refBonusDays} дн. начислен и применён к подписке пользователя #${user.referrerId}`);
+
+      // Бонус приглашённому пользователю: +1 день к его новой подписке
+      const referredBonusDays = parseInt(process.env.REFERRED_BONUS_DAYS || '1', 10);
+      if (referredBonusDays > 0) {
+        await this.extendActiveSubscription(userId, referredBonusDays);
+        this.logger.log(`Бонус приглашённого +${referredBonusDays} дн. начислен пользователю #${userId}`);
+      }
     }
 
     if (options?.bonusDays) {
@@ -145,7 +153,14 @@ export class SubscriptionService {
       );
       if (traffic) {
         const totalBytes = traffic.up + traffic.down;
-        sub.trafficUsedGB = Number((totalBytes / (1024 * 1024 * 1024)).toFixed(2));
+        const newTrafficGB = Number((totalBytes / (1024 * 1024 * 1024)).toFixed(2));
+
+        // Track when traffic actually changes (for inactivity detection)
+        if (newTrafficGB !== Number(sub.trafficUsedGB)) {
+          sub.lastTrafficUpdateAt = new Date();
+        }
+
+        sub.trafficUsedGB = newTrafficGB;
         await this.subRepo.save(sub);
 
         // Отключаем при превышении лимита трафика
@@ -212,5 +227,47 @@ export class SubscriptionService {
       },
       relations: ['user', 'plan'],
     });
+  }
+
+  /** Find all active subscriptions on a specific server */
+  async findActiveByServerId(serverId: number): Promise<Subscription[]> {
+    return this.subRepo.find({
+      where: {
+        serverId,
+        status: SubscriptionStatus.ACTIVE,
+      },
+      relations: ['server', 'user', 'plan'],
+    });
+  }
+
+  /**
+   * Find active subscriptions where traffic hasn't changed in N days.
+   * Returns subscriptions with lastTrafficUpdateAt older than the threshold,
+   * or where lastTrafficUpdateAt is null and createdAt is older than the threshold.
+   */
+  async findInactiveTrafficSubscriptions(inactiveDays: number): Promise<Subscription[]> {
+    const threshold = new Date();
+    threshold.setDate(threshold.getDate() - inactiveDays);
+
+    // Subscriptions where traffic was tracked but hasn't changed recently
+    const staleTraffic = await this.subRepo.find({
+      where: {
+        status: SubscriptionStatus.ACTIVE,
+        lastTrafficUpdateAt: LessThan(threshold),
+      },
+      relations: ['user', 'plan'],
+    });
+
+    // Subscriptions where traffic was never tracked (null) and created long enough ago
+    const neverTracked = await this.subRepo.find({
+      where: {
+        status: SubscriptionStatus.ACTIVE,
+        lastTrafficUpdateAt: IsNull(),
+        createdAt: LessThan(threshold),
+      },
+      relations: ['user', 'plan'],
+    });
+
+    return [...staleTraffic, ...neverTracked];
   }
 }

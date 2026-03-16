@@ -71,6 +71,10 @@ export class UserService {
     return true;
   }
 
+  async markTrialUsed(userId: number): Promise<void> {
+    await this.userRepo.update({ id: userId }, { hasUsedTrial: true });
+  }
+
   private createRandomCode(length: number): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let result = '';

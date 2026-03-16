@@ -8,11 +8,13 @@ import {
   DollarSign,
   Tag,
   Megaphone,
+  BarChart3,
   Shield,
 } from 'lucide-react';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/analytics', icon: BarChart3, label: 'Аналитика' },
   { to: '/users', icon: Users, label: 'Пользователи' },
   { to: '/subscriptions', icon: CreditCard, label: 'Подписки' },
   { to: '/plans', icon: Package, label: 'Тарифы' },

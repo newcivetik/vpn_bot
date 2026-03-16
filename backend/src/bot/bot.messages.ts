@@ -28,9 +28,9 @@ export const messages = {
 
   key: (connectionLink: string) =>
     `🔑 Твой ключ подключения:\n\n` +
-    `\`${connectionLink}\`\n\n` +
+    `\`\`\`\n${connectionLink}\n\`\`\`\n\n` +
     `━━━━━━━━━━━━━━━\n` +
-    `📱 Вставь его в Hiddify\n` +
+    `📱 Нажми на ключ, чтобы скопировать, и вставь в Hiddify\n` +
     `💡 Не знаешь как? Жми /help`,
 
   noKey: '😔 У тебя нет активного ключа.\n\nСначала оформи подписку! 🚀',
@@ -55,9 +55,9 @@ export const messages = {
 
   paymentSuccess: (connectionLink: string) =>
     '🎉 Оплата прошла!\n\n' +
-    `🔑 Твой ключ:\n\n\`${connectionLink}\`\n\n` +
+    `🔑 Твой ключ:\n\n\`\`\`\n${connectionLink}\n\`\`\`\n\n` +
     '━━━━━━━━━━━━━━━\n' +
-    '📱 Скопируй и вставь в Hiddify\n' +
+    '📱 Нажми на ключ, чтобы скопировать, и вставь в Hiddify\n' +
     '❓ Как подключить → /help',
 
   yokassaPay: (planName: string, price: number) =>

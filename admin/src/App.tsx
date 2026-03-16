@@ -11,6 +11,7 @@ import { ServersPage } from './pages/ServersPage.tsx';
 import { PaymentsPage } from './pages/PaymentsPage.tsx';
 import { PromosPage } from './pages/PromosPage.tsx';
 import { BroadcastPage } from './pages/BroadcastPage.tsx';
+import { AnalyticsPage } from './pages/AnalyticsPage.tsx';
 import type { ReactNode } from 'react';
 
 function PrivateRoute({ children }: { children: ReactNode }) {
@@ -32,6 +33,7 @@ export function App() {
         <Route path="/servers" element={<PrivateRoute><ServersPage /></PrivateRoute>} />
         <Route path="/payments" element={<PrivateRoute><PaymentsPage /></PrivateRoute>} />
         <Route path="/promos" element={<PrivateRoute><PromosPage /></PrivateRoute>} />
+        <Route path="/analytics" element={<PrivateRoute><AnalyticsPage /></PrivateRoute>} />
         <Route path="/broadcast" element={<PrivateRoute><BroadcastPage /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>

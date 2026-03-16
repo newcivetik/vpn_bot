@@ -39,4 +39,12 @@ export class ServerService {
   async decrementClients(id: number): Promise<void> {
     await this.serverRepo.decrement({ id }, 'currentClients', 1);
   }
+
+  async markInactive(id: number): Promise<void> {
+    await this.serverRepo.update(id, { isActive: false });
+  }
+
+  async markActive(id: number): Promise<void> {
+    await this.serverRepo.update(id, { isActive: true });
+  }
 }

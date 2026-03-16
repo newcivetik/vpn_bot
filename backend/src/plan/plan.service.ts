@@ -66,4 +66,11 @@ export class PlanService implements OnModuleInit {
   async findBySlug(slug: string): Promise<Plan | null> {
     return this.planRepo.findOne({ where: { slug } });
   }
+
+  async findCheapest(): Promise<Plan | null> {
+    return this.planRepo.findOne({
+      where: { isActive: true },
+      order: { price: 'ASC' },
+    });
+  }
 }

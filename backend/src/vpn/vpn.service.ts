@@ -160,6 +160,32 @@ export class VpnService {
     }
   }
 
+  /**
+   * Check if a 3X-UI server is healthy (can login, API responds).
+   * Returns true if the server is reachable and responds correctly.
+   */
+  async checkHealth(server: Server): Promise<boolean> {
+    try {
+      const cookie = await this.login(server);
+      if (!cookie) return false;
+
+      // Verify API responds by fetching inbound list
+      const result = await this.apiCall<any>(
+        server,
+        `/panel/api/inbounds/list`,
+        undefined,
+        'GET',
+      );
+
+      return result.success === true;
+    } catch (error) {
+      this.logger.warn(
+        `Health check failed for server ${server.name} (${server.host}): ${error}`,
+      );
+      return false;
+    }
+  }
+
   async getClientTraffic(
     server: Server,
     email: string,

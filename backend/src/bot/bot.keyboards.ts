@@ -3,15 +3,19 @@ import { Plan } from '../plan/plan.entity';
 import { Server } from '../server/server.entity';
 import { getLocationFlag, getLoadEmoji } from './bot.messages';
 
-export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
-  return new InlineKeyboard()
-    .webApp('🛒 Магазин', miniAppUrl)
+export function mainMenuKeyboard(miniAppUrl: string, options?: { showTrial?: boolean }): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  if (options?.showTrial) {
+    kb.text('🎁 Попробовать бесплатно', 'trial').row();
+  }
+  kb.webApp('🛒 Магазин', miniAppUrl)
     .text('🌍 Сервер', 'server')
     .row()
     .text('📊 Статус', 'status')
     .text('🔑 Ключ', 'key')
     .row()
     .text('❓ Помощь', 'help');
+  return kb;
 }
 
 export function plansKeyboard(plans: Plan[]): InlineKeyboard {

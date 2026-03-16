@@ -20,6 +20,7 @@ export interface PlanDTO {
   trafficLimitGB: number;
   durationDays: number;
   maxDevices: number;
+  renewalDiscountPercent?: number;
 }
 
 export interface SubscriptionDTO {

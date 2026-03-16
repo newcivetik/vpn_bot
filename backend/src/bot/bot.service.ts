@@ -78,15 +78,18 @@ export class BotService implements OnModuleInit {
             await this.sendNotification(
               referrer.telegramId,
               `🎉 По твоей ссылке зарегистрировался ${name}!\n\n` +
-              `Когда он купит подписку, ты получишь +${process.env.REFERRAL_BONUS_DAYS || '3'} бонусных дней 🎁`,
+              `Когда он купит подписку:\n` +
+              `• Ты получишь +${process.env.REFERRAL_BONUS_DAYS || '3'} бонусных дней\n` +
+              `• Он получит +${process.env.REFERRED_BONUS_DAYS || '1'} бонусный день 🎁`,
             );
           }
           this.logger.log(`User #${user.id} referred by #${referrer.id}`);
         }
       }
 
+      const showTrial = !user.hasUsedTrial;
       await ctx.reply(messages.welcome(from.first_name), {
-        reply_markup: mainMenuKeyboard(miniAppUrl),
+        reply_markup: mainMenuKeyboard(miniAppUrl, { showTrial }),
       });
     });
 
@@ -151,9 +154,11 @@ export class BotService implements OnModuleInit {
 
       await ctx.reply(
         `🤝 Твоя реферальная ссылка:\n\n\`${link}\`\n\n` +
-        `👥 Приглашено: ${count}\n` +
-        `🎁 За каждого друга — ${process.env.REFERRAL_BONUS_DAYS || '3'} бонусных дня!\n\n` +
-        `Отправь ссылку друзьям 👇`,
+        `👥 Приглашено: ${count}\n\n` +
+        `🎁 Бонусы за каждого друга:\n` +
+        `• Тебе: +${process.env.REFERRAL_BONUS_DAYS || '3'} дней к подписке\n` +
+        `• Другу: +${process.env.REFERRED_BONUS_DAYS || '1'} день к подписке\n\n` +
+        `Выгодно обоим! Отправь ссылку друзьям 👇`,
         { parse_mode: 'Markdown' },
       );
     });
@@ -180,7 +185,7 @@ export class BotService implements OnModuleInit {
           input_message_content: {
             message_text:
               `🛡 Быстрый и безопасный VPN!\n\n` +
-              `Подключайся по моей ссылке и получи бонус:\n${link}`,
+              `Подключайся по моей ссылке — оба получим бонусные дни:\n${link}`,
           },
         },
       ], { cache_time: 60 });
@@ -218,6 +223,8 @@ export class BotService implements OnModuleInit {
         await this.handleYokassaPayment(ctx, data);
       } else if (data.startsWith('change_server:')) {
         await this.handleChangeServer(ctx, data);
+      } else if (data === 'trial') {
+        await this.handleTrial(ctx);
       }
 
       await ctx.answerCallbackQuery();
@@ -255,6 +262,7 @@ export class BotService implements OnModuleInit {
       if (user?.referrerId) {
         const referrer = await this.userService.findById(user.referrerId);
         const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
+        const referredBonusDays = process.env.REFERRED_BONUS_DAYS || '1';
         if (referrer?.telegramId) {
           const buyerName = ctx.from.first_name || ctx.from.username || 'Твой реферал';
           await this.sendNotification(
@@ -263,6 +271,11 @@ export class BotService implements OnModuleInit {
             `Тебе начислено +${bonusDays} бонусных дней к подписке 🚀`,
           );
         }
+        // Уведомление приглашённому о его бонусе
+        await this.sendNotification(
+          ctx.from.id,
+          `🎁 Тебе начислен бонус +${referredBonusDays} день за регистрацию по реферальной ссылке! 🚀`,
+        );
       }
     });
 
@@ -403,6 +416,59 @@ export class BotService implements OnModuleInit {
     }
   }
 
+  private async handleTrial(ctx: any) {
+    const from = ctx.callbackQuery?.from;
+    if (!from) return;
+
+    const user = await this.userService.findOrCreate({
+      telegramId: from.id,
+      username: from.username,
+      firstName: from.first_name,
+    });
+
+    if (user.hasUsedTrial) {
+      await ctx.editMessageText(
+        '😔 Ты уже использовал бесплатный пробный период.\n\nВыбери тариф для продолжения! 🚀',
+        { reply_markup: backToMenuKeyboard() },
+      );
+      return;
+    }
+
+    const plan = await this.planService.findCheapest();
+    if (!plan) {
+      await ctx.editMessageText('😔 Нет доступных тарифов. Попробуй позже.', {
+        reply_markup: backToMenuKeyboard(),
+      });
+      return;
+    }
+
+    try {
+      const sub = await this.subscriptionService.createSubscription(
+        user.id,
+        plan.id,
+        { trialDays: 1 },
+      );
+
+      await this.userService.markTrialUsed(user.id);
+
+      await ctx.editMessageText(
+        '🎉 Пробный период активирован!\n\n' +
+        `🛡 Тариф: ${plan.name} (1 день)\n\n` +
+        `🔑 Твой ключ:\n\n\`\`\`\n${sub.connectionLink}\n\`\`\`\n\n` +
+        '━━━━━━━━━━━━━━━\n' +
+        '📱 Нажми на ключ, чтобы скопировать, и вставь в Hiddify\n' +
+        '❓ Как подключить → /help',
+        { parse_mode: 'Markdown', reply_markup: backToMenuKeyboard() },
+      );
+    } catch (e) {
+      this.logger.error(`Trial activation error: ${e}`);
+      await ctx.editMessageText(
+        '😔 Не удалось активировать пробный период. Попробуй позже.',
+        { reply_markup: backToMenuKeyboard() },
+      );
+    }
+  }
+
   private async handleStarsPayment(ctx: any, data: string) {
     const planId = parseInt(data.split(':')[1]);
     const plan = await this.planService.findById(planId);
@@ -455,12 +521,20 @@ export class BotService implements OnModuleInit {
 
         const referrer = await this.userService.findById(user.referrerId);
         const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
+        const referredBonusDays = process.env.REFERRED_BONUS_DAYS || '1';
         if (referrer?.telegramId) {
           const buyerName = user.firstName || user.username || 'Твой реферал';
           await this.sendNotification(
             referrer.telegramId,
             `🎁 ${buyerName} купил подписку!\n\n` +
             `Тебе начислено +${bonusDays} бонусных дней к подписке 🚀`,
+          );
+        }
+        // Уведомление приглашённому о его бонусе
+        if (user.telegramId) {
+          await this.sendNotification(
+            user.telegramId,
+            `🎁 Тебе начислен бонус +${referredBonusDays} день за регистрацию по реферальной ссылке! 🚀`,
           );
         }
       } catch (e) {

@@ -38,6 +38,9 @@ export class Plan {
   @Column({ type: 'int', default: 0, comment: 'Порядок сортировки' })
   sortOrder: number;
 
+  @Column({ type: 'int', default: 0, comment: 'Скидка на продление (%)' })
+  renewalDiscountPercent: number;
+
   @OneToMany(() => Subscription, (s) => s.plan)
   subscriptions: Subscription[];
 }

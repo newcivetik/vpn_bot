@@ -331,6 +331,93 @@ export class AdminService {
     await this.promoRepo.update(id, { isActive: false });
   }
 
+  // ─── Analytics ───────────────────────────────────────
+
+  async getAnalytics() {
+    // Конверсия: зарегистрировался → купил
+    const totalUsers = await this.userRepo.count();
+    const usersWithPayments = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('COUNT(DISTINCT p.userId)', 'count')
+      .where('p.status = :status', { status: PaymentStatus.PAID })
+      .getRawOne();
+    const payingUsers = Number(usersWithPayments?.count || 0);
+    const conversionRate = totalUsers > 0 ? ((payingUsers / totalUsers) * 100) : 0;
+
+    // Churn rate: не продлили за последние 30 дней
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const expiredLast30 = await this.subRepo.count({
+      where: {
+        status: SubscriptionStatus.EXPIRED,
+        expiresAt: MoreThanOrEqual(thirtyDaysAgo),
+      },
+    });
+
+    // Пользователи, чья подписка истекла и которые купили новую
+    const renewedUsers = await this.subRepo
+      .createQueryBuilder('s')
+      .select('COUNT(DISTINCT s.userId)', 'count')
+      .where('s.status = :active', { active: SubscriptionStatus.ACTIVE })
+      .andWhere('s.userId IN ' +
+        this.subRepo.createQueryBuilder('s2')
+          .select('s2.userId')
+          .where('s2.status = :expired', { expired: SubscriptionStatus.EXPIRED })
+          .getQuery()
+      )
+      .getRawOne();
+    const renewedCount = Number(renewedUsers?.count || 0);
+    const churnRate = expiredLast30 > 0 ? (((expiredLast30 - renewedCount) / expiredLast30) * 100) : 0;
+
+    // LTV: средний доход на платящего пользователя
+    const totalRevenue = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('SUM(p.amount)', 'total')
+      .where('p.status = :status', { status: PaymentStatus.PAID })
+      .andWhere('p.method = :method', { method: PaymentMethod.YOKASSA })
+      .getRawOne();
+    const avgLTV = payingUsers > 0 ? (Number(totalRevenue?.total || 0) / payingUsers) : 0;
+
+    // Средний чек
+    const avgCheckResult = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('AVG(p.amount)', 'avg')
+      .where('p.status = :status', { status: PaymentStatus.PAID })
+      .andWhere('p.method = :method', { method: PaymentMethod.YOKASSA })
+      .getRawOne();
+    const avgCheck = Number(avgCheckResult?.avg || 0);
+
+    // Количество рефералов
+    const totalReferrals = await this.userRepo.count({
+      where: { referrerId: MoreThanOrEqual(1) as any },
+    });
+
+    // Конверсия воронки по дням (последние 30 дней)
+    const funnelChart = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select("TO_CHAR(p.createdAt, 'YYYY-MM-DD')", 'date')
+      .addSelect('COUNT(DISTINCT p.userId)', 'buyers')
+      .where('p.status = :status', { status: PaymentStatus.PAID })
+      .andWhere('p.createdAt >= :since', { since: thirtyDaysAgo })
+      .groupBy("TO_CHAR(p.createdAt, 'YYYY-MM-DD')")
+      .orderBy('date')
+      .getRawMany();
+
+    return {
+      conversionRate: Math.round(conversionRate * 10) / 10,
+      churnRate: Math.max(0, Math.round(churnRate * 10) / 10),
+      avgLTV: Math.round(avgLTV),
+      avgCheck: Math.round(avgCheck),
+      payingUsers,
+      totalUsers,
+      totalReferrals,
+      expiredLast30,
+      renewedCount,
+      funnelChart: funnelChart.map((r: any) => ({ date: r.date, buyers: Number(r.buyers) })),
+    };
+  }
+
   // ─── Broadcast ────────────────────────────────────────
 
   async broadcastMessage(text: string, onlyActive: boolean) {
