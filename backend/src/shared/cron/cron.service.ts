@@ -28,18 +28,30 @@ export class CronService {
     this.logger.debug('Трафик синхронизирован');
   }
 
-  // Каждый день в 10:00 — уведомления об истечении
+  // Каждый день в 10:00 — уведомления об истечении (7, 3, 1 день)
   @Cron('0 10 * * *')
   async notifyExpiring() {
-    const expiring = await this.subscriptionService.getExpiringSubscriptions(3);
-    for (const sub of expiring) {
-      const daysLeft = Math.ceil(
-        (new Date(sub.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-      );
-      await this.botService.sendNotification(
-        sub.user.telegramId,
-        `⚠️ Ваша VPN-подписка "${sub.plan.name}" истекает через ${daysLeft} ${this.pluralizeDays(daysLeft)}.\n\nПродлите подписку, чтобы не потерять доступ.`,
-      );
+    for (const threshold of [7, 3, 1]) {
+      const expiring = await this.subscriptionService.getExpiringSubscriptions(threshold);
+      for (const sub of expiring) {
+        if (!sub.user.notifyBeforeExpiry) continue;
+
+        const daysLeft = Math.ceil(
+          (new Date(sub.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        );
+
+        // Уведомляем только если дней осталось в диапазоне текущего порога
+        if (threshold === 7 && (daysLeft > 7 || daysLeft <= 3)) continue;
+        if (threshold === 3 && (daysLeft > 3 || daysLeft <= 1)) continue;
+        if (threshold === 1 && daysLeft > 1) continue;
+
+        const emoji = daysLeft <= 1 ? '🚨' : daysLeft <= 3 ? '⚠️' : '📢';
+        await this.botService.sendNotification(
+          sub.user.telegramId,
+          `${emoji} Твоя подписка «${sub.plan.name}» истекает через ${daysLeft} ${this.pluralizeDays(daysLeft)}!\n\n` +
+          `Продли, чтобы не потерять доступ 🛡`,
+        );
+      }
     }
   }
 

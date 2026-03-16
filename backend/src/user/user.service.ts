@@ -36,4 +36,46 @@ export class UserService {
   async findById(id: number): Promise<User | null> {
     return this.userRepo.findOne({ where: { id } });
   }
+
+  async generateReferralCode(userId: number): Promise<string> {
+    const user = await this.findById(userId);
+    if (!user) throw new Error('Пользователь не найден');
+
+    if (user.referralCode) return user.referralCode;
+
+    const code = this.createRandomCode(8);
+    user.referralCode = code;
+    await this.userRepo.save(user);
+    return code;
+  }
+
+  async findByReferralCode(code: string): Promise<User | null> {
+    return this.userRepo.findOne({ where: { referralCode: code } });
+  }
+
+  async getReferralCount(userId: number): Promise<number> {
+    return this.userRepo.count({ where: { referrerId: userId } });
+  }
+
+  async addReferralBonus(userId: number, days: number): Promise<void> {
+    await this.userRepo.increment({ id: userId }, 'referralBonusDays', days);
+  }
+
+  async setReferrer(userId: number, referrerId: number): Promise<void> {
+    const user = await this.findById(userId);
+    if (!user || user.referrerId) return;
+    if (userId === referrerId) return;
+
+    user.referrerId = referrerId;
+    await this.userRepo.save(user);
+  }
+
+  private createRandomCode(length: number): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
 }

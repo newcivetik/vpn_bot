@@ -25,6 +25,13 @@ export class ServerService {
     return this.serverRepo.find({ order: { id: 'ASC' } });
   }
 
+  async findAllActive(): Promise<Server[]> {
+    return this.serverRepo.find({
+      where: { isActive: true },
+      order: { currentClients: 'ASC' },
+    });
+  }
+
   async incrementClients(id: number): Promise<void> {
     await this.serverRepo.increment({ id }, 'currentClients', 1);
   }

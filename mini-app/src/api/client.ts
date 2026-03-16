@@ -55,4 +55,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ planId, initData }),
     }),
+
+  getProfile: (initData: string) =>
+    request<{ referralCode: string; referralCount: number; referralBonusDays: number } | null>(
+      `/profile?initData=${encodeURIComponent(initData)}`,
+    ),
+
+  validatePromo: (code: string, initData: string) =>
+    request<{ valid: boolean; error?: string; discountPercent?: number; bonusDays?: number }>(
+      '/validate-promo',
+      {
+        method: 'POST',
+        body: JSON.stringify({ code, initData }),
+      },
+    ),
 };

@@ -58,6 +58,13 @@ export class SubscriptionService {
     const saved = await this.subRepo.save(subscription);
     await this.serverService.incrementClients(server.id);
 
+    // Реферальный бонус
+    const bonusDays = parseInt(process.env.REFERRAL_BONUS_DAYS || '3', 10);
+    if (user.referrerId && bonusDays > 0) {
+      await this.userService.addReferralBonus(user.referrerId, bonusDays);
+      this.logger.log(`Реферальный бонус ${bonusDays} дн. начислен пользователю #${user.referrerId}`);
+    }
+
     this.logger.log(`Подписка #${saved.id} создана для пользователя #${userId}`);
     return saved;
   }
@@ -120,6 +127,47 @@ export class SubscriptionService {
         await this.subRepo.save(sub);
       }
     }
+  }
+
+  async changeServer(subscriptionId: number, newServerId: number): Promise<Subscription> {
+    const sub = await this.subRepo.findOne({
+      where: { id: subscriptionId },
+      relations: ['server'],
+    });
+    if (!sub) throw new Error('Подписка не найдена');
+
+    const newServer = await this.serverService.findById(newServerId);
+    if (!newServer || !newServer.isActive) throw new Error('Сервер недоступен');
+
+    // Удаляем клиента на старом сервере
+    await this.vpnService.deleteClient(sub.server, sub.vpnClientId);
+    await this.serverService.decrementClients(sub.serverId);
+
+    // Считаем оставшиеся дни
+    const remainingMs = new Date(sub.expiresAt).getTime() - Date.now();
+    const remainingDays = Math.max(1, Math.ceil(remainingMs / 86400000));
+
+    const plan = await this.planService.findById(sub.planId);
+
+    // Создаём клиента на новом сервере
+    const user = await this.userService.findById(sub.userId);
+    const vpnClient = await this.vpnService.createClient(newServer, {
+      telegramId: user!.telegramId,
+      trafficLimitGB: plan?.trafficLimitGB || 0,
+      expiryDays: remainingDays,
+      maxDevices: plan?.maxDevices || 1,
+    });
+
+    sub.serverId = newServer.id;
+    sub.server = newServer;
+    sub.vpnClientId = vpnClient.clientId;
+    sub.vpnClientEmail = vpnClient.email;
+    sub.connectionLink = vpnClient.connectionLink;
+    await this.subRepo.save(sub);
+    await this.serverService.incrementClients(newServer.id);
+
+    this.logger.log(`Подписка #${sub.id} перенесена на сервер #${newServer.id}`);
+    return sub;
   }
 
   async getExpiringSubscriptions(daysBeforeExpiry: number): Promise<Subscription[]> {

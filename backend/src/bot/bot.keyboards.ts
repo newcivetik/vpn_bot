@@ -1,12 +1,15 @@
 import { InlineKeyboard } from 'grammy';
 import { Plan } from '../plan/plan.entity';
+import { Server } from '../server/server.entity';
+import { getLocationFlag, getLoadEmoji } from './bot.messages';
 
 export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
   return new InlineKeyboard()
-    .webApp('🛒 Открыть магазин', miniAppUrl)
+    .webApp('🛒 Магазин', miniAppUrl)
+    .text('🌍 Сервер', 'server')
     .row()
-    .text('📊 Мой статус', 'status')
-    .text('🔑 Мой ключ', 'key')
+    .text('📊 Статус', 'status')
+    .text('🔑 Ключ', 'key')
     .row()
     .text('❓ Помощь', 'help');
 }
@@ -14,12 +17,13 @@ export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
 export function plansKeyboard(plans: Plan[]): InlineKeyboard {
   const kb = new InlineKeyboard();
   for (const plan of plans) {
-    const trafficLabel = plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : 'Безлимит';
+    const trafficLabel = plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : '∞';
     kb.text(
-      `${plan.name} — ${plan.price}₽ (${trafficLabel})`,
+      `${plan.name} — ${plan.price}₽ · ${trafficLabel}`,
       `buy_stars:${plan.id}`,
     ).row();
   }
+  kb.text('« Назад', 'menu');
   return kb;
 }
 
@@ -27,11 +31,26 @@ export function paymentMethodKeyboard(planId: number): InlineKeyboard {
   return new InlineKeyboard()
     .text('⭐ Telegram Stars', `pay_stars:${planId}`)
     .row()
-    .text('💳 Карта (ЮKassa)', `pay_yokassa:${planId}`)
+    .text('💳 Карта / СБП', `pay_yokassa:${planId}`)
     .row()
     .text('« Назад', 'plans');
 }
 
 export function backToMenuKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().text('« Главное меню', 'menu');
+  return new InlineKeyboard().text('« Меню', 'menu');
+}
+
+export function serverKeyboard(servers: Server[], currentServerId?: number): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const server of servers) {
+    const flag = getLocationFlag(server.location);
+    const load = getLoadEmoji(server.currentClients, server.maxClients);
+    const current = server.id === currentServerId ? ' ✓' : '';
+    kb.text(
+      `${flag} ${server.location} ${load}${current}`,
+      `change_server:${server.id}`,
+    ).row();
+  }
+  kb.text('« Меню', 'menu');
+  return kb;
 }

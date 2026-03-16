@@ -4,6 +4,8 @@ import { PlanService } from '../plan/plan.service';
 import { UserService } from '../user/user.service';
 import { PaymentService } from '../payment/payment.service';
 import { BotService } from '../bot/bot.service';
+import { ServerService } from '../server/server.service';
+import { PromoService } from '../promo/promo.service';
 import { validateTelegramWebAppData } from '../shared/guards/telegram-auth';
 
 @Controller('api')
@@ -16,6 +18,8 @@ export class SubscriptionController {
     private readonly paymentService: PaymentService,
     @Inject(forwardRef(() => BotService))
     private readonly botService: BotService,
+    private readonly serverService: ServerService,
+    private readonly promoService: PromoService,
   ) {}
 
   @Get('plans')
@@ -98,6 +102,63 @@ export class SubscriptionController {
     );
 
     return { confirmationToken };
+  }
+
+  @Get('servers')
+  async getServers() {
+    return this.serverService.findAllActive();
+  }
+
+  @Post('subscription/change-server')
+  async changeServer(
+    @Body() body: { serverId: number; initData: string },
+  ) {
+    const telegramUser = this.validateAndExtractUser(body.initData);
+    const user = await this.userService.findByTelegramId(telegramUser.id);
+    if (!user) throw new UnauthorizedException('Пользователь не найден');
+
+    const sub = await this.subscriptionService.getActiveSubscription(user.id);
+    if (!sub) throw new UnauthorizedException('Нет активной подписки');
+
+    await this.subscriptionService.changeServer(sub.id, body.serverId);
+    const updated = await this.subscriptionService.getActiveSubscription(user.id);
+    return updated;
+  }
+
+  @Post('validate-promo')
+  async validatePromo(
+    @Body() body: { code: string; initData: string },
+  ) {
+    const telegramUser = this.validateAndExtractUser(body.initData);
+    const user = await this.userService.findByTelegramId(telegramUser.id);
+    if (!user) throw new UnauthorizedException('Пользователь не найден');
+
+    const result = await this.promoService.validatePromo(body.code, user.id);
+    if (!result.valid) {
+      return { valid: false, error: result.error };
+    }
+
+    return {
+      valid: true,
+      discountPercent: result.promo!.discountPercent,
+      bonusDays: result.promo!.bonusDays,
+    };
+  }
+
+  @Get('profile')
+  async getProfile(@Query('initData') initData: string) {
+    const telegramUser = this.validateAndExtractUser(initData);
+    const user = await this.userService.findByTelegramId(telegramUser.id);
+    if (!user) return null;
+
+    const code = await this.userService.generateReferralCode(user.id);
+    const referralCount = await this.userService.getReferralCount(user.id);
+
+    return {
+      referralCode: code,
+      referralCount,
+      referralBonusDays: user.referralBonusDays,
+    };
   }
 
   private validateAndExtractUser(initData: string) {

@@ -26,6 +26,18 @@ export class User {
   @Column({ nullable: true })
   languageCode: string;
 
+  @Column({ nullable: true, comment: 'ID реферера' })
+  referrerId: number;
+
+  @Column({ nullable: true, unique: true, length: 8, comment: 'Реферальный код' })
+  referralCode: string;
+
+  @Column({ type: 'int', default: 0, comment: 'Накопленные бонусные дни от рефералов' })
+  referralBonusDays: number;
+
+  @Column({ default: true })
+  notifyBeforeExpiry: boolean;
+
   @OneToMany(() => Subscription, (s) => s.user)
   subscriptions: Subscription[];
 

@@ -1,47 +1,73 @@
+import { Check } from 'lucide-react';
 import type { PlanDTO } from '../api/client';
 
 interface Props {
   plan: PlanDTO;
   onSelect: (plan: PlanDTO) => void;
   popular?: boolean;
+  current?: boolean;
 }
 
-export function PlanCard({ plan, onSelect, popular }: Props) {
+export function PlanCard({ plan, onSelect, popular, current }: Props) {
   const trafficLabel =
-    plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : 'Безлимит';
+    plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ трафика` : 'Безлимитный трафик';
+
+  const features = [
+    trafficLabel,
+    `${plan.maxDevices} устройств`,
+    `${plan.durationDays} дней`,
+    'VLESS+Reality',
+  ];
 
   return (
     <div
-      className={`relative rounded-2xl p-5 border-2 transition-all ${
+      className={`relative rounded-3xl p-5 border-2 transition-all ${
         popular
-          ? 'border-tg-button bg-tg-button/5 shadow-lg'
-          : 'border-tg-secondary bg-tg-secondary'
+          ? 'border-brand-purple bg-brand-purple/5 shadow-glow'
+          : current
+            ? 'border-brand-green bg-brand-green/5'
+            : 'border-transparent bg-tg-secondary'
       }`}
     >
       {popular && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-tg-button text-tg-button-text text-xs font-bold px-3 py-1 rounded-full">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-primary text-white text-xs font-bold px-4 py-1 rounded-full">
           Популярный
         </span>
       )}
+      {current && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-green text-white text-xs font-bold px-4 py-1 rounded-full">
+          Текущий
+        </span>
+      )}
 
-      <h3 className="text-lg font-bold text-tg-text mb-1">{plan.name}</h3>
-
-      <div className="text-3xl font-bold text-tg-text mb-2">
-        {plan.price} ₽
-        <span className="text-sm font-normal text-tg-hint">/мес</span>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="text-lg font-bold text-tg-text">{plan.name}</h3>
+          <div className="text-2xl font-bold text-tg-text mt-1">
+            {plan.price} ₽
+            <span className="text-sm font-normal text-tg-hint"> / мес</span>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-1.5 text-sm text-tg-hint mb-4">
-        <div>📊 Трафик: {trafficLabel}</div>
-        <div>📱 Устройств: {plan.maxDevices}</div>
-        <div>📅 {plan.durationDays} дней</div>
+      <div className="space-y-2 mb-4">
+        {features.map((feature) => (
+          <div key={feature} className="flex items-center gap-2 text-sm text-tg-hint">
+            <Check size={14} className="text-brand-green flex-shrink-0" />
+            <span>{feature}</span>
+          </div>
+        ))}
       </div>
 
       <button
         onClick={() => onSelect(plan)}
-        className="w-full py-3 rounded-xl font-semibold text-tg-button-text bg-tg-button active:opacity-80 transition-opacity"
+        className={`w-full py-3 rounded-xl font-semibold active:scale-95 transition-transform ${
+          popular
+            ? 'bg-gradient-primary text-white'
+            : 'bg-tg-button text-tg-button-text'
+        }`}
       >
-        Выбрать
+        {current ? 'Продлить' : 'Выбрать'}
       </button>
     </div>
   );

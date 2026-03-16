@@ -9,6 +9,7 @@ import { PlanModule } from '../plan/plan.module';
 import { UserModule } from '../user/user.module';
 import { PaymentModule } from '../payment/payment.module';
 import { BotModule } from '../bot/bot.module';
+import { PromoModule } from '../promo/promo.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { BotModule } from '../bot/bot.module';
     UserModule,
     forwardRef(() => PaymentModule),
     forwardRef(() => BotModule),
+    PromoModule,
   ],
   providers: [SubscriptionService],
   controllers: [SubscriptionController],

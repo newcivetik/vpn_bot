@@ -11,6 +11,7 @@ import { PaymentModule } from './payment/payment.module';
 import { VpnModule } from './vpn/vpn.module';
 import { BotModule } from './bot/bot.module';
 import { CronService } from './shared/cron/cron.service';
+import { PromoModule } from './promo/promo.module';
 
 // Entities
 import { User } from './user/user.entity';
@@ -18,6 +19,8 @@ import { Plan } from './plan/plan.entity';
 import { Server } from './server/server.entity';
 import { Subscription } from './subscription/subscription.entity';
 import { Payment } from './payment/payment.entity';
+import { PromoCode } from './promo/promo.entity';
+import { PromoUsage } from './promo/promo-usage.entity';
 
 @Module({
   imports: [
@@ -34,7 +37,7 @@ import { Payment } from './payment/payment.entity';
         username: config.get('DB_USERNAME'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
-        entities: [User, Plan, Server, Subscription, Payment],
+        entities: [User, Plan, Server, Subscription, Payment, PromoCode, PromoUsage],
         synchronize: config.get('NODE_ENV') === 'development',
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -47,6 +50,7 @@ import { Payment } from './payment/payment.entity';
     PaymentModule,
     VpnModule,
     BotModule,
+    PromoModule,
   ],
   providers: [CronService],
 })

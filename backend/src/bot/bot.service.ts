@@ -1,15 +1,19 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Bot, GrammyError, HttpError } from 'grammy';
+import { Bot, GrammyError, HttpError, InlineKeyboard } from 'grammy';
 import { UserService } from '../user/user.service';
 import { PlanService } from '../plan/plan.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { PaymentService } from '../payment/payment.service';
+import { ServerService } from '../server/server.service';
+import { PromoService } from '../promo/promo.service';
+import { messages } from './bot.messages';
 import {
   mainMenuKeyboard,
   plansKeyboard,
   paymentMethodKeyboard,
   backToMenuKeyboard,
+  serverKeyboard,
 } from './bot.keyboards';
 
 @Injectable()
@@ -23,6 +27,8 @@ export class BotService implements OnModuleInit {
     private readonly planService: PlanService,
     private readonly subscriptionService: SubscriptionService,
     private readonly paymentService: PaymentService,
+    private readonly serverService: ServerService,
+    private readonly promoService: PromoService,
   ) {
     this.bot = new Bot(this.config.getOrThrow<string>('BOT_TOKEN'));
   }
@@ -35,7 +41,6 @@ export class BotService implements OnModuleInit {
       await this.bot.api.setWebhook(`${webhookDomain}/bot/webhook`);
       this.logger.log(`Webhook установлен: ${webhookDomain}/bot/webhook`);
     } else {
-      // Long polling для разработки
       this.bot.start();
       this.logger.log('Бот запущен в режиме long polling');
     }
@@ -48,40 +53,128 @@ export class BotService implements OnModuleInit {
   private registerHandlers() {
     const miniAppUrl = this.config.getOrThrow<string>('MINI_APP_URL');
 
-    // /start
+    // /start (with referral deep-link support: /start ref_XXXXXXXX)
     this.bot.command('start', async (ctx) => {
       const from = ctx.from;
       if (!from) return;
 
-      await this.userService.findOrCreate({
+      const user = await this.userService.findOrCreate({
         telegramId: from.id,
         username: from.username,
         firstName: from.first_name,
         languageCode: from.language_code,
       });
 
-      await ctx.reply(
-        '👋 Добро пожаловать в VPN-сервис!\n\n' +
-          '🔒 Быстрый, безопасный VPN с протоколом VLESS+Reality.\n' +
-          'Трафик неотличим от обычного HTTPS.\n\n' +
-          'Выберите действие:',
-        { reply_markup: mainMenuKeyboard(miniAppUrl) },
-      );
+      // Parse referral code from deep-link
+      const payload = ctx.match;
+      if (payload && payload.startsWith('ref_')) {
+        const refCode = payload.slice(4);
+        const referrer = await this.userService.findByReferralCode(refCode);
+        if (referrer && referrer.id !== user.id) {
+          await this.userService.setReferrer(user.id, referrer.id);
+          this.logger.log(`User #${user.id} referred by #${referrer.id}`);
+        }
+      }
+
+      await ctx.reply(messages.welcome(from.first_name), {
+        reply_markup: mainMenuKeyboard(miniAppUrl),
+      });
     });
 
     // /status
-    this.bot.command('status', async (ctx) => {
-      await this.handleStatus(ctx);
-    });
+    this.bot.command('status', (ctx) => this.handleStatus(ctx));
 
     // /key
-    this.bot.command('key', async (ctx) => {
-      await this.handleKey(ctx);
-    });
+    this.bot.command('key', (ctx) => this.handleKey(ctx));
 
     // /help
-    this.bot.command('help', async (ctx) => {
-      await this.handleHelp(ctx);
+    this.bot.command('help', (ctx) => this.handleHelp(ctx));
+
+    // /server
+    this.bot.command('server', (ctx) => this.handleServer(ctx));
+
+    // /promo
+    this.bot.command('promo', async (ctx) => {
+      const code = ctx.match;
+      if (!code) {
+        await ctx.reply('Введи промокод после команды:\n/promo КОД');
+        return;
+      }
+      const from = ctx.from;
+      if (!from) return;
+
+      const user = await this.userService.findOrCreate({
+        telegramId: from.id,
+        username: from.username,
+        firstName: from.first_name,
+      });
+
+      const result = await this.promoService.validatePromo(code, user.id);
+      if (!result.valid) {
+        await ctx.reply(`❌ ${result.error}`);
+        return;
+      }
+
+      const promo = result.promo!;
+      let text = '✅ Промокод активен!\n\n';
+      if (promo.discountPercent > 0) text += `💰 Скидка: ${promo.discountPercent}%\n`;
+      if (promo.bonusDays > 0) text += `🎁 Бонус: +${promo.bonusDays} дней\n`;
+      text += '\nПримени его при оплате в мини-приложении 🛒';
+
+      await ctx.reply(text);
+    });
+
+    // /referral — получить свою реферальную ссылку
+    this.bot.command('referral', async (ctx) => {
+      const from = ctx.from;
+      if (!from) return;
+
+      const user = await this.userService.findOrCreate({
+        telegramId: from.id,
+        username: from.username,
+        firstName: from.first_name,
+      });
+
+      const code = await this.userService.generateReferralCode(user.id);
+      const botUsername = this.bot.botInfo?.username || 'bot';
+      const link = `https://t.me/${botUsername}?start=ref_${code}`;
+      const count = await this.userService.getReferralCount(user.id);
+
+      await ctx.reply(
+        `🤝 Твоя реферальная ссылка:\n\n\`${link}\`\n\n` +
+        `👥 Приглашено: ${count}\n` +
+        `🎁 За каждого друга — ${process.env.REFERRAL_BONUS_DAYS || '3'} бонусных дня!\n\n` +
+        `Отправь ссылку друзьям 👇`,
+        { parse_mode: 'Markdown' },
+      );
+    });
+
+    // Inline query — share referral link
+    this.bot.on('inline_query', async (ctx) => {
+      const from = ctx.inlineQuery.from;
+      const user = await this.userService.findByTelegramId(from.id);
+      if (!user) {
+        await ctx.answerInlineQuery([]);
+        return;
+      }
+
+      const code = await this.userService.generateReferralCode(user.id);
+      const botUsername = this.bot.botInfo?.username || 'bot';
+      const link = `https://t.me/${botUsername}?start=ref_${code}`;
+
+      await ctx.answerInlineQuery([
+        {
+          type: 'article',
+          id: 'referral',
+          title: '🤝 Поделиться VPN',
+          description: 'Отправить реферальную ссылку',
+          input_message_content: {
+            message_text:
+              `🛡 Быстрый и безопасный VPN!\n\n` +
+              `Подключайся по моей ссылке и получи бонус:\n${link}`,
+          },
+        },
+      ], { cache_time: 60 });
     });
 
     // Callback queries
@@ -89,32 +182,33 @@ export class BotService implements OnModuleInit {
       const data = ctx.callbackQuery.data;
 
       if (data === 'menu') {
-        await ctx.editMessageText(
-          '🔒 VPN-сервис\n\nВыберите действие:',
-          { reply_markup: mainMenuKeyboard(miniAppUrl) },
-        );
+        await ctx.editMessageText(messages.menu, {
+          reply_markup: mainMenuKeyboard(miniAppUrl),
+        });
       } else if (data === 'status') {
         await this.handleStatus(ctx);
       } else if (data === 'key') {
         await this.handleKey(ctx);
       } else if (data === 'help') {
         await this.handleHelp(ctx);
+      } else if (data === 'server') {
+        await this.handleServer(ctx);
       } else if (data === 'plans') {
         const plans = await this.planService.findAll();
-        await ctx.editMessageText(
-          '📋 Тарифные планы:\n\nВыберите подходящий:',
-          { reply_markup: plansKeyboard(plans) },
-        );
+        await ctx.editMessageText(messages.plans, {
+          reply_markup: plansKeyboard(plans),
+        });
       } else if (data.startsWith('buy_stars:')) {
         const planId = parseInt(data.split(':')[1]);
-        await ctx.editMessageText(
-          '💰 Выберите способ оплаты:',
-          { reply_markup: paymentMethodKeyboard(planId) },
-        );
+        await ctx.editMessageText(messages.selectPayment, {
+          reply_markup: paymentMethodKeyboard(planId),
+        });
       } else if (data.startsWith('pay_stars:')) {
         await this.handleStarsPayment(ctx, data);
       } else if (data.startsWith('pay_yokassa:')) {
         await this.handleYokassaPayment(ctx, data);
+      } else if (data.startsWith('change_server:')) {
+        await this.handleChangeServer(ctx, data);
       }
 
       await ctx.answerCallbackQuery();
@@ -141,9 +235,7 @@ export class BotService implements OnModuleInit {
         : null;
 
       await ctx.reply(
-        '✅ Оплата прошла успешно!\n\n' +
-          `🔑 Ваш ключ подключения:\n\n\`${sub?.connectionLink || 'Ошибка получения ключа'}\`\n\n` +
-          'Скопируйте ключ и вставьте в приложение Hiddify.',
+        messages.paymentSuccess(sub?.connectionLink || 'Ошибка получения ключа'),
         {
           parse_mode: 'Markdown',
           reply_markup: backToMenuKeyboard(),
@@ -153,7 +245,6 @@ export class BotService implements OnModuleInit {
 
     // Error handler
     this.bot.catch((err) => {
-      const ctx = err.ctx;
       const e = err.error;
       if (e instanceof GrammyError) {
         this.logger.error(`Grammy error: ${e.description}`);
@@ -165,31 +256,30 @@ export class BotService implements OnModuleInit {
     });
   }
 
+  /** Send reply or edit depending on context */
+  private async sendOrEdit(ctx: any, text: string, keyboard: InlineKeyboard, parseMode?: string) {
+    const opts: any = { reply_markup: keyboard };
+    if (parseMode) opts.parse_mode = parseMode;
+
+    if (ctx.callbackQuery) {
+      await ctx.editMessageText(text, opts);
+    } else {
+      await ctx.reply(text, opts);
+    }
+  }
+
   private async handleStatus(ctx: any) {
     const from = ctx.from || ctx.callbackQuery?.from;
     if (!from) return;
 
     const user = await this.userService.findByTelegramId(from.id);
-    if (!user) {
-      const text = '❌ У вас нет активной подписки.\n\nВыберите тариф:';
-      const plans = await this.planService.findAll();
-      if (ctx.callbackQuery) {
-        await ctx.editMessageText(text, { reply_markup: plansKeyboard(plans) });
-      } else {
-        await ctx.reply(text, { reply_markup: plansKeyboard(plans) });
-      }
-      return;
-    }
+    const sub = user
+      ? await this.subscriptionService.getActiveSubscription(user.id)
+      : null;
 
-    const sub = await this.subscriptionService.getActiveSubscription(user.id);
     if (!sub) {
-      const text = '❌ У вас нет активной подписки.\n\nВыберите тариф:';
       const plans = await this.planService.findAll();
-      if (ctx.callbackQuery) {
-        await ctx.editMessageText(text, { reply_markup: plansKeyboard(plans) });
-      } else {
-        await ctx.reply(text, { reply_markup: plansKeyboard(plans) });
-      }
+      await this.sendOrEdit(ctx, messages.noSubscription, plansKeyboard(plans));
       return;
     }
 
@@ -203,18 +293,11 @@ export class BotService implements OnModuleInit {
       ? `${sub.trafficUsedGB} / ${sub.plan.trafficLimitGB} ГБ`
       : `${sub.trafficUsedGB} ГБ (безлимит)`;
 
-    const text =
-      `📊 Ваша подписка\n\n` +
-      `📦 Тариф: ${sub.plan.name}\n` +
-      `📅 Действует до: ${expiresDate}\n` +
-      `📈 Трафик: ${trafficLimit}\n` +
-      `🌍 Сервер: ${sub.server.location}`;
-
-    if (ctx.callbackQuery) {
-      await ctx.editMessageText(text, { reply_markup: backToMenuKeyboard() });
-    } else {
-      await ctx.reply(text, { reply_markup: backToMenuKeyboard() });
-    }
+    await this.sendOrEdit(
+      ctx,
+      messages.status(sub.plan.name, expiresDate, trafficLimit, sub.server.location),
+      backToMenuKeyboard(),
+    );
   }
 
   private async handleKey(ctx: any) {
@@ -227,50 +310,73 @@ export class BotService implements OnModuleInit {
       : null;
 
     if (!sub) {
-      const text = '❌ У вас нет активной подписки.';
-      if (ctx.callbackQuery) {
-        await ctx.editMessageText(text, { reply_markup: backToMenuKeyboard() });
-      } else {
-        await ctx.reply(text, { reply_markup: backToMenuKeyboard() });
-      }
+      await this.sendOrEdit(ctx, messages.noKey, backToMenuKeyboard());
       return;
     }
 
-    const text =
-      `🔑 Ваш ключ подключения:\n\n` +
-      `\`${sub.connectionLink}\`\n\n` +
-      `Скопируйте и вставьте в приложение Hiddify.`;
-
-    if (ctx.callbackQuery) {
-      await ctx.editMessageText(text, {
-        parse_mode: 'Markdown',
-        reply_markup: backToMenuKeyboard(),
-      });
-    } else {
-      await ctx.reply(text, {
-        parse_mode: 'Markdown',
-        reply_markup: backToMenuKeyboard(),
-      });
-    }
+    await this.sendOrEdit(ctx, messages.key(sub.connectionLink), backToMenuKeyboard(), 'Markdown');
   }
 
   private async handleHelp(ctx: any) {
-    const text =
-      '❓ Как подключиться:\n\n' +
-      '1. Купите подписку через бота или Mini App\n' +
-      '2. Скопируйте ключ подключения\n' +
-      '3. Скачайте Hiddify:\n' +
-      '   • iPhone: App Store → Hiddify\n' +
-      '   • Android: Google Play → Hiddify\n' +
-      '   • Windows/Mac: hiddify.com\n' +
-      '4. Откройте Hiddify → нажмите + → вставьте ключ\n' +
-      '5. Нажмите кнопку подключения\n\n' +
-      '🔒 Протокол VLESS+Reality — трафик неотличим от обычного HTTPS.';
+    await this.sendOrEdit(ctx, messages.help, backToMenuKeyboard());
+  }
 
-    if (ctx.callbackQuery) {
-      await ctx.editMessageText(text, { reply_markup: backToMenuKeyboard() });
-    } else {
-      await ctx.reply(text, { reply_markup: backToMenuKeyboard() });
+  private async handleServer(ctx: any) {
+    const from = ctx.from || ctx.callbackQuery?.from;
+    if (!from) return;
+
+    const user = await this.userService.findByTelegramId(from.id);
+    const sub = user
+      ? await this.subscriptionService.getActiveSubscription(user.id)
+      : null;
+
+    if (!sub) {
+      await this.sendOrEdit(ctx, messages.noSubscription, backToMenuKeyboard());
+      return;
+    }
+
+    const servers = await this.serverService.findAllActive();
+    await this.sendOrEdit(
+      ctx,
+      messages.serverSelect,
+      serverKeyboard(servers, sub.serverId),
+    );
+  }
+
+  private async handleChangeServer(ctx: any, data: string) {
+    const newServerId = parseInt(data.split(':')[1]);
+    const from = ctx.callbackQuery?.from;
+    if (!from) return;
+
+    const user = await this.userService.findByTelegramId(from.id);
+    const sub = user
+      ? await this.subscriptionService.getActiveSubscription(user.id)
+      : null;
+
+    if (!sub) {
+      await ctx.editMessageText(messages.noSubscription, {
+        reply_markup: backToMenuKeyboard(),
+      });
+      return;
+    }
+
+    if (sub.serverId === newServerId) {
+      await ctx.answerCallbackQuery({ text: 'Ты уже на этом сервере' });
+      return;
+    }
+
+    try {
+      await this.subscriptionService.changeServer(sub.id, newServerId);
+      const server = await this.serverService.findById(newServerId);
+      await ctx.editMessageText(
+        messages.serverChanged(server?.location || 'Новый сервер'),
+        { reply_markup: backToMenuKeyboard() },
+      );
+    } catch (e) {
+      this.logger.error(`Server change error: ${e}`);
+      await ctx.editMessageText(messages.serverChangeError, {
+        reply_markup: backToMenuKeyboard(),
+      });
     }
   }
 
@@ -292,9 +398,14 @@ export class BotService implements OnModuleInit {
       plan.priceStars,
     );
 
-    await ctx.api.sendInvoice(from.id, `VPN ${plan.name}`, `Подписка на ${plan.durationDays} дней`, String(payment.id), 'XTR', [
-      { label: plan.name, amount: plan.priceStars },
-    ]);
+    await ctx.api.sendInvoice(
+      from.id,
+      `VPN ${plan.name}`,
+      `Подписка на ${plan.durationDays} дней`,
+      String(payment.id),
+      'XTR',
+      [{ label: plan.name, amount: plan.priceStars }],
+    );
   }
 
   private async handleYokassaPayment(ctx: any, data: string) {
@@ -316,20 +427,16 @@ export class BotService implements OnModuleInit {
         plan.price,
       );
 
-      await ctx.editMessageText(
-        `💳 Оплата тарифа "${plan.name}" — ${plan.price}₽\n\nНажмите кнопку для перехода к оплате:`,
-        {
-          reply_markup: new (await import('grammy')).InlineKeyboard()
-            .url('Оплатить', result.confirmationUrl!)
-            .row()
-            .text('« Назад', 'menu'),
-        },
-      );
-    } catch (e) {
-      await ctx.editMessageText(
-        '❌ Ошибка создания платежа. Попробуйте позже.',
-        { reply_markup: backToMenuKeyboard() },
-      );
+      await ctx.editMessageText(messages.yokassaPay(plan.name, plan.price), {
+        reply_markup: new InlineKeyboard()
+          .url('💳 Оплатить', result.confirmationUrl!)
+          .row()
+          .text('« Назад', 'menu'),
+      });
+    } catch {
+      await ctx.editMessageText(messages.yokassaError, {
+        reply_markup: backToMenuKeyboard(),
+      });
     }
   }
 

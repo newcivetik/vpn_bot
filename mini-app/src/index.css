@@ -17,3 +17,38 @@ body {
 #root {
   min-height: 100svh;
 }
+
+/* Hide scrollbars for horizontal scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe area padding for bottom tab bar */
+.pb-safe {
+  padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass {
+    background: rgba(30, 30, 30, 0.8);
+  }
+}

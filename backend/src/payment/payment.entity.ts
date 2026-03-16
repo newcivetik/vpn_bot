@@ -55,6 +55,12 @@ export class Payment {
   @Column({ nullable: true, comment: 'ID тарифа для привязки после оплаты' })
   planId: number;
 
+  @Column({ type: 'int', default: 0, comment: 'Процент скидки по промокоду' })
+  discountPercent: number;
+
+  @Column({ nullable: true, comment: 'ID использованного промокода' })
+  promoCodeId: number;
+
   @CreateDateColumn()
   createdAt: Date;
 }
