@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, MoreThanOrEqual } from 'typeorm';
+import { Repository, Like, Between, MoreThanOrEqual, Not, IsNull } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Subscription, SubscriptionStatus } from '../subscription/subscription.entity';
 import { Payment, PaymentMethod, PaymentStatus } from '../payment/payment.entity';
@@ -360,12 +360,7 @@ export class AdminService {
       .createQueryBuilder('s')
       .select('COUNT(DISTINCT s.userId)', 'count')
       .where('s.status = :active', { active: SubscriptionStatus.ACTIVE })
-      .andWhere('s.userId IN ' +
-        this.subRepo.createQueryBuilder('s2')
-          .select('s2.userId')
-          .where('s2.status = :expired', { expired: SubscriptionStatus.EXPIRED })
-          .getQuery()
-      )
+      .andWhere(`s.userId IN (SELECT s2."userId" FROM subscriptions s2 WHERE s2.status = :expired)`, { expired: SubscriptionStatus.EXPIRED })
       .getRawOne();
     const renewedCount = Number(renewedUsers?.count || 0);
     const churnRate = expiredLast30 > 0 ? (((expiredLast30 - renewedCount) / expiredLast30) * 100) : 0;
@@ -390,7 +385,7 @@ export class AdminService {
 
     // Количество рефералов
     const totalReferrals = await this.userRepo.count({
-      where: { referrerId: MoreThanOrEqual(1) as any },
+      where: { referrerId: Not(IsNull()) },
     });
 
     // Конверсия воронки по дням (последние 30 дней)
