@@ -57,7 +57,7 @@ export const api = {
     }),
 
   getProfile: (initData: string) =>
-    request<{ referralCode: string; referralCount: number; referralBonusDays: number } | null>(
+    request<{ referralCode: string; referralCount: number; referralBonusDays: number; botUsername: string } | null>(
       `/profile?initData=${encodeURIComponent(initData)}`,
     ),
 

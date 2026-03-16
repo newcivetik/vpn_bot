@@ -13,6 +13,7 @@ export function ProfilePage() {
     referralCode: string;
     referralCount: number;
     referralBonusDays: number;
+    botUsername?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -38,9 +39,8 @@ export function ProfilePage() {
       : `${trafficUsed.toFixed(1)} ГБ`
     : '—';
 
-  const botUsername = (tg as any)?.initDataUnsafe?.bot?.username;
-  const referralLink = profile?.referralCode
-    ? `https://t.me/${botUsername || 'bot'}?start=ref_${profile.referralCode}`
+  const referralLink = profile?.referralCode && profile.botUsername
+    ? `https://t.me/${profile.botUsername}?start=ref_${profile.referralCode}`
     : '';
 
   const handleCopyReferral = async () => {

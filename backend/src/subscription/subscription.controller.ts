@@ -164,10 +164,13 @@ export class SubscriptionController {
     const code = await this.userService.generateReferralCode(user.id);
     const referralCount = await this.userService.getReferralCount(user.id);
 
+    const botUsername = this.botService.getBot().botInfo?.username || '';
+
     return {
       referralCode: code,
       referralCount,
       referralBonusDays: user.referralBonusDays,
+      botUsername,
     };
   }
 
