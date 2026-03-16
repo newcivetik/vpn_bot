@@ -12,6 +12,7 @@ import { VpnModule } from './vpn/vpn.module';
 import { BotModule } from './bot/bot.module';
 import { CronService } from './shared/cron/cron.service';
 import { PromoModule } from './promo/promo.module';
+import { AdminModule } from './admin/admin.module';
 
 // Entities
 import { User } from './user/user.entity';
@@ -51,6 +52,7 @@ import { PromoUsage } from './promo/promo-usage.entity';
     VpnModule,
     BotModule,
     PromoModule,
+    AdminModule,
   ],
   providers: [CronService],
 })

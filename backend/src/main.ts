@@ -9,8 +9,9 @@ async function bootstrap() {
     new ValidationPipe({ whitelist: true, transform: true }),
   );
 
+  const origins = [process.env.MINI_APP_URL, process.env.ADMIN_APP_URL].filter(Boolean) as string[];
   app.enableCors({
-    origin: process.env.MINI_APP_URL || '*',
+    origin: origins.length > 0 ? origins : '*',
     methods: 'GET,POST,PATCH,DELETE',
   });
 

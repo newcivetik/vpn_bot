@@ -27,4 +27,12 @@ export const envValidationSchema = Joi.object({
   YOKASSA_SHOP_ID: Joi.string().optional().allow(''),
   YOKASSA_SECRET_KEY: Joi.string().optional().allow(''),
   YOKASSA_RETURN_URL: Joi.string().optional().allow(''),
+
+  // Admin
+  ADMIN_PASSWORD: Joi.string().optional().allow('').default(''),
+  JWT_SECRET: Joi.string().optional().default('admin-jwt-secret-change-me'),
+  ADMIN_APP_URL: Joi.string().optional().allow(''),
+
+  // Referral
+  REFERRAL_BONUS_DAYS: Joi.number().optional().default(3),
 });

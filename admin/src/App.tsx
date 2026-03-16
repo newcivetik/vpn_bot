@@ -1,0 +1,39 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './stores/authStore.ts';
+import { Layout } from './components/Layout.tsx';
+import { LoginPage } from './pages/LoginPage.tsx';
+import { DashboardPage } from './pages/DashboardPage.tsx';
+import { UsersPage } from './pages/UsersPage.tsx';
+import { UserDetailPage } from './pages/UserDetailPage.tsx';
+import { SubscriptionsPage } from './pages/SubscriptionsPage.tsx';
+import { PlansPage } from './pages/PlansPage.tsx';
+import { ServersPage } from './pages/ServersPage.tsx';
+import { PaymentsPage } from './pages/PaymentsPage.tsx';
+import { PromosPage } from './pages/PromosPage.tsx';
+import { BroadcastPage } from './pages/BroadcastPage.tsx';
+import type { ReactNode } from 'react';
+
+function PrivateRoute({ children }: { children: ReactNode }) {
+  const token = useAuthStore((s) => s.token);
+  if (!token) return <Navigate to="/login" replace />;
+  return <Layout>{children}</Layout>;
+}
+
+export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/users" element={<PrivateRoute><UsersPage /></PrivateRoute>} />
+        <Route path="/users/:id" element={<PrivateRoute><UserDetailPage /></PrivateRoute>} />
+        <Route path="/subscriptions" element={<PrivateRoute><SubscriptionsPage /></PrivateRoute>} />
+        <Route path="/plans" element={<PrivateRoute><PlansPage /></PrivateRoute>} />
+        <Route path="/servers" element={<PrivateRoute><ServersPage /></PrivateRoute>} />
+        <Route path="/payments" element={<PrivateRoute><PaymentsPage /></PrivateRoute>} />
+        <Route path="/promos" element={<PrivateRoute><PromosPage /></PrivateRoute>} />
+        <Route path="/broadcast" element={<PrivateRoute><BroadcastPage /></PrivateRoute>} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
