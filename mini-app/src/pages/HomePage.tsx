@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, PlanDTO, SubscriptionDTO } from '../api/client';
+import { api } from '../api/client';
+import type { PlanDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
 import { PlanCard } from '../components/PlanCard';
@@ -15,15 +16,18 @@ export function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([
-      api.getPlans(),
-      initData ? api.getSubscription(initData) : Promise.resolve(null),
-    ])
-      .then(([plans, sub]) => {
-        setPlans(plans);
-        setSubscription(sub);
-      })
+    api
+      .getPlans()
+      .then(setPlans)
+      .catch(() => {})
       .finally(() => setLoading(false));
+
+    if (initData) {
+      api
+        .getSubscription(initData)
+        .then(setSubscription)
+        .catch(() => {});
+    }
   }, [initData, setSubscription]);
 
   const handleSelectPlan = (plan: PlanDTO) => {

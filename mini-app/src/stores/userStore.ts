@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { SubscriptionDTO } from '../api/client';
+import type { SubscriptionDTO } from '../api/client';
 
 interface UserState {
   subscription: SubscriptionDTO | null;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api, PlanDTO } from '../api/client';
+import { api } from '../api/client';
+import type { PlanDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 
 export function PaymentPage() {
@@ -8,7 +9,7 @@ export function PaymentPage() {
   const [plan, setPlan] = useState<PlanDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { tg, haptic, backButton } = useTelegram();
+  const { tg, haptic, backButton, initData } = useTelegram();
 
   useEffect(() => {
     backButton?.show();
@@ -27,11 +28,24 @@ export function PaymentPage() {
     };
   }, [planId, navigate, backButton]);
 
-  const handleStars = () => {
+  const [paying, setPaying] = useState(false);
+
+  const handleStars = async () => {
+    if (paying || !plan) return;
     haptic?.impactOccurred('medium');
-    // Stars-оплата обрабатывается через бота (sendInvoice)
-    // Отправляем deeplink боту с planId
-    tg?.close();
+    setPaying(true);
+
+    try {
+      const { invoiceLink } = await api.createInvoice(plan.id, initData);
+      tg?.openInvoice(invoiceLink, (status) => {
+        if (status === 'paid') {
+          navigate('/');
+        }
+        setPaying(false);
+      });
+    } catch {
+      setPaying(false);
+    }
   };
 
   const handleYokassa = async () => {

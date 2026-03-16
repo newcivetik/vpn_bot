@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Subscription } from './subscription.entity';
 import { SubscriptionService } from './subscription.service';
@@ -7,6 +7,8 @@ import { VpnModule } from '../vpn/vpn.module';
 import { ServerModule } from '../server/server.module';
 import { PlanModule } from '../plan/plan.module';
 import { UserModule } from '../user/user.module';
+import { PaymentModule } from '../payment/payment.module';
+import { BotModule } from '../bot/bot.module';
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { UserModule } from '../user/user.module';
     ServerModule,
     PlanModule,
     UserModule,
+    forwardRef(() => PaymentModule),
+    forwardRef(() => BotModule),
   ],
   providers: [SubscriptionService],
   controllers: [SubscriptionController],

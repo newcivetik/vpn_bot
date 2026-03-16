@@ -43,4 +43,10 @@ export const api = {
     request<SubscriptionDTO[]>(
       `/subscriptions?initData=${encodeURIComponent(initData)}`,
     ),
+
+  createInvoice: (planId: number, initData: string) =>
+    request<{ invoiceLink: string }>('/create-invoice', {
+      method: 'POST',
+      body: JSON.stringify({ planId, initData }),
+    }),
 };

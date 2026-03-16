@@ -1,4 +1,4 @@
-import { PlanDTO } from '../api/client';
+import type { PlanDTO } from '../api/client';
 
 interface Props {
   plan: PlanDTO;
