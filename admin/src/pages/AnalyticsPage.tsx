@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Users, DollarSign, UserPlus, Repeat, BarChart3, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, DollarSign, Repeat, BarChart3, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Header } from '../components/Header.tsx';
 import { StatsCard } from '../components/StatsCard.tsx';
