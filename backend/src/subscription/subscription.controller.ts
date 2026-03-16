@@ -90,13 +90,13 @@ export class SubscriptionController {
       firstName: telegramUser.first_name,
     });
 
-    const { confirmationUrl } = await this.paymentService.createYokassaPayment(
+    const { confirmationToken } = await this.paymentService.createYokassaPayment(
       user.id,
       plan.id,
       plan.price,
     );
 
-    return { confirmationUrl };
+    return { confirmationToken };
   }
 
   private validateAndExtractUser(initData: string) {

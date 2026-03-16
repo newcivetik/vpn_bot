@@ -1,19 +1,42 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { PlanDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 
+declare global {
+  interface Window {
+    YooMoneyCheckoutWidget?: new (config: {
+      confirmation_token: string;
+      return_url?: string;
+      error_callback: (error: { error: string }) => void;
+    }) => {
+      render: (containerId: string) => Promise<void>;
+      destroy: () => void;
+    };
+  }
+}
+
 export function PaymentPage() {
   const { planId } = useParams<{ planId: string }>();
   const [plan, setPlan] = useState<PlanDTO | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showWidget, setShowWidget] = useState(false);
   const navigate = useNavigate();
   const { tg, haptic, backButton, initData } = useTelegram();
+  const widgetRef = useRef<{ destroy: () => void } | null>(null);
 
   useEffect(() => {
     backButton?.show();
-    const goBack = () => navigate('/');
+    const goBack = () => {
+      if (showWidget) {
+        widgetRef.current?.destroy();
+        widgetRef.current = null;
+        setShowWidget(false);
+      } else {
+        navigate('/');
+      }
+    };
     backButton?.onClick(goBack);
 
     api.getPlans().then((plans) => {
@@ -25,8 +48,9 @@ export function PaymentPage() {
     return () => {
       backButton?.offClick(goBack);
       backButton?.hide();
+      widgetRef.current?.destroy();
     };
-  }, [planId, navigate, backButton]);
+  }, [planId, navigate, backButton, showWidget]);
 
   const [paying, setPaying] = useState(false);
 
@@ -54,14 +78,29 @@ export function PaymentPage() {
     setPaying(true);
 
     try {
-      const { confirmationUrl } = await api.createYokassaPayment(plan.id, initData);
-      if (tg?.openLink) {
-        tg.openLink(confirmationUrl);
-      } else {
-        window.open(confirmationUrl, '_blank');
-      }
+      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData);
+
+      setShowWidget(true);
+
+      // Wait for DOM to render the container
+      await new Promise((r) => setTimeout(r, 100));
+
+      const checkout = new window.YooMoneyCheckoutWidget!({
+        confirmation_token: confirmationToken,
+        return_url: `${window.location.origin}/`,
+        error_callback: (error) => {
+          console.error('YooKassa widget error:', error);
+          setShowWidget(false);
+          setPaying(false);
+          alert('Ошибка оплаты. Попробуйте позже.');
+        },
+      });
+
+      widgetRef.current = checkout;
+      await checkout.render('yokassa-widget');
     } catch (err) {
       console.error('YooKassa payment error:', err);
+      setShowWidget(false);
       alert('Ошибка создания платежа. Попробуйте позже или выберите оплату Stars.');
     } finally {
       setPaying(false);
@@ -74,6 +113,18 @@ export function PaymentPage() {
         <div className="h-32 bg-tg-secondary rounded-2xl animate-pulse" />
         <div className="h-14 bg-tg-secondary rounded-2xl animate-pulse" />
         <div className="h-14 bg-tg-secondary rounded-2xl animate-pulse" />
+      </div>
+    );
+  }
+
+  if (showWidget) {
+    return (
+      <div className="p-4 pb-8 space-y-4">
+        <div className="bg-tg-secondary rounded-2xl p-4 text-center">
+          <h2 className="text-lg font-bold text-tg-text">Оплата картой</h2>
+          <div className="text-sm text-tg-hint">{plan.name} — {plan.price} ₽</div>
+        </div>
+        <div id="yokassa-widget" />
       </div>
     );
   }
