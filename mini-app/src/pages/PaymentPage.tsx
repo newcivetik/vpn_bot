@@ -98,14 +98,28 @@ export function PaymentPage() {
     }
   };
 
+  const loadYokassaScript = (): Promise<void> => {
+    if (window.YooMoneyCheckoutWidget) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://yookassa.ru/checkout-widget/v1/checkout-widget.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load YooKassa widget'));
+      document.head.appendChild(script);
+    });
+  };
+
   const handleYokassa = async () => {
     if (paying || !plan) return;
     haptic?.impactOccurred('medium');
     setPaying(true);
 
     try {
-      const activePromo = promoResult?.valid ? promoCode : undefined;
-      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData, activePromo);
+      const [{ confirmationToken }] = await Promise.all([
+        api.createYokassaPayment(plan.id, initData, promoResult?.valid ? promoCode : undefined),
+        loadYokassaScript(),
+      ]);
+
       setShowWidget(true);
       await new Promise((r) => setTimeout(r, 100));
 
