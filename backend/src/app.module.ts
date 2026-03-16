@@ -22,6 +22,8 @@ import { Subscription } from './subscription/subscription.entity';
 import { Payment } from './payment/payment.entity';
 import { PromoCode } from './promo/promo.entity';
 import { PromoUsage } from './promo/promo-usage.entity';
+import { Setting } from './settings/setting.entity';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -38,7 +40,7 @@ import { PromoUsage } from './promo/promo-usage.entity';
         username: config.get('DB_USERNAME'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
-        entities: [User, Plan, Server, Subscription, Payment, PromoCode, PromoUsage],
+        entities: [User, Plan, Server, Subscription, Payment, PromoCode, PromoUsage, Setting],
         synchronize: config.get('NODE_ENV') === 'development',
         logging: config.get('NODE_ENV') === 'development',
       }),
@@ -53,6 +55,7 @@ import { PromoUsage } from './promo/promo-usage.entity';
     BotModule,
     PromoModule,
     AdminModule,
+    SettingsModule,
   ],
   providers: [CronService],
 })

@@ -6,6 +6,7 @@ import { VpnService } from '../vpn/vpn.service';
 import { ServerService } from '../server/server.service';
 import { PlanService } from '../plan/plan.service';
 import { UserService } from '../user/user.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -18,6 +19,7 @@ export class SubscriptionService {
     private readonly serverService: ServerService,
     private readonly planService: PlanService,
     private readonly userService: UserService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async createSubscription(
@@ -63,14 +65,14 @@ export class SubscriptionService {
     await this.serverService.incrementClients(server.id);
 
     // Реферальный бонус — продлеваем подписку реферера + бонус приглашённому
-    const refBonusDays = parseInt(process.env.REFERRAL_BONUS_DAYS || '3', 10);
+    const refBonusDays = await this.settingsService.getNumber('referral_bonus_days', 3);
     if (user.referrerId && refBonusDays > 0) {
       await this.userService.addReferralBonus(user.referrerId, refBonusDays);
       await this.extendActiveSubscription(user.referrerId, refBonusDays);
       this.logger.log(`Реферальный бонус ${refBonusDays} дн. начислен и применён к подписке пользователя #${user.referrerId}`);
 
-      // Бонус приглашённому пользователю: +1 день к его новой подписке
-      const referredBonusDays = parseInt(process.env.REFERRED_BONUS_DAYS || '1', 10);
+      // Бонус приглашённому пользователю
+      const referredBonusDays = await this.settingsService.getNumber('referred_bonus_days', 1);
       if (referredBonusDays > 0) {
         await this.extendActiveSubscription(userId, referredBonusDays);
         this.logger.log(`Бонус приглашённого +${referredBonusDays} дн. начислен пользователю #${userId}`);

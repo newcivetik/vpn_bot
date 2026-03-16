@@ -114,6 +114,12 @@ export interface PromoCode {
   createdAt: string;
 }
 
+export interface Setting {
+  key: string;
+  value: string;
+  description: string | null;
+}
+
 export interface ServerHealth {
   online: boolean;
   clientCount: number;

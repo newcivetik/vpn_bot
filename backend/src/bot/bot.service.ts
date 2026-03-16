@@ -7,6 +7,7 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import { PaymentService } from '../payment/payment.service';
 import { ServerService } from '../server/server.service';
 import { PromoService } from '../promo/promo.service';
+import { SettingsService } from '../settings/settings.service';
 import { messages } from './bot.messages';
 import {
   mainMenuKeyboard,
@@ -29,6 +30,7 @@ export class BotService implements OnModuleInit {
     private readonly paymentService: PaymentService,
     private readonly serverService: ServerService,
     private readonly promoService: PromoService,
+    private readonly settingsService: SettingsService,
   ) {
     this.bot = new Bot(this.config.getOrThrow<string>('BOT_TOKEN'));
   }
@@ -75,9 +77,11 @@ export class BotService implements OnModuleInit {
           const wasSet = await this.userService.setReferrer(user.id, referrer.id);
           if (wasSet && referrer.telegramId) {
             const name = from.first_name || from.username || 'Кто-то';
+            const bonusDays = await this.settingsService.get('referral_bonus_days', '3');
+            const referredBonusDays = await this.settingsService.get('referred_bonus_days', '1');
             await this.sendNotification(
               referrer.telegramId,
-              messages.referralNewUser(name, process.env.REFERRAL_BONUS_DAYS || '3', process.env.REFERRED_BONUS_DAYS || '1'),
+              messages.referralNewUser(name, bonusDays, referredBonusDays),
             );
           }
           this.logger.log(`User #${user.id} referred by #${referrer.id}`);
@@ -143,9 +147,11 @@ export class BotService implements OnModuleInit {
       const botUsername = this.bot.botInfo?.username || 'bot';
       const link = `https://t.me/${botUsername}?start=ref_${code}`;
       const count = await this.userService.getReferralCount(user.id);
+      const bonusDays = await this.settingsService.get('referral_bonus_days', '3');
+      const referredBonusDays = await this.settingsService.get('referred_bonus_days', '1');
 
       await ctx.reply(
-        messages.referralInfo(link, count, process.env.REFERRAL_BONUS_DAYS || '3', process.env.REFERRED_BONUS_DAYS || '1'),
+        messages.referralInfo(link, count, bonusDays, referredBonusDays),
         { parse_mode: 'Markdown' },
       );
     });
@@ -246,8 +252,8 @@ export class BotService implements OnModuleInit {
       // Уведомление рефереру о бонусе
       if (user?.referrerId) {
         const referrer = await this.userService.findById(user.referrerId);
-        const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
-        const referredBonusDays = process.env.REFERRED_BONUS_DAYS || '1';
+        const bonusDays = await this.settingsService.get('referral_bonus_days', '3');
+        const referredBonusDays = await this.settingsService.get('referred_bonus_days', '1');
         if (referrer?.telegramId) {
           const buyerName = ctx.from.first_name || ctx.from.username || 'Друг';
           await this.sendNotification(
@@ -425,10 +431,11 @@ export class BotService implements OnModuleInit {
     }
 
     try {
+      const trialDays = await this.settingsService.getNumber('trial_days', 1);
       const sub = await this.subscriptionService.createSubscription(
         user.id,
         plan.id,
-        { trialDays: 1 },
+        { trialDays },
       );
 
       await this.userService.markTrialUsed(user.id);
@@ -496,8 +503,8 @@ export class BotService implements OnModuleInit {
         if (!user?.referrerId) return;
 
         const referrer = await this.userService.findById(user.referrerId);
-        const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
-        const referredBonusDays = process.env.REFERRED_BONUS_DAYS || '1';
+        const bonusDays = await this.settingsService.get('referral_bonus_days', '3');
+        const referredBonusDays = await this.settingsService.get('referred_bonus_days', '1');
         if (referrer?.telegramId) {
           const buyerName = user.firstName || user.username || 'Друг';
           await this.sendNotification(

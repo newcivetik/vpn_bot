@@ -14,6 +14,7 @@ import { PromoCode } from '../promo/promo.entity';
 import { VpnModule } from '../vpn/vpn.module';
 import { BotModule } from '../bot/bot.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { SubscriptionModule } from '../subscription/subscription.module';
     VpnModule,
     forwardRef(() => BotModule),
     forwardRef(() => SubscriptionModule),
+    SettingsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, AdminAuthGuard],

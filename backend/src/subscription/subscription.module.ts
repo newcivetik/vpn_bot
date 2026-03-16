@@ -10,6 +10,7 @@ import { UserModule } from '../user/user.module';
 import { PaymentModule } from '../payment/payment.module';
 import { BotModule } from '../bot/bot.module';
 import { PromoModule } from '../promo/promo.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PromoModule } from '../promo/promo.module';
     forwardRef(() => PaymentModule),
     forwardRef(() => BotModule),
     PromoModule,
+    SettingsModule,
   ],
   providers: [SubscriptionService],
   controllers: [SubscriptionController],

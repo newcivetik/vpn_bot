@@ -30,6 +30,7 @@ import {
   SubscriptionFilterQuery,
   PaymentFilterQuery,
 } from './admin.dto';
+import { SettingsService } from '../settings/settings.service';
 
 @Controller('api/admin')
 export class AdminController {
@@ -37,6 +38,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   // ─── Auth (no guard) ──────────────────────────────────
@@ -221,6 +223,20 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   deletePromo(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deletePromo(id);
+  }
+
+  // ─── Settings ────────────────────────────────────────
+
+  @Get('settings')
+  @UseGuards(AdminAuthGuard)
+  getSettings() {
+    return this.settingsService.getAll();
+  }
+
+  @Patch('settings/:key')
+  @UseGuards(AdminAuthGuard)
+  updateSetting(@Param('key') key: string, @Body('value') value: string) {
+    return this.settingsService.set(key, value);
   }
 
   // ─── Broadcast ────────────────────────────────────────

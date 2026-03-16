@@ -14,6 +14,7 @@ import type {
   ServerHealth,
   BroadcastResult,
   Analytics,
+  Setting,
 } from './types.ts';
 
 const api = axios.create({
@@ -118,4 +119,10 @@ export const adminApi = {
 
   getAnalytics: () =>
     api.get<Analytics>('/analytics').then((r) => r.data),
+
+  getSettings: () =>
+    api.get<Setting[]>('/settings').then((r) => r.data),
+
+  updateSetting: (key: string, value: string) =>
+    api.patch(`/settings/${key}`, { value }).then((r) => r.data),
 };

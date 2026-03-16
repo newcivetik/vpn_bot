@@ -7,9 +7,10 @@ import { SubscriptionModule } from '../subscription/subscription.module';
 import { PaymentModule } from '../payment/payment.module';
 import { ServerModule } from '../server/server.module';
 import { PromoModule } from '../promo/promo.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
-  imports: [UserModule, PlanModule, forwardRef(() => SubscriptionModule), PaymentModule, ServerModule, PromoModule],
+  imports: [UserModule, PlanModule, forwardRef(() => SubscriptionModule), PaymentModule, ServerModule, PromoModule, SettingsModule],
   providers: [BotService],
   controllers: [BotController],
   exports: [BotService],

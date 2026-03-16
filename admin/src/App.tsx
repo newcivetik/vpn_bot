@@ -12,6 +12,7 @@ import { PaymentsPage } from './pages/PaymentsPage.tsx';
 import { PromosPage } from './pages/PromosPage.tsx';
 import { BroadcastPage } from './pages/BroadcastPage.tsx';
 import { AnalyticsPage } from './pages/AnalyticsPage.tsx';
+import { SettingsPage } from './pages/SettingsPage.tsx';
 import type { ReactNode } from 'react';
 
 function PrivateRoute({ children }: { children: ReactNode }) {
@@ -35,6 +36,7 @@ export function App() {
         <Route path="/promos" element={<PrivateRoute><PromosPage /></PrivateRoute>} />
         <Route path="/analytics" element={<PrivateRoute><AnalyticsPage /></PrivateRoute>} />
         <Route path="/broadcast" element={<PrivateRoute><BroadcastPage /></PrivateRoute>} />
+        <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   );
