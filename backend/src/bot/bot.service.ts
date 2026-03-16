@@ -74,13 +74,10 @@ export class BotService implements OnModuleInit {
         if (referrer && referrer.id !== user.id) {
           const wasSet = await this.userService.setReferrer(user.id, referrer.id);
           if (wasSet && referrer.telegramId) {
-            const name = from.first_name || from.username || 'Новый пользователь';
+            const name = from.first_name || from.username || 'Кто-то';
             await this.sendNotification(
               referrer.telegramId,
-              `🎉 По твоей ссылке зарегистрировался ${name}!\n\n` +
-              `Когда он купит подписку:\n` +
-              `• Ты получишь +${process.env.REFERRAL_BONUS_DAYS || '3'} бонусных дней\n` +
-              `• Он получит +${process.env.REFERRED_BONUS_DAYS || '1'} бонусный день 🎁`,
+              messages.referralNewUser(name, process.env.REFERRAL_BONUS_DAYS || '3', process.env.REFERRED_BONUS_DAYS || '1'),
             );
           }
           this.logger.log(`User #${user.id} referred by #${referrer.id}`);
@@ -109,7 +106,7 @@ export class BotService implements OnModuleInit {
     this.bot.command('promo', async (ctx) => {
       const code = ctx.match;
       if (!code) {
-        await ctx.reply('Введи промокод после команды:\n/promo КОД');
+        await ctx.reply(messages.promoHint);
         return;
       }
       const from = ctx.from;
@@ -123,17 +120,12 @@ export class BotService implements OnModuleInit {
 
       const result = await this.promoService.validatePromo(code, user.id);
       if (!result.valid) {
-        await ctx.reply(`❌ ${result.error}`);
+        await ctx.reply(messages.promoInvalid(result.error!));
         return;
       }
 
       const promo = result.promo!;
-      let text = '✅ Промокод активен!\n\n';
-      if (promo.discountPercent > 0) text += `💰 Скидка: ${promo.discountPercent}%\n`;
-      if (promo.bonusDays > 0) text += `🎁 Бонус: +${promo.bonusDays} дней\n`;
-      text += '\nПримени его при оплате в мини-приложении 🛒';
-
-      await ctx.reply(text);
+      await ctx.reply(messages.promoValid(promo.discountPercent, promo.bonusDays));
     });
 
     // /referral — получить свою реферальную ссылку
@@ -153,12 +145,7 @@ export class BotService implements OnModuleInit {
       const count = await this.userService.getReferralCount(user.id);
 
       await ctx.reply(
-        `🤝 Твоя реферальная ссылка:\n\n\`${link}\`\n\n` +
-        `👥 Приглашено: ${count}\n\n` +
-        `🎁 Бонусы за каждого друга:\n` +
-        `• Тебе: +${process.env.REFERRAL_BONUS_DAYS || '3'} дней к подписке\n` +
-        `• Другу: +${process.env.REFERRED_BONUS_DAYS || '1'} день к подписке\n\n` +
-        `Выгодно обоим! Отправь ссылку друзьям 👇`,
+        messages.referralInfo(link, count, process.env.REFERRAL_BONUS_DAYS || '3', process.env.REFERRED_BONUS_DAYS || '1'),
         { parse_mode: 'Markdown' },
       );
     });
@@ -183,9 +170,7 @@ export class BotService implements OnModuleInit {
           title: '🤝 Поделиться VPN',
           description: 'Отправить реферальную ссылку',
           input_message_content: {
-            message_text:
-              `🛡 Быстрый и безопасный VPN!\n\n` +
-              `Подключайся по моей ссылке — оба получим бонусные дни:\n${link}`,
+            message_text: messages.inlineShareText(link),
           },
         },
       ], { cache_time: 60 });
@@ -264,17 +249,15 @@ export class BotService implements OnModuleInit {
         const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
         const referredBonusDays = process.env.REFERRED_BONUS_DAYS || '1';
         if (referrer?.telegramId) {
-          const buyerName = ctx.from.first_name || ctx.from.username || 'Твой реферал';
+          const buyerName = ctx.from.first_name || ctx.from.username || 'Друг';
           await this.sendNotification(
             referrer.telegramId,
-            `🎁 ${buyerName} купил подписку!\n\n` +
-            `Тебе начислено +${bonusDays} бонусных дней к подписке 🚀`,
+            messages.referralBonusToReferrer(buyerName, bonusDays),
           );
         }
-        // Уведомление приглашённому о его бонусе
         await this.sendNotification(
           ctx.from.id,
-          `🎁 Тебе начислен бонус +${referredBonusDays} день за регистрацию по реферальной ссылке! 🚀`,
+          messages.referralBonusToReferred(referredBonusDays),
         );
       }
     });
@@ -397,7 +380,7 @@ export class BotService implements OnModuleInit {
     }
 
     if (sub.serverId === newServerId) {
-      await ctx.answerCallbackQuery({ text: 'Ты уже на этом сервере' });
+      await ctx.answerCallbackQuery({ text: messages.alreadyOnServer });
       return;
     }
 
@@ -427,16 +410,15 @@ export class BotService implements OnModuleInit {
     });
 
     if (user.hasUsedTrial) {
-      await ctx.editMessageText(
-        '😔 Ты уже использовал бесплатный пробный период.\n\nВыбери тариф для продолжения! 🚀',
-        { reply_markup: backToMenuKeyboard() },
-      );
+      await ctx.editMessageText(messages.trialAlreadyUsed, {
+        reply_markup: backToMenuKeyboard(),
+      });
       return;
     }
 
     const plan = await this.planService.findCheapest();
     if (!plan) {
-      await ctx.editMessageText('😔 Нет доступных тарифов. Попробуй позже.', {
+      await ctx.editMessageText(messages.noPlans, {
         reply_markup: backToMenuKeyboard(),
       });
       return;
@@ -452,20 +434,14 @@ export class BotService implements OnModuleInit {
       await this.userService.markTrialUsed(user.id);
 
       await ctx.editMessageText(
-        '🎉 Пробный период активирован!\n\n' +
-        `🛡 Тариф: ${plan.name} (1 день)\n\n` +
-        `🔑 Твой ключ:\n\n\`\`\`\n${sub.connectionLink}\n\`\`\`\n\n` +
-        '━━━━━━━━━━━━━━━\n' +
-        '📱 Нажми на ключ, чтобы скопировать, и вставь в Hiddify\n' +
-        '❓ Как подключить → /help',
+        messages.trialSuccess(plan.name, sub.connectionLink),
         { parse_mode: 'Markdown', reply_markup: backToMenuKeyboard() },
       );
     } catch (e) {
       this.logger.error(`Trial activation error: ${e}`);
-      await ctx.editMessageText(
-        '😔 Не удалось активировать пробный период. Попробуй позже.',
-        { reply_markup: backToMenuKeyboard() },
-      );
+      await ctx.editMessageText(messages.trialError, {
+        reply_markup: backToMenuKeyboard(),
+      });
     }
   }
 
@@ -489,8 +465,8 @@ export class BotService implements OnModuleInit {
 
     await ctx.api.sendInvoice(
       from.id,
-      `VPN ${plan.name}`,
-      `Подписка на ${plan.durationDays} дней`,
+      messages.invoiceTitle(plan.name),
+      messages.invoiceDescription(plan.durationDays),
       String(payment.id),
       'XTR',
       [{ label: plan.name, amount: plan.priceStars }],
@@ -523,18 +499,16 @@ export class BotService implements OnModuleInit {
         const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
         const referredBonusDays = process.env.REFERRED_BONUS_DAYS || '1';
         if (referrer?.telegramId) {
-          const buyerName = user.firstName || user.username || 'Твой реферал';
+          const buyerName = user.firstName || user.username || 'Друг';
           await this.sendNotification(
             referrer.telegramId,
-            `🎁 ${buyerName} купил подписку!\n\n` +
-            `Тебе начислено +${bonusDays} бонусных дней к подписке 🚀`,
+            messages.referralBonusToReferrer(buyerName, bonusDays),
           );
         }
-        // Уведомление приглашённому о его бонусе
         if (user.telegramId) {
           await this.sendNotification(
             user.telegramId,
-            `🎁 Тебе начислен бонус +${referredBonusDays} день за регистрацию по реферальной ссылке! 🚀`,
+            messages.referralBonusToReferred(referredBonusDays),
           );
         }
       } catch (e) {

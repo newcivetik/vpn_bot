@@ -8,11 +8,11 @@ export function mainMenuKeyboard(miniAppUrl: string, options?: { showTrial?: boo
   if (options?.showTrial) {
     kb.text('🎁 Попробовать бесплатно', 'trial').row();
   }
-  kb.webApp('🛒 Магазин', miniAppUrl)
-    .text('🌍 Сервер', 'server')
+  kb.webApp('🛒 Открыть магазин', miniAppUrl).row()
+    .text('🌍 Сменить сервер', 'server')
     .row()
-    .text('📊 Статус', 'status')
-    .text('🔑 Ключ', 'key')
+    .text('📊 Мой статус', 'status')
+    .text('🔑 Мой ключ', 'key')
     .row()
     .text('❓ Помощь', 'help');
   return kb;
