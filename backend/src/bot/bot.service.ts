@@ -35,6 +35,7 @@ export class BotService implements OnModuleInit {
 
   async onModuleInit() {
     this.registerHandlers();
+    this.registerPaymentCallback();
 
     const webhookDomain = this.config.get<string>('WEBHOOK_DOMAIN');
     if (webhookDomain) {
@@ -71,7 +72,15 @@ export class BotService implements OnModuleInit {
         const refCode = payload.slice(4);
         const referrer = await this.userService.findByReferralCode(refCode);
         if (referrer && referrer.id !== user.id) {
-          await this.userService.setReferrer(user.id, referrer.id);
+          const wasSet = await this.userService.setReferrer(user.id, referrer.id);
+          if (wasSet && referrer.telegramId) {
+            const name = from.first_name || from.username || 'Новый пользователь';
+            await this.sendNotification(
+              referrer.telegramId,
+              `🎉 По твоей ссылке зарегистрировался ${name}!\n\n` +
+              `Когда он купит подписку, ты получишь +${process.env.REFERRAL_BONUS_DAYS || '3'} бонусных дней 🎁`,
+            );
+          }
           this.logger.log(`User #${user.id} referred by #${referrer.id}`);
         }
       }
@@ -241,6 +250,20 @@ export class BotService implements OnModuleInit {
           reply_markup: backToMenuKeyboard(),
         },
       );
+
+      // Уведомление рефереру о бонусе
+      if (user?.referrerId) {
+        const referrer = await this.userService.findById(user.referrerId);
+        const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
+        if (referrer?.telegramId) {
+          const buyerName = ctx.from.first_name || ctx.from.username || 'Твой реферал';
+          await this.sendNotification(
+            referrer.telegramId,
+            `🎁 ${buyerName} купил подписку!\n\n` +
+            `Тебе начислено +${bonusDays} бонусных дней к подписке 🚀`,
+          );
+        }
+      }
     });
 
     // Error handler
@@ -420,6 +443,29 @@ export class BotService implements OnModuleInit {
         .webApp('💳 Оплатить', `${miniAppUrl}/plans/${planId}/pay`)
         .row()
         .text('« Назад', 'menu'),
+    });
+  }
+
+  /** Register callback for YoKassa payments (referral notifications) */
+  private registerPaymentCallback() {
+    this.paymentService.setOnPaymentConfirmed(async (userId: number) => {
+      try {
+        const user = await this.userService.findById(userId);
+        if (!user?.referrerId) return;
+
+        const referrer = await this.userService.findById(user.referrerId);
+        const bonusDays = process.env.REFERRAL_BONUS_DAYS || '3';
+        if (referrer?.telegramId) {
+          const buyerName = user.firstName || user.username || 'Твой реферал';
+          await this.sendNotification(
+            referrer.telegramId,
+            `🎁 ${buyerName} купил подписку!\n\n` +
+            `Тебе начислено +${bonusDays} бонусных дней к подписке 🚀`,
+          );
+        }
+      } catch (e) {
+        this.logger.error(`Referral notification error: ${e}`);
+      }
     });
   }
 

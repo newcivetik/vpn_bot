@@ -8,6 +8,7 @@ import { PromoService } from '../promo/promo.service';
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
+  private onPaymentConfirmed?: (userId: number) => void;
 
   constructor(
     @InjectRepository(Payment)
@@ -15,6 +16,10 @@ export class PaymentService {
     private readonly subscriptionService: SubscriptionService,
     private readonly promoService: PromoService,
   ) {}
+
+  setOnPaymentConfirmed(cb: (userId: number) => void) {
+    this.onPaymentConfirmed = cb;
+  }
 
   async createStarsPayment(
     userId: number,
@@ -190,6 +195,9 @@ export class PaymentService {
     await this.paymentRepo.save(payment);
 
     this.logger.log(`Оплата ЮKassa #${payment.id} подтверждена, подписка #${subscription.id}`);
+
+    // Notify about referral bonus
+    this.onPaymentConfirmed?.(payment.userId);
   }
 
   /** Получает bonusDays из промокода, привязанного к платежу, и отмечает использование */

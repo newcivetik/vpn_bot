@@ -61,13 +61,14 @@ export class UserService {
     await this.userRepo.increment({ id: userId }, 'referralBonusDays', days);
   }
 
-  async setReferrer(userId: number, referrerId: number): Promise<void> {
+  async setReferrer(userId: number, referrerId: number): Promise<boolean> {
     const user = await this.findById(userId);
-    if (!user || user.referrerId) return;
-    if (userId === referrerId) return;
+    if (!user || user.referrerId) return false;
+    if (userId === referrerId) return false;
 
     user.referrerId = referrerId;
     await this.userRepo.save(user);
+    return true;
   }
 
   private createRandomCode(length: number): string {
