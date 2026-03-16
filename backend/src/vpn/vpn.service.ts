@@ -8,8 +8,12 @@ export class VpnService {
   private readonly logger = new Logger(VpnService.name);
   private sessionCookies = new Map<number, string>(); // serverId -> cookie
 
+  private getBaseUrl(server: Server): string {
+    return `https://${server.host}:${server.apiPort}`;
+  }
+
   private async login(server: Server): Promise<string> {
-    const url = `http://${server.host}:${server.apiPort}/login`;
+    const url = `${this.getBaseUrl(server)}/login`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -40,7 +44,7 @@ export class VpnService {
       cookie = await this.login(server);
     }
 
-    const url = `http://${server.host}:${server.apiPort}${path}`;
+    const url = `${this.getBaseUrl(server)}${path}`;
     const options: RequestInit = {
       method,
       headers: {
