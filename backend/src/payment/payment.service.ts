@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment, PaymentMethod, PaymentStatus } from './payment.entity';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { PromoService } from '../promo/promo.service';
 
 @Injectable()
 export class PaymentService {
@@ -12,12 +13,14 @@ export class PaymentService {
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
     private readonly subscriptionService: SubscriptionService,
+    private readonly promoService: PromoService,
   ) {}
 
   async createStarsPayment(
     userId: number,
     planId: number,
     amount: number,
+    promoCode?: string,
   ): Promise<Payment> {
     const payment = this.paymentRepo.create({
       userId,
@@ -26,6 +29,15 @@ export class PaymentService {
       method: PaymentMethod.STARS,
       status: PaymentStatus.PENDING,
     });
+
+    if (promoCode) {
+      const result = await this.promoService.validatePromo(promoCode, userId);
+      if (result.valid && result.promo) {
+        payment.promoCodeId = result.promo.id;
+        payment.discountPercent = result.promo.discountPercent;
+      }
+    }
+
     return this.paymentRepo.save(payment);
   }
 
@@ -42,10 +54,14 @@ export class PaymentService {
     payment.externalId = telegramPaymentChargeId;
     await this.paymentRepo.save(payment);
 
+    // Считаем бонусные дни из промокода
+    const bonusDays = await this.getPromoBonusDays(payment);
+
     // Создаём подписку
     const subscription = await this.subscriptionService.createSubscription(
       payment.userId,
       payment.planId,
+      bonusDays > 0 ? { bonusDays } : undefined,
     );
     payment.subscriptionId = subscription.id;
     await this.paymentRepo.save(payment);
@@ -58,7 +74,7 @@ export class PaymentService {
     userId: number,
     planId: number,
     amount: number,
-    options?: { embedded?: boolean },
+    options?: { embedded?: boolean; promoCode?: string },
   ): Promise<{ payment: Payment; confirmationToken?: string; confirmationUrl?: string }> {
     const shopId = process.env.YOKASSA_SHOP_ID;
     const secretKey = process.env.YOKASSA_SECRET_KEY;
@@ -77,6 +93,15 @@ export class PaymentService {
       method: PaymentMethod.YOKASSA,
       status: PaymentStatus.PENDING,
     });
+
+    if (options?.promoCode) {
+      const result = await this.promoService.validatePromo(options.promoCode, userId);
+      if (result.valid && result.promo) {
+        payment.promoCodeId = result.promo.id;
+        payment.discountPercent = result.promo.discountPercent;
+      }
+    }
+
     const saved = await this.paymentRepo.save(payment);
 
     const confirmation = embedded
@@ -153,14 +178,27 @@ export class PaymentService {
     payment.status = PaymentStatus.PAID;
     await this.paymentRepo.save(payment);
 
+    // Считаем бонусные дни из промокода
+    const bonusDays = await this.getPromoBonusDays(payment);
+
     const subscription = await this.subscriptionService.createSubscription(
       payment.userId,
       payment.planId,
+      bonusDays > 0 ? { bonusDays } : undefined,
     );
     payment.subscriptionId = subscription.id;
     await this.paymentRepo.save(payment);
 
     this.logger.log(`Оплата ЮKassa #${payment.id} подтверждена, подписка #${subscription.id}`);
+  }
+
+  /** Получает bonusDays из промокода, привязанного к платежу, и отмечает использование */
+  private async getPromoBonusDays(payment: Payment): Promise<number> {
+    if (!payment.promoCodeId) return 0;
+    const promo = await this.promoService.findById(payment.promoCodeId);
+    if (!promo) return 0;
+    await this.promoService.applyPromo(promo.id, payment.userId);
+    return promo.bonusDays || 0;
   }
 
   async findById(id: number): Promise<Payment | null> {

@@ -85,7 +85,8 @@ export function PaymentPage() {
     setPaying(true);
 
     try {
-      const { invoiceLink } = await api.createInvoice(plan.id, initData);
+      const activePromo = promoResult?.valid ? promoCode : undefined;
+      const { invoiceLink } = await api.createInvoice(plan.id, initData, activePromo);
       tg?.openInvoice(invoiceLink, (status) => {
         if (status === 'paid') {
           navigate('/');
@@ -103,7 +104,8 @@ export function PaymentPage() {
     setPaying(true);
 
     try {
-      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData);
+      const activePromo = promoResult?.valid ? promoCode : undefined;
+      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData, activePromo);
       setShowWidget(true);
       await new Promise((r) => setTimeout(r, 100));
 

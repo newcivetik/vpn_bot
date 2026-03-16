@@ -51,4 +51,8 @@ export class PromoService {
   async findByCode(code: string): Promise<PromoCode | null> {
     return this.promoRepo.findOne({ where: { code: code.toUpperCase() } });
   }
+
+  async findById(id: number): Promise<PromoCode | null> {
+    return this.promoRepo.findOne({ where: { id } });
+  }
 }

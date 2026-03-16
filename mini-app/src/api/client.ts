@@ -44,16 +44,16 @@ export const api = {
       `/subscriptions?initData=${encodeURIComponent(initData)}`,
     ),
 
-  createInvoice: (planId: number, initData: string) =>
+  createInvoice: (planId: number, initData: string, promoCode?: string) =>
     request<{ invoiceLink: string }>('/create-invoice', {
       method: 'POST',
-      body: JSON.stringify({ planId, initData }),
+      body: JSON.stringify({ planId, initData, promoCode }),
     }),
 
-  createYokassaPayment: (planId: number, initData: string) =>
+  createYokassaPayment: (planId: number, initData: string, promoCode?: string) =>
     request<{ confirmationToken: string }>('/create-yokassa-payment', {
       method: 'POST',
-      body: JSON.stringify({ planId, initData }),
+      body: JSON.stringify({ planId, initData, promoCode }),
     }),
 
   getProfile: (initData: string) =>

@@ -49,7 +49,7 @@ export class SubscriptionController {
 
   @Post('create-invoice')
   async createInvoice(
-    @Body() body: { planId: number; initData: string },
+    @Body() body: { planId: number; initData: string; promoCode?: string },
   ) {
     const telegramUser = this.validateAndExtractUser(body.initData);
     const plan = await this.planService.findById(body.planId);
@@ -65,6 +65,7 @@ export class SubscriptionController {
       user.id,
       plan.id,
       plan.priceStars,
+      body.promoCode,
     );
 
     const bot = this.botService.getBot();
@@ -82,7 +83,7 @@ export class SubscriptionController {
 
   @Post('create-yokassa-payment')
   async createYokassaPayment(
-    @Body() body: { planId: number; initData: string },
+    @Body() body: { planId: number; initData: string; promoCode?: string },
   ) {
     const telegramUser = this.validateAndExtractUser(body.initData);
     const plan = await this.planService.findById(body.planId);
@@ -94,11 +95,20 @@ export class SubscriptionController {
       firstName: telegramUser.first_name,
     });
 
+    // Рассчитываем скидку из промокода
+    let finalPrice = plan.price;
+    if (body.promoCode) {
+      const result = await this.promoService.validatePromo(body.promoCode, user.id);
+      if (result.valid && result.promo && result.promo.discountPercent > 0) {
+        finalPrice = Math.round(plan.price * (1 - result.promo.discountPercent / 100));
+      }
+    }
+
     const { confirmationToken } = await this.paymentService.createYokassaPayment(
       user.id,
       plan.id,
-      plan.price,
-      { embedded: true },
+      finalPrice,
+      { embedded: true, promoCode: body.promoCode },
     );
 
     return { confirmationToken };
