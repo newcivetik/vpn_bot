@@ -33,7 +33,7 @@ export function ServersPage() {
       const h = await adminApi.getServerHealth(id);
       setHealth((prev) => ({ ...prev, [id]: h }));
     } catch {
-      setHealth((prev) => ({ ...prev, [id]: { online: false, xui: '', uptime: 0 } as ServerHealth }));
+      setHealth((prev) => ({ ...prev, [id]: { online: false, clientCount: 0 } }));
     }
   };
 
