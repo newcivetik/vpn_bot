@@ -26,6 +26,7 @@ jobs:
 
             git fetch origin main
             git reset --hard origin/main
+            git clean -fd
 
             # Restore .env files
             cp -f /tmp/.env.root.bak .env 2>/dev/null || true
