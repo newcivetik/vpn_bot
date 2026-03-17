@@ -9,9 +9,10 @@ export function QuickStats({ subscription }: Props) {
   const daysLeft = Math.max(0, Math.ceil(
     (new Date(subscription.expiresAt).getTime() - Date.now()) / 86400000
   ));
+  const traffic = Number(subscription.trafficUsedGB) || 0;
   const trafficLabel = subscription.plan.trafficLimitGB > 0
-    ? `${subscription.trafficUsedGB.toFixed(1)} / ${subscription.plan.trafficLimitGB} ГБ`
-    : `${subscription.trafficUsedGB.toFixed(1)} ГБ`;
+    ? `${traffic.toFixed(1)} / ${subscription.plan.trafficLimitGB} ГБ`
+    : `${traffic.toFixed(1)} ГБ`;
 
   const stats = [
     { icon: Activity, label: 'Трафик', value: trafficLabel, color: 'text-brand-blue' },

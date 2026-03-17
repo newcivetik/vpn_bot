@@ -35,10 +35,11 @@ export function ProfilePage() {
     ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / 86400000))
     : 0;
 
+  const traffic = Number(subscription?.trafficUsedGB) || 0;
   const trafficLabel = subscription
     ? subscription.plan.trafficLimitGB > 0
-      ? `${subscription.trafficUsedGB.toFixed(1)} / ${subscription.plan.trafficLimitGB} ГБ`
-      : `${subscription.trafficUsedGB.toFixed(1)} ГБ`
+      ? `${traffic.toFixed(1)} / ${subscription.plan.trafficLimitGB} ГБ`
+      : `${traffic.toFixed(1)} ГБ`
     : '—';
 
   const botUsername = (tg as any)?.initDataUnsafe?.bot?.username;
