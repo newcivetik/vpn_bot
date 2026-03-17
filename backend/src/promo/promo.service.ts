@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { PromoCode } from './promo.entity';
 import { PromoUsage } from './promo-usage.entity';
 
@@ -11,6 +11,7 @@ export class PromoService {
     private readonly promoRepo: Repository<PromoCode>,
     @InjectRepository(PromoUsage)
     private readonly usageRepo: Repository<PromoUsage>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async validatePromo(
@@ -44,8 +45,29 @@ export class PromoService {
   }
 
   async applyPromo(promoId: number, userId: number): Promise<void> {
-    await this.usageRepo.save({ userId, promoCodeId: promoId });
-    await this.promoRepo.increment({ id: promoId }, 'currentUses', 1);
+    await this.dataSource.transaction(async (manager) => {
+      // Lock the promo code row to prevent race conditions
+      const promo = await manager.findOne(PromoCode, {
+        where: { id: promoId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!promo) throw new BadRequestException('Промокод не найден');
+
+      if (promo.maxUses > 0 && promo.currentUses >= promo.maxUses) {
+        throw new BadRequestException('Промокод исчерпан');
+      }
+
+      // Check if already used within transaction
+      const alreadyUsed = await manager.findOne(PromoUsage, {
+        where: { userId, promoCodeId: promoId },
+      });
+      if (alreadyUsed) return;
+
+      await manager.save(PromoUsage, { userId, promoCodeId: promoId });
+      promo.currentUses += 1;
+      await manager.save(promo);
+    });
   }
 
   async findByCode(code: string): Promise<PromoCode | null> {

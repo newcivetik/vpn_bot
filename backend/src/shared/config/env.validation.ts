@@ -1,7 +1,9 @@
 import * as Joi from 'joi';
 
 export const envValidationSchema = Joi.object({
-  NODE_ENV: Joi.string().valid('development', 'production').default('development'),
+  NODE_ENV: Joi.string()
+    .valid('development', 'production')
+    .default('development'),
   PORT: Joi.number().default(3100),
 
   // Database
@@ -30,7 +32,11 @@ export const envValidationSchema = Joi.object({
 
   // Admin
   ADMIN_PASSWORD: Joi.string().optional().allow('').default(''),
-  JWT_SECRET: Joi.string().optional().default('admin-jwt-secret-change-me'),
+  JWT_SECRET: Joi.string().when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(32).required(),
+    otherwise: Joi.string().default('dev-jwt-secret-do-not-use-in-production'),
+  }),
   ADMIN_APP_URL: Joi.string().optional().allow(''),
 
   // Referral

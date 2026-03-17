@@ -7,7 +7,7 @@ import { StatusCard } from '../components/StatusCard';
 import { QuickStats } from '../components/QuickStats';
 import { QuickActions } from '../components/QuickActions';
 import { QRModal } from '../components/QRModal';
-import { Zap } from 'lucide-react';
+import { Zap, AlertTriangle } from 'lucide-react';
 
 export function HomePage() {
   const { subscription, setSubscription, firstName, setFirstName } = useUserStore();
@@ -15,6 +15,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const user = tg?.initDataUnsafe?.user;
@@ -26,7 +27,10 @@ export function HomePage() {
       api
         .getSubscription(initData)
         .then(setSubscription)
-        .catch(() => {})
+        .catch((e) => {
+          console.error('Failed to load subscription:', e);
+          setError('Не удалось загрузить подписку');
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -42,6 +46,35 @@ export function HomePage() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-20 bg-tg-secondary rounded-2xl animate-pulse" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="bg-brand-red/10 rounded-2xl p-4 flex items-center gap-3">
+          <AlertTriangle size={20} className="text-brand-red shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-tg-text">{error}</p>
+            <button
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                api.getSubscription(initData)
+                  .then(setSubscription)
+                  .catch((e) => {
+                    console.error('Retry failed:', e);
+                    setError('Не удалось загрузить подписку');
+                  })
+                  .finally(() => setLoading(false));
+              }}
+              className="text-xs text-tg-link mt-1"
+            >
+              Попробовать снова
+            </button>
+          </div>
         </div>
       </div>
     );

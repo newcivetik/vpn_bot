@@ -1,6 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Subscription, SubscriptionStatus } from './subscription.entity';
 import { VpnService } from '../vpn/vpn.service';
 import { ServerService } from '../server/server.service';
@@ -18,6 +24,7 @@ export class SubscriptionService {
     private readonly serverService: ServerService,
     private readonly planService: PlanService,
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
   ) {}
 
   async createSubscription(
@@ -25,13 +32,13 @@ export class SubscriptionService {
     planId: number,
   ): Promise<Subscription> {
     const user = await this.userService.findById(userId);
-    if (!user) throw new Error('Пользователь не найден');
+    if (!user) throw new NotFoundException('Пользователь не найден');
 
     const plan = await this.planService.findById(planId);
-    if (!plan) throw new Error('Тариф не найден');
+    if (!plan) throw new NotFoundException('Тариф не найден');
 
     const server = await this.serverService.findAvailable();
-    if (!server) throw new Error('Нет доступных серверов');
+    if (!server) throw new BadRequestException('Нет доступных серверов');
 
     // Создаём клиента в 3X-UI
     const vpnClient = await this.vpnService.createClient(server, {
@@ -58,14 +65,21 @@ export class SubscriptionService {
     const saved = await this.subRepo.save(subscription);
     await this.serverService.incrementClients(server.id);
 
-    // Реферальный бонус
-    const bonusDays = parseInt(process.env.REFERRAL_BONUS_DAYS || '3', 10);
+    // Реферальный бонус — только при первой покупке
+    const bonusDays = this.configService.get<number>('REFERRAL_BONUS_DAYS', 3);
     if (user.referrerId && bonusDays > 0) {
-      await this.userService.addReferralBonus(user.referrerId, bonusDays);
-      this.logger.log(`Реферальный бонус ${bonusDays} дн. начислен пользователю #${user.referrerId}`);
+      const previousSubs = await this.subRepo.count({ where: { userId } });
+      if (previousSubs === 1) {
+        await this.userService.addReferralBonus(user.referrerId, bonusDays);
+        this.logger.log(
+          `Реферальный бонус ${bonusDays} дн. начислен пользователю #${user.referrerId}`,
+        );
+      }
     }
 
-    this.logger.log(`Подписка #${saved.id} создана для пользователя #${userId}`);
+    this.logger.log(
+      `Подписка #${saved.id} создана для пользователя #${userId}`,
+    );
     return saved;
   }
 
@@ -94,20 +108,32 @@ export class SubscriptionService {
       relations: ['server'],
     });
 
-    for (const sub of expired) {
-      await this.vpnService.toggleClient(
-        sub.server,
-        sub.vpnClientId,
-        sub.vpnClientEmail,
-        false,
+    let count = 0;
+    const batchSize = 5;
+    for (let i = 0; i < expired.length; i += batchSize) {
+      const batch = expired.slice(i, i + batchSize);
+      await Promise.allSettled(
+        batch.map(async (sub) => {
+          try {
+            await this.vpnService.toggleClient(
+              sub.server,
+              sub.vpnClientId,
+              sub.vpnClientEmail,
+              false,
+            );
+            sub.status = SubscriptionStatus.EXPIRED;
+            await this.subRepo.save(sub);
+            await this.serverService.decrementClients(sub.serverId);
+            this.logger.log(`Подписка #${sub.id} истекла`);
+            count++;
+          } catch (e) {
+            this.logger.error(`Ошибка деактивации подписки #${sub.id}: ${e}`);
+          }
+        }),
       );
-      sub.status = SubscriptionStatus.EXPIRED;
-      await this.subRepo.save(sub);
-      await this.serverService.decrementClients(sub.serverId);
-      this.logger.log(`Подписка #${sub.id} истекла`);
     }
 
-    return expired.length;
+    return count;
   }
 
   async syncTraffic(): Promise<void> {
@@ -116,35 +142,60 @@ export class SubscriptionService {
       relations: ['server'],
     });
 
-    for (const sub of active) {
-      const traffic = await this.vpnService.getClientTraffic(
-        sub.server,
-        sub.vpnClientEmail,
+    const batchSize = 5;
+    for (let i = 0; i < active.length; i += batchSize) {
+      const batch = active.slice(i, i + batchSize);
+      await Promise.allSettled(
+        batch.map(async (sub) => {
+          try {
+            const traffic = await this.vpnService.getClientTraffic(
+              sub.server,
+              sub.vpnClientEmail,
+            );
+            if (traffic) {
+              const totalBytes = traffic.up + traffic.down;
+              sub.trafficUsedGB = Number(
+                (totalBytes / (1024 * 1024 * 1024)).toFixed(2),
+              );
+              await this.subRepo.save(sub);
+            }
+          } catch (e) {
+            this.logger.warn(
+              `Ошибка синхронизации трафика подписки #${sub.id}: ${e}`,
+            );
+          }
+        }),
       );
-      if (traffic) {
-        const totalBytes = traffic.up + traffic.down;
-        sub.trafficUsedGB = Number((totalBytes / (1024 * 1024 * 1024)).toFixed(2));
-        await this.subRepo.save(sub);
-      }
     }
   }
 
-  async changeServer(subscriptionId: number, newServerId: number): Promise<Subscription> {
+  async changeServer(
+    subscriptionId: number,
+    newServerId: number,
+  ): Promise<Subscription> {
     const sub = await this.subRepo.findOne({
       where: { id: subscriptionId },
       relations: ['server'],
     });
-    if (!sub) throw new Error('Подписка не найдена');
+    if (!sub) throw new NotFoundException('Подписка не найдена');
+
+    if (sub.status !== SubscriptionStatus.ACTIVE) {
+      throw new BadRequestException('Подписка не активна');
+    }
+
+    const remainingMs = new Date(sub.expiresAt).getTime() - Date.now();
+    if (remainingMs <= 0) {
+      throw new BadRequestException('Подписка истекла');
+    }
 
     const newServer = await this.serverService.findById(newServerId);
-    if (!newServer || !newServer.isActive) throw new Error('Сервер недоступен');
+    if (!newServer || !newServer.isActive)
+      throw new BadRequestException('Сервер недоступен');
 
     // Удаляем клиента на старом сервере
     await this.vpnService.deleteClient(sub.server, sub.vpnClientId);
     await this.serverService.decrementClients(sub.serverId);
 
-    // Считаем оставшиеся дни
-    const remainingMs = new Date(sub.expiresAt).getTime() - Date.now();
     const remainingDays = Math.max(1, Math.ceil(remainingMs / 86400000));
 
     const plan = await this.planService.findById(sub.planId);
@@ -166,11 +217,15 @@ export class SubscriptionService {
     await this.subRepo.save(sub);
     await this.serverService.incrementClients(newServer.id);
 
-    this.logger.log(`Подписка #${sub.id} перенесена на сервер #${newServer.id}`);
+    this.logger.log(
+      `Подписка #${sub.id} перенесена на сервер #${newServer.id}`,
+    );
     return sub;
   }
 
-  async getExpiringSubscriptions(daysBeforeExpiry: number): Promise<Subscription[]> {
+  async getExpiringSubscriptions(
+    daysBeforeExpiry: number,
+  ): Promise<Subscription[]> {
     const threshold = new Date();
     threshold.setDate(threshold.getDate() + daysBeforeExpiry);
 

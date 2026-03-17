@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AdminAuthGuard } from './admin-auth.guard';
 import { AdminService } from './admin.service';
 import {
@@ -42,6 +43,8 @@ export class AdminController {
   // ─── Auth (no guard) ──────────────────────────────────
 
   @Post('login')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   async login(@Body() dto: LoginDto) {
     const adminPassword = this.config.get<string>('ADMIN_PASSWORD');
     if (!adminPassword || dto.password !== adminPassword) {
@@ -76,7 +79,11 @@ export class AdminController {
   @Get('users')
   @UseGuards(AdminAuthGuard)
   getUsers(@Query() query: PaginationQuery) {
-    return this.adminService.getUsers(query.page || 1, query.limit || 20, query.search);
+    return this.adminService.getUsers(
+      query.page || 1,
+      query.limit || 20,
+      query.search,
+    );
   }
 
   @Get('users/:id')
@@ -135,7 +142,10 @@ export class AdminController {
 
   @Patch('plans/:id')
   @UseGuards(AdminAuthGuard)
-  updatePlan(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePlanDto) {
+  updatePlan(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePlanDto,
+  ) {
     return this.adminService.updatePlan(id, dto);
   }
 
@@ -161,7 +171,10 @@ export class AdminController {
 
   @Patch('servers/:id')
   @UseGuards(AdminAuthGuard)
-  updateServer(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateServerDto) {
+  updateServer(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateServerDto,
+  ) {
     return this.adminService.updateServer(id, dto);
   }
 
@@ -207,7 +220,10 @@ export class AdminController {
 
   @Patch('promos/:id')
   @UseGuards(AdminAuthGuard)
-  updatePromo(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePromoDto) {
+  updatePromo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePromoDto,
+  ) {
     return this.adminService.updatePromo(id, dto);
   }
 
@@ -222,6 +238,9 @@ export class AdminController {
   @Post('broadcast')
   @UseGuards(AdminAuthGuard)
   broadcast(@Body() dto: BroadcastDto) {
-    return this.adminService.broadcastMessage(dto.text, dto.onlyActive || false);
+    return this.adminService.broadcastMessage(
+      dto.text,
+      dto.onlyActive || false,
+    );
   }
 }

@@ -18,35 +18,53 @@ export function ServersPage() {
   const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [health, setHealth] = useState<Record<number, ServerHealth>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
-    adminApi.getServers().then((s) => { setServers(s); setLoading(false); });
+    adminApi.getServers().then((s) => { setServers(s); setLoading(false); }).catch(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
   const checkHealth = async (id: number) => {
-    const h = await adminApi.getServerHealth(id);
-    setHealth((prev) => ({ ...prev, [id]: h }));
+    try {
+      const h = await adminApi.getServerHealth(id);
+      setHealth((prev) => ({ ...prev, [id]: h }));
+    } catch {
+      setHealth((prev) => ({ ...prev, [id]: { online: false, xui: '', uptime: 0 } as ServerHealth }));
+    }
   };
 
   const handleSave = async () => {
-    if (!editServer) return;
-    if (isNew) {
-      await adminApi.createServer(editServer);
-    } else {
-      await adminApi.updateServer(editServer.id!, editServer);
+    if (!editServer || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      if (isNew) {
+        await adminApi.createServer(editServer);
+      } else {
+        await adminApi.updateServer(editServer.id!, editServer);
+      }
+      setEditServer(null);
+      load();
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Ошибка сохранения');
+    } finally {
+      setSaving(false);
     }
-    setEditServer(null);
-    load();
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await adminApi.deleteServer(deleteId);
-    setDeleteId(null);
-    load();
+    try {
+      await adminApi.deleteServer(deleteId);
+      setDeleteId(null);
+      load();
+    } catch {
+      setDeleteId(null);
+    }
   };
 
   const columns: Column<Server>[] = [
@@ -112,18 +130,23 @@ export function ServersPage() {
         onClose={() => setEditServer(null)}
         footer={
           <>
-            <button onClick={() => setEditServer(null)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg">Отмена</button>
-            <button onClick={handleSave} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">Сохранить</button>
+            <button onClick={() => setEditServer(null)} disabled={saving} className="px-4 py-2 text-sm border border-slate-300 rounded-lg disabled:opacity-50">Отмена</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg disabled:opacity-50">
+              {saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
           </>
         }
       >
         <div className="space-y-3">
+          {saveError && (
+            <div className="text-sm text-red-600 bg-red-50 rounded-lg p-2">{saveError}</div>
+          )}
           {field('Название', 'name')}
           {field('Хост (IP/домен)', 'host')}
           {field('Порт VLESS', 'port', 'number')}
           {field('Порт API (3X-UI)', 'apiPort', 'number')}
           {field('Логин 3X-UI', 'username')}
-          {field('Пароль 3X-UI', 'password')}
+          {field('Пароль 3X-UI', 'password', 'password')}
           {field('Inbound ID', 'inboundId', 'number')}
           {field('Локация', 'location')}
           {field('Макс. клиентов', 'maxClients', 'number')}

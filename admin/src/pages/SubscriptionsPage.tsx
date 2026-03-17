@@ -39,18 +39,32 @@ export function SubscriptionsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [extending, setExtending] = useState(false);
+
   const handleExtend = async () => {
-    if (!extendId) return;
-    await adminApi.extendSubscription(extendId, Number(extendDays));
-    setExtendId(null);
-    load();
+    if (!extendId || extending) return;
+    setExtending(true);
+    try {
+      await adminApi.extendSubscription(extendId, Number(extendDays));
+      setExtendId(null);
+      load();
+    } catch (e) {
+      console.error('Extend failed:', e);
+    } finally {
+      setExtending(false);
+    }
   };
 
   const handleCancel = async () => {
     if (!cancelId) return;
-    await adminApi.cancelSubscription(cancelId);
-    setCancelId(null);
-    load();
+    try {
+      await adminApi.cancelSubscription(cancelId);
+      setCancelId(null);
+      load();
+    } catch (e) {
+      console.error('Cancel failed:', e);
+      setCancelId(null);
+    }
   };
 
   const openGrant = async () => {
@@ -203,8 +217,10 @@ export function SubscriptionsPage() {
         onClose={() => setExtendId(null)}
         footer={
           <>
-            <button onClick={() => setExtendId(null)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg">Отмена</button>
-            <button onClick={handleExtend} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">Продлить</button>
+            <button onClick={() => setExtendId(null)} disabled={extending} className="px-4 py-2 text-sm border border-slate-300 rounded-lg disabled:opacity-50">Отмена</button>
+            <button onClick={handleExtend} disabled={extending} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg disabled:opacity-50">
+              {extending ? 'Продление...' : 'Продлить'}
+            </button>
           </>
         }
       >

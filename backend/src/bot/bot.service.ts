@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Bot, GrammyError, HttpError, InlineKeyboard } from 'grammy';
 import { UserService } from '../user/user.service';
@@ -17,7 +22,7 @@ import {
 } from './bot.keyboards';
 
 @Injectable()
-export class BotService implements OnModuleInit {
+export class BotService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
   private readonly logger = new Logger(BotService.name);
 
@@ -44,6 +49,11 @@ export class BotService implements OnModuleInit {
       this.bot.start();
       this.logger.log('Бот запущен в режиме long polling');
     }
+  }
+
+  async onModuleDestroy() {
+    await this.bot.stop();
+    this.logger.log('Бот остановлен');
   }
 
   getBot(): Bot {
@@ -117,7 +127,8 @@ export class BotService implements OnModuleInit {
 
       const promo = result.promo!;
       let text = '✅ Промокод активен!\n\n';
-      if (promo.discountPercent > 0) text += `💰 Скидка: ${promo.discountPercent}%\n`;
+      if (promo.discountPercent > 0)
+        text += `💰 Скидка: ${promo.discountPercent}%\n`;
       if (promo.bonusDays > 0) text += `🎁 Бонус: +${promo.bonusDays} дней\n`;
       text += '\nПримени его при оплате в мини-приложении 🛒';
 
@@ -142,9 +153,9 @@ export class BotService implements OnModuleInit {
 
       await ctx.reply(
         `🤝 Твоя реферальная ссылка:\n\n\`${link}\`\n\n` +
-        `👥 Приглашено: ${count}\n` +
-        `🎁 За каждого друга — ${process.env.REFERRAL_BONUS_DAYS || '3'} бонусных дня!\n\n` +
-        `Отправь ссылку друзьям 👇`,
+          `👥 Приглашено: ${count}\n` +
+          `🎁 За каждого друга — ${this.config.get('REFERRAL_BONUS_DAYS', 3)} бонусных дня!\n\n` +
+          `Отправь ссылку друзьям 👇`,
         { parse_mode: 'Markdown' },
       );
     });
@@ -162,19 +173,22 @@ export class BotService implements OnModuleInit {
       const botUsername = this.bot.botInfo?.username || 'bot';
       const link = `https://t.me/${botUsername}?start=ref_${code}`;
 
-      await ctx.answerInlineQuery([
-        {
-          type: 'article',
-          id: 'referral',
-          title: '🤝 Поделиться VPN',
-          description: 'Отправить реферальную ссылку',
-          input_message_content: {
-            message_text:
-              `🛡 Быстрый и безопасный VPN!\n\n` +
-              `Подключайся по моей ссылке и получи бонус:\n${link}`,
+      await ctx.answerInlineQuery(
+        [
+          {
+            type: 'article',
+            id: 'referral',
+            title: '🤝 Поделиться VPN',
+            description: 'Отправить реферальную ссылку',
+            input_message_content: {
+              message_text:
+                `🛡 Быстрый и безопасный VPN!\n\n` +
+                `Подключайся по моей ссылке и получи бонус:\n${link}`,
+            },
           },
-        },
-      ], { cache_time: 60 });
+        ],
+        { cache_time: 60 },
+      );
     });
 
     // Callback queries
@@ -235,7 +249,9 @@ export class BotService implements OnModuleInit {
         : null;
 
       await ctx.reply(
-        messages.paymentSuccess(sub?.connectionLink || 'Ошибка получения ключа'),
+        messages.paymentSuccess(
+          sub?.connectionLink || 'Ошибка получения ключа',
+        ),
         {
           parse_mode: 'Markdown',
           reply_markup: backToMenuKeyboard(),
@@ -257,7 +273,12 @@ export class BotService implements OnModuleInit {
   }
 
   /** Send reply or edit depending on context */
-  private async sendOrEdit(ctx: any, text: string, keyboard: InlineKeyboard, parseMode?: string) {
+  private async sendOrEdit(
+    ctx: any,
+    text: string,
+    keyboard: InlineKeyboard,
+    parseMode?: string,
+  ) {
     const opts: any = { reply_markup: keyboard };
     if (parseMode) opts.parse_mode = parseMode;
 
@@ -289,13 +310,19 @@ export class BotService implements OnModuleInit {
       year: 'numeric',
     });
 
-    const trafficLimit = sub.plan.trafficLimitGB > 0
-      ? `${sub.trafficUsedGB} / ${sub.plan.trafficLimitGB} ГБ`
-      : `${sub.trafficUsedGB} ГБ (безлимит)`;
+    const trafficLimit =
+      sub.plan.trafficLimitGB > 0
+        ? `${sub.trafficUsedGB} / ${sub.plan.trafficLimitGB} ГБ`
+        : `${sub.trafficUsedGB} ГБ (безлимит)`;
 
     await this.sendOrEdit(
       ctx,
-      messages.status(sub.plan.name, expiresDate, trafficLimit, sub.server.location),
+      messages.status(
+        sub.plan.name,
+        expiresDate,
+        trafficLimit,
+        sub.server.location,
+      ),
       backToMenuKeyboard(),
     );
   }
@@ -314,7 +341,12 @@ export class BotService implements OnModuleInit {
       return;
     }
 
-    await this.sendOrEdit(ctx, messages.key(sub.connectionLink), backToMenuKeyboard(), 'Markdown');
+    await this.sendOrEdit(
+      ctx,
+      messages.key(sub.connectionLink),
+      backToMenuKeyboard(),
+      'Markdown',
+    );
   }
 
   private async handleHelp(ctx: any) {

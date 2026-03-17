@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Query, Inject, forwardRef, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Headers,
+  Inject,
+  forwardRef,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SubscriptionService } from './subscription.service';
 import { PlanService } from '../plan/plan.service';
 import { UserService } from '../user/user.service';
@@ -20,6 +31,7 @@ export class SubscriptionController {
     private readonly botService: BotService,
     private readonly serverService: ServerService,
     private readonly promoService: PromoService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get('plans')
@@ -28,18 +40,27 @@ export class SubscriptionController {
   }
 
   @Get('subscription')
-  async getSubscription(@Query('initData') initData: string) {
+  async getSubscription(
+    @Headers('x-init-data') headerInitData: string,
+    @Query('initData') queryInitData: string,
+  ) {
+    const initData = headerInitData || queryInitData;
     const telegramUser = this.validateAndExtractUser(initData);
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) return null;
 
-    const subscription =
-      await this.subscriptionService.getActiveSubscription(user.id);
+    const subscription = await this.subscriptionService.getActiveSubscription(
+      user.id,
+    );
     return subscription;
   }
 
   @Get('subscriptions')
-  async getSubscriptions(@Query('initData') initData: string) {
+  async getSubscriptions(
+    @Headers('x-init-data') headerInitData: string,
+    @Query('initData') queryInitData: string,
+  ) {
+    const initData = headerInitData || queryInitData;
     const telegramUser = this.validateAndExtractUser(initData);
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) return [];
@@ -49,7 +70,7 @@ export class SubscriptionController {
 
   @Post('create-invoice')
   async createInvoice(
-    @Body() body: { planId: number; initData: string },
+    @Body() body: { planId: number; initData: string; promoCode?: string },
   ) {
     const telegramUser = this.validateAndExtractUser(body.initData);
     const plan = await this.planService.findById(body.planId);
@@ -65,6 +86,7 @@ export class SubscriptionController {
       user.id,
       plan.id,
       plan.priceStars,
+      body.promoCode,
     );
 
     const bot = this.botService.getBot();
@@ -74,7 +96,7 @@ export class SubscriptionController {
       String(payment.id),
       '',
       'XTR',
-      [{ label: plan.name, amount: plan.priceStars }],
+      [{ label: plan.name, amount: payment.amount }],
     );
 
     return { invoiceLink };
@@ -82,7 +104,7 @@ export class SubscriptionController {
 
   @Post('create-yokassa-payment')
   async createYokassaPayment(
-    @Body() body: { planId: number; initData: string },
+    @Body() body: { planId: number; initData: string; promoCode?: string },
   ) {
     const telegramUser = this.validateAndExtractUser(body.initData);
     const plan = await this.planService.findById(body.planId);
@@ -94,12 +116,13 @@ export class SubscriptionController {
       firstName: telegramUser.first_name,
     });
 
-    const { confirmationToken } = await this.paymentService.createYokassaPayment(
-      user.id,
-      plan.id,
-      plan.price,
-      { embedded: true },
-    );
+    const { confirmationToken } =
+      await this.paymentService.createYokassaPayment(
+        user.id,
+        plan.id,
+        plan.price,
+        { embedded: true, promoCode: body.promoCode },
+      );
 
     return { confirmationToken };
   }
@@ -110,9 +133,7 @@ export class SubscriptionController {
   }
 
   @Post('subscription/change-server')
-  async changeServer(
-    @Body() body: { serverId: number; initData: string },
-  ) {
+  async changeServer(@Body() body: { serverId: number; initData: string }) {
     const telegramUser = this.validateAndExtractUser(body.initData);
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) throw new UnauthorizedException('Пользователь не найден');
@@ -121,14 +142,14 @@ export class SubscriptionController {
     if (!sub) throw new UnauthorizedException('Нет активной подписки');
 
     await this.subscriptionService.changeServer(sub.id, body.serverId);
-    const updated = await this.subscriptionService.getActiveSubscription(user.id);
+    const updated = await this.subscriptionService.getActiveSubscription(
+      user.id,
+    );
     return updated;
   }
 
   @Post('validate-promo')
-  async validatePromo(
-    @Body() body: { code: string; initData: string },
-  ) {
+  async validatePromo(@Body() body: { code: string; initData: string }) {
     const telegramUser = this.validateAndExtractUser(body.initData);
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) throw new UnauthorizedException('Пользователь не найден');
@@ -146,7 +167,11 @@ export class SubscriptionController {
   }
 
   @Get('profile')
-  async getProfile(@Query('initData') initData: string) {
+  async getProfile(
+    @Headers('x-init-data') headerInitData: string,
+    @Query('initData') queryInitData: string,
+  ) {
+    const initData = headerInitData || queryInitData;
     const telegramUser = this.validateAndExtractUser(initData);
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) return null;
@@ -162,7 +187,7 @@ export class SubscriptionController {
   }
 
   private validateAndExtractUser(initData: string) {
-    const botToken = process.env.BOT_TOKEN;
+    const botToken = this.configService.get<string>('BOT_TOKEN');
     if (!botToken || !initData) {
       throw new UnauthorizedException('Неверные данные авторизации');
     }

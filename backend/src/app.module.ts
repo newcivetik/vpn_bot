@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { envValidationSchema } from './shared/config/env.validation';
 import { UserModule } from './user/user.module';
 import { PlanModule } from './plan/plan.module';
@@ -29,6 +30,12 @@ import { PromoUsage } from './promo/promo-usage.entity';
       isGlobal: true,
       validationSchema: envValidationSchema,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -38,9 +45,17 @@ import { PromoUsage } from './promo/promo-usage.entity';
         username: config.get('DB_USERNAME'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
-        entities: [User, Plan, Server, Subscription, Payment, PromoCode, PromoUsage],
-        synchronize: config.get('NODE_ENV') === 'development',
-        logging: config.get('NODE_ENV') === 'development',
+        entities: [
+          User,
+          Plan,
+          Server,
+          Subscription,
+          Payment,
+          PromoCode,
+          PromoUsage,
+        ],
+        synchronize: config.get('NODE_ENV') !== 'production',
+        logging: config.get('NODE_ENV') !== 'production',
       }),
     }),
     ScheduleModule.forRoot(),

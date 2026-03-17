@@ -1,9 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, Between, MoreThanOrEqual } from 'typeorm';
 import { User } from '../user/user.entity';
-import { Subscription, SubscriptionStatus } from '../subscription/subscription.entity';
-import { Payment, PaymentMethod, PaymentStatus } from '../payment/payment.entity';
+import {
+  Subscription,
+  SubscriptionStatus,
+} from '../subscription/subscription.entity';
+import {
+  Payment,
+  PaymentMethod,
+  PaymentStatus,
+} from '../payment/payment.entity';
 import { Plan } from '../plan/plan.entity';
 import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
@@ -17,11 +24,14 @@ export class AdminService {
 
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(Subscription) private readonly subRepo: Repository<Subscription>,
-    @InjectRepository(Payment) private readonly paymentRepo: Repository<Payment>,
+    @InjectRepository(Subscription)
+    private readonly subRepo: Repository<Subscription>,
+    @InjectRepository(Payment)
+    private readonly paymentRepo: Repository<Payment>,
     @InjectRepository(Plan) private readonly planRepo: Repository<Plan>,
     @InjectRepository(Server) private readonly serverRepo: Repository<Server>,
-    @InjectRepository(PromoCode) private readonly promoRepo: Repository<PromoCode>,
+    @InjectRepository(PromoCode)
+    private readonly promoRepo: Repository<PromoCode>,
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
     private readonly subscriptionService: SubscriptionService,
@@ -31,7 +41,11 @@ export class AdminService {
 
   async getDashboardStats() {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const weekStart = new Date(todayStart);
     weekStart.setDate(weekStart.getDate() - 7);
     const monthStart = new Date(todayStart);
@@ -50,9 +64,13 @@ export class AdminService {
     ] = await Promise.all([
       this.userRepo.count(),
       this.subRepo.count({ where: { status: SubscriptionStatus.ACTIVE } }),
-      this.userRepo.count({ where: { createdAt: MoreThanOrEqual(todayStart) } }),
+      this.userRepo.count({
+        where: { createdAt: MoreThanOrEqual(todayStart) },
+      }),
       this.userRepo.count({ where: { createdAt: MoreThanOrEqual(weekStart) } }),
-      this.userRepo.count({ where: { createdAt: MoreThanOrEqual(monthStart) } }),
+      this.userRepo.count({
+        where: { createdAt: MoreThanOrEqual(monthStart) },
+      }),
       this.serverRepo.count({ where: { isActive: true } }),
       this.subRepo.count({
         where: {
@@ -74,7 +92,8 @@ export class AdminService {
     let totalRevenueStars = 0;
     let totalRevenueRubles = 0;
     for (const row of revenueResult) {
-      if (row.method === PaymentMethod.STARS) totalRevenueStars = Number(row.total);
+      if (row.method === PaymentMethod.STARS)
+        totalRevenueStars = Number(row.total);
       else totalRevenueRubles = Number(row.total);
     }
 
@@ -107,7 +126,10 @@ export class AdminService {
       .orderBy('date')
       .getRawMany();
 
-    const map = new Map<string, { date: string; stars: number; rubles: number }>();
+    const map = new Map<
+      string,
+      { date: string; stars: number; rubles: number }
+    >();
     for (const row of rows) {
       if (!map.has(row.date)) {
         map.set(row.date, { date: row.date, stars: 0, rubles: 0 });
@@ -132,7 +154,9 @@ export class AdminService {
       .groupBy("TO_CHAR(u.createdAt, 'YYYY-MM-DD')")
       .orderBy('date')
       .getRawMany()
-      .then((rows) => rows.map((r) => ({ date: r.date, count: Number(r.count) })));
+      .then((rows) =>
+        rows.map((r) => ({ date: r.date, count: Number(r.count) })),
+      );
   }
 
   // ─── Users ─────────────────────────────────────────────
@@ -163,13 +187,23 @@ export class AdminService {
   async getUserById(id: number) {
     return this.userRepo.findOne({
       where: { id },
-      relations: ['subscriptions', 'subscriptions.plan', 'subscriptions.server', 'payments'],
+      relations: [
+        'subscriptions',
+        'subscriptions.plan',
+        'subscriptions.server',
+        'payments',
+      ],
     });
   }
 
   // ─── Subscriptions ────────────────────────────────────
 
-  async getSubscriptions(page: number, limit: number, status?: string, userId?: number) {
+  async getSubscriptions(
+    page: number,
+    limit: number,
+    status?: string,
+    userId?: number,
+  ) {
     const where: any = {};
     if (status) where.status = status;
     if (userId) where.userId = userId;
@@ -186,14 +220,22 @@ export class AdminService {
   }
 
   async grantSubscription(userId: number, planId: number) {
-    const sub = await this.subscriptionService.createSubscription(userId, planId);
-    this.logger.log(`Admin granted subscription #${sub.id} to user #${userId}, plan #${planId}`);
+    const sub = await this.subscriptionService.createSubscription(
+      userId,
+      planId,
+    );
+    this.logger.log(
+      `Admin granted subscription #${sub.id} to user #${userId}, plan #${planId}`,
+    );
     return sub;
   }
 
   async extendSubscription(id: number, days: number) {
-    const sub = await this.subRepo.findOne({ where: { id }, relations: ['server'] });
-    if (!sub) throw new Error('Subscription not found');
+    const sub = await this.subRepo.findOne({
+      where: { id },
+      relations: ['server'],
+    });
+    if (!sub) throw new NotFoundException('Subscription not found');
 
     const newExpiry = new Date(sub.expiresAt);
     newExpiry.setDate(newExpiry.getDate() + days);
@@ -201,7 +243,12 @@ export class AdminService {
 
     if (sub.status === SubscriptionStatus.EXPIRED) {
       sub.status = SubscriptionStatus.ACTIVE;
-      await this.vpnService.toggleClient(sub.server, sub.vpnClientId, sub.vpnClientEmail, true);
+      await this.vpnService.toggleClient(
+        sub.server,
+        sub.vpnClientId,
+        sub.vpnClientEmail,
+        true,
+      );
     }
 
     await this.subRepo.save(sub);
@@ -210,11 +257,19 @@ export class AdminService {
   }
 
   async cancelSubscription(id: number) {
-    const sub = await this.subRepo.findOne({ where: { id }, relations: ['server'] });
-    if (!sub) throw new Error('Subscription not found');
+    const sub = await this.subRepo.findOne({
+      where: { id },
+      relations: ['server'],
+    });
+    if (!sub) throw new NotFoundException('Subscription not found');
 
     sub.status = SubscriptionStatus.CANCELLED;
-    await this.vpnService.toggleClient(sub.server, sub.vpnClientId, sub.vpnClientEmail, false);
+    await this.vpnService.toggleClient(
+      sub.server,
+      sub.vpnClientId,
+      sub.vpnClientEmail,
+      false,
+    );
     await this.subRepo.save(sub);
     this.logger.log(`Subscription #${id} cancelled`);
     return sub;
@@ -262,11 +317,11 @@ export class AdminService {
 
   async getServerHealth(id: number) {
     const server = await this.serverRepo.findOne({ where: { id } });
-    if (!server) throw new Error('Server not found');
+    if (!server) throw new NotFoundException('Server not found');
 
     try {
       // Try to login to 3X-UI panel
-      const url = `http://${server.host}:${server.apiPort}/login`;
+      const url = `https://${server.host}:${server.apiPort}/login`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -281,7 +336,13 @@ export class AdminService {
 
   // ─── Payments ─────────────────────────────────────────
 
-  async getPayments(page: number, limit: number, status?: string, method?: string, userId?: number) {
+  async getPayments(
+    page: number,
+    limit: number,
+    status?: string,
+    method?: string,
+    userId?: number,
+  ) {
     const where: any = {};
     if (status) where.status = status;
     if (method) where.method = method;
@@ -353,12 +414,22 @@ export class AdminService {
     let sent = 0;
     let failed = 0;
 
-    for (const user of users) {
-      try {
-        await this.botService.sendNotification(user.telegramId, text);
-        sent++;
-      } catch {
-        failed++;
+    // Telegram rate limit: ~30 messages per second
+    const batchSize = 25;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+      const results = await Promise.allSettled(
+        batch.map((user) =>
+          this.botService.sendNotification(user.telegramId, text),
+        ),
+      );
+      for (const r of results) {
+        if (r.status === 'fulfilled') sent++;
+        else failed++;
+      }
+      // Pause between batches to respect Telegram rate limits
+      if (i + batchSize < users.length) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 

@@ -39,10 +39,13 @@ export function PaymentPage() {
   } | null>(null);
   const [validating, setValidating] = useState(false);
 
+  const showWidgetRef = useRef(showWidget);
+  showWidgetRef.current = showWidget;
+
   useEffect(() => {
     backButton?.show();
     const goBack = () => {
-      if (showWidget) {
+      if (showWidgetRef.current) {
         widgetRef.current?.destroy();
         widgetRef.current = null;
         setShowWidget(false);
@@ -56,6 +59,9 @@ export function PaymentPage() {
       const found = plans.find((p) => p.id === Number(planId));
       setPlan(found || null);
       setLoading(false);
+    }).catch((e) => {
+      console.error('Failed to load plans:', e);
+      setLoading(false);
     });
 
     return () => {
@@ -63,7 +69,7 @@ export function PaymentPage() {
       backButton?.hide();
       widgetRef.current?.destroy();
     };
-  }, [planId, navigate, backButton, showWidget]);
+  }, [planId, navigate, backButton]);
 
   const handleValidatePromo = async () => {
     if (!promoCode.trim() || validating) return;

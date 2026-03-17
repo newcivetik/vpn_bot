@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export interface TelegramUser {
   id: number;
@@ -7,6 +7,8 @@ export interface TelegramUser {
   username?: string;
   language_code?: string;
 }
+
+const MAX_AUTH_AGE_SECONDS = 300; // 5 minutes
 
 export function validateTelegramWebAppData(
   initData: string,
@@ -19,6 +21,15 @@ export function validateTelegramWebAppData(
 
     params.delete('hash');
 
+    // Check auth_date expiry to prevent replay attacks
+    const authDate = params.get('auth_date');
+    if (!authDate) return null;
+    const authTimestamp = parseInt(authDate, 10);
+    const now = Math.floor(Date.now() / 1000);
+    if (isNaN(authTimestamp) || now - authTimestamp > MAX_AUTH_AGE_SECONDS) {
+      return null;
+    }
+
     // Сортируем параметры
     const dataCheckString = Array.from(params.entries())
       .sort(([a], [b]) => a.localeCompare(b))
@@ -30,12 +41,15 @@ export function validateTelegramWebAppData(
       .update(botToken)
       .digest();
 
-    // Проверяем подпись
+    // Проверяем подпись (timing-safe comparison)
     const calculatedHash = createHmac('sha256', secretKey)
       .update(dataCheckString)
       .digest('hex');
 
-    if (calculatedHash !== hash) return null;
+    if (calculatedHash.length !== hash.length) return null;
+    const a = Buffer.from(calculatedHash, 'hex');
+    const b = Buffer.from(hash, 'hex');
+    if (!timingSafeEqual(a, b)) return null;
 
     const userStr = params.get('user');
     if (!userStr) return null;

@@ -1,14 +1,26 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3100/api';
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  console.error('VITE_API_URL is not configured');
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
   });
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `API error: ${res.status}`);
   }
   return res.json();
+}
+
+function authHeaders(initData: string): HeadersInit {
+  return { 'X-Init-Data': initData };
 }
 
 export interface PlanDTO {
@@ -35,14 +47,14 @@ export const api = {
   getPlans: () => request<PlanDTO[]>('/plans'),
 
   getSubscription: (initData: string) =>
-    request<SubscriptionDTO | null>(
-      `/subscription?initData=${encodeURIComponent(initData)}`,
-    ),
+    request<SubscriptionDTO | null>('/subscription', {
+      headers: authHeaders(initData),
+    }),
 
   getSubscriptions: (initData: string) =>
-    request<SubscriptionDTO[]>(
-      `/subscriptions?initData=${encodeURIComponent(initData)}`,
-    ),
+    request<SubscriptionDTO[]>('/subscriptions', {
+      headers: authHeaders(initData),
+    }),
 
   createInvoice: (planId: number, initData: string) =>
     request<{ invoiceLink: string }>('/create-invoice', {
@@ -58,7 +70,9 @@ export const api = {
 
   getProfile: (initData: string) =>
     request<{ referralCode: string; referralCount: number; referralBonusDays: number } | null>(
-      `/profile?initData=${encodeURIComponent(initData)}`,
+      '/profile', {
+        headers: authHeaders(initData),
+      },
     ),
 
   validatePromo: (code: string, initData: string) =>

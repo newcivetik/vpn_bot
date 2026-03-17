@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { X } from 'lucide-react';
 
 interface Props {
@@ -14,8 +15,6 @@ export function QRModal({ connectionLink, onClose }: Props) {
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
-
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(connectionLink)}`;
 
   return (
     <div
@@ -37,7 +36,7 @@ export function QRModal({ connectionLink, onClose }: Props) {
         </div>
 
         <div className="bg-white rounded-2xl p-4 flex items-center justify-center">
-          <img src={qrUrl} alt="QR Code" className="w-60 h-60" />
+          <QRCodeSVG value={connectionLink} size={240} level="M" />
         </div>
 
         <p className="text-xs text-tg-hint text-center mt-3">

@@ -21,9 +21,13 @@ export function ProfilePage() {
 
     if (initData) {
       if (!subscription) {
-        api.getSubscription(initData).then(setSubscription).catch(() => {});
+        api.getSubscription(initData).then(setSubscription).catch((e) => {
+          console.error('Failed to load subscription:', e);
+        });
       }
-      api.getProfile(initData).then(setProfile).catch(() => {});
+      api.getProfile(initData).then(setProfile).catch((e) => {
+        console.error('Failed to load profile:', e);
+      });
     }
   }, [initData, tg, subscription, setSubscription, setFirstName]);
 
