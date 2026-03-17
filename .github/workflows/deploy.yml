@@ -1,0 +1,55 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -e
+
+            cd /root/vpn_bot
+
+            # Save .env files before reset
+            cp -f .env /tmp/.env.root.bak 2>/dev/null || true
+            cp -f mini-app/.env /tmp/.env.miniapp.bak 2>/dev/null || true
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Restore .env files
+            cp -f /tmp/.env.root.bak .env 2>/dev/null || true
+            cp -f /tmp/.env.miniapp.bak mini-app/.env 2>/dev/null || true
+
+            # Backend
+            cd /root/vpn_bot/backend
+            npm ci
+            npm run build
+            pm2 restart vpn-bot --update-env
+
+            # Mini-app
+            cd /root/vpn_bot/mini-app
+            npm ci
+            npm run build
+            rm -rf /var/www/vpn-mini-app/*
+            cp -r dist/* /var/www/vpn-mini-app/
+
+            # Admin
+            cd /root/vpn_bot/admin
+            npm ci
+            npm run build
+            rm -rf /var/www/vpn-admin/*
+            cp -r dist/* /var/www/vpn-admin/
+
+            nginx -s reload
+            echo "Deploy complete!"
