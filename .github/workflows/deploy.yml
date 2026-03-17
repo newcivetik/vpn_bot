@@ -22,7 +22,9 @@ jobs:
 
             # Save .env files before reset
             cp -f .env /tmp/.env.root.bak 2>/dev/null || true
+            cp -f backend/.env /tmp/.env.backend.bak 2>/dev/null || true
             cp -f mini-app/.env /tmp/.env.miniapp.bak 2>/dev/null || true
+            cp -f admin/.env /tmp/.env.admin.bak 2>/dev/null || true
 
             git fetch origin main
             git reset --hard origin/main
@@ -30,7 +32,9 @@ jobs:
 
             # Restore .env files
             cp -f /tmp/.env.root.bak .env 2>/dev/null || true
+            cp -f /tmp/.env.backend.bak backend/.env 2>/dev/null || true
             cp -f /tmp/.env.miniapp.bak mini-app/.env 2>/dev/null || true
+            cp -f /tmp/.env.admin.bak admin/.env 2>/dev/null || true
 
             # Backend
             cd /root/vpn_bot/backend
