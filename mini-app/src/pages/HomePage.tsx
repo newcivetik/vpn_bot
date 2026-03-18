@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
@@ -7,7 +7,26 @@ import { StatusCard } from '../components/StatusCard';
 import { QuickStats } from '../components/QuickStats';
 import { QuickActions } from '../components/QuickActions';
 import { QRModal } from '../components/QRModal';
-import { Zap, AlertTriangle, Shield, Globe, Wifi } from 'lucide-react';
+import { Zap, AlertTriangle, Shield, Globe, Wifi, Clock } from 'lucide-react';
+
+function useUptime(createdAt: string | undefined) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!createdAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [createdAt]);
+  return useMemo(() => {
+    if (!createdAt) return null;
+    const diff = Math.max(0, now - new Date(createdAt).getTime());
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    if (d > 0) return `${d}д ${h}ч ${m}м`;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }, [createdAt, now]);
+}
 
 export function HomePage() {
   const { subscription, setSubscription, firstName, setFirstName } = useUserStore();
@@ -16,6 +35,7 @@ export function HomePage() {
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const uptime = useUptime(subscription?.createdAt);
 
   useEffect(() => {
     const user = tg?.initDataUnsafe?.user;
@@ -92,6 +112,15 @@ export function HomePage() {
 
       {/* Status card */}
       <StatusCard subscription={subscription} />
+
+      {/* Uptime counter */}
+      {subscription && uptime && (
+        <div className="flex items-center justify-center gap-2 py-2 animate-fade-in">
+          <Clock size={14} className="text-tg-hint" />
+          <span className="text-sm text-tg-hint font-mono">{uptime}</span>
+          <span className="text-xs text-tg-hint">активна</span>
+        </div>
+      )}
 
       {/* Quick stats (only if subscribed) */}
       {subscription && <QuickStats subscription={subscription} />}

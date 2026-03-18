@@ -13,6 +13,8 @@ export interface DashboardStats {
   newUsersMonth: number;
   activeServers: number;
   expiringIn3Days: number;
+  conversionRate: number;
+  churnedWeek: number;
 }
 
 export interface RevenueDataPoint {

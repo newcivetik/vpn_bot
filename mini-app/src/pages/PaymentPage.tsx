@@ -4,7 +4,7 @@ import { api } from '../api/client';
 import type { PlanDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
-import { Star, CreditCard, ArrowLeft, Tag, Check, X } from 'lucide-react';
+import { Star, CreditCard, ArrowLeft, Tag, Check, X, CheckCircle } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -25,6 +25,7 @@ export function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [showWidget, setShowWidget] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const navigate = useNavigate();
   const { tg, haptic, backButton, initData } = useTelegram();
   const { subscription } = useUserStore();
@@ -105,7 +106,9 @@ export function PaymentPage() {
       const { invoiceLink } = await api.createInvoice(plan.id, initData);
       tg?.openInvoice(invoiceLink, (status) => {
         if (status === 'paid') {
-          navigate('/');
+          haptic?.notificationOccurred('success');
+          setPaymentSuccess(true);
+          setTimeout(() => navigate('/'), 2500);
         }
         setPaying(false);
       });
@@ -145,6 +148,18 @@ export function PaymentPage() {
       setPaying(false);
     }
   };
+
+  if (paymentSuccess) {
+    return (
+      <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in text-center">
+        <div className="w-20 h-20 rounded-full bg-brand-green/10 flex items-center justify-center mb-4 animate-bounce">
+          <CheckCircle size={40} className="text-brand-green" />
+        </div>
+        <h2 className="text-xl font-bold text-tg-text mb-2">Оплата прошла!</h2>
+        <p className="text-sm text-tg-hint">VPN подключение активировано</p>
+      </div>
+    );
+  }
 
   if (loading || !plan) {
     return (

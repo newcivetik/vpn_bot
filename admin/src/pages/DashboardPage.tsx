@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, CreditCard, DollarSign, Star, UserPlus, Server, AlertTriangle, Activity } from 'lucide-react';
+import { Users, CreditCard, DollarSign, Star, UserPlus, Server, AlertTriangle, Activity, TrendingUp, UserMinus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Header } from '../components/Header.tsx';
 import { StatsCard } from '../components/StatsCard.tsx';
@@ -91,10 +91,22 @@ export function DashboardPage() {
             color="text-purple-600"
           />
           <StatsCard
+            title="Конверсия"
+            value={`${stats.conversionRate}%`}
+            icon={TrendingUp}
+            color="text-teal-600"
+          />
+          <StatsCard
             title="Истекают (3 дня)"
             value={stats.expiringIn3Days}
             icon={AlertTriangle}
             color="text-red-500"
+          />
+          <StatsCard
+            title="Отток (7 дней)"
+            value={stats.churnedWeek}
+            icon={UserMinus}
+            color="text-orange-500"
           />
         </div>
 

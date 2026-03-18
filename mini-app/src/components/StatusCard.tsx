@@ -1,5 +1,11 @@
-import { Shield, ShieldOff, AlertTriangle } from 'lucide-react';
+import { Shield, ShieldOff, AlertTriangle, MapPin } from 'lucide-react';
 import type { SubscriptionDTO } from '../api/client';
+
+const LOCATION_FLAGS: Record<string, string> = {
+  'Нидерланды': '🇳🇱', 'Германия': '🇩🇪', 'Финляндия': '🇫🇮', 'США': '🇺🇸',
+  'Сингапур': '🇸🇬', 'Турция': '🇹🇷', 'Великобритания': '🇬🇧', 'Франция': '🇫🇷',
+  'Япония': '🇯🇵', 'Канада': '🇨🇦',
+};
 
 interface Props {
   subscription: SubscriptionDTO | null;
@@ -21,6 +27,9 @@ export function StatusCard({ subscription }: Props) {
       : isWarning
         ? 'bg-gradient-to-br from-brand-amber to-brand-orange'
         : 'bg-gradient-success';
+
+  const serverLocation = subscription?.server?.location;
+  const serverFlag = serverLocation ? (LOCATION_FLAGS[serverLocation] || '🌐') : null;
 
   return (
     <div
@@ -58,6 +67,12 @@ export function StatusCard({ subscription }: Props) {
               ? `${subscription!.plan.name} — ${daysLeft} дн. осталось`
               : 'Подключи VPN и будь в безопасности'}
           </span>
+          {isActive && serverLocation && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <MapPin size={12} className="text-white/60" />
+              <span className="text-xs text-white/60">{serverFlag} {serverLocation}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

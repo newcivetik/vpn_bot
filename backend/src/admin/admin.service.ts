@@ -1,6 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, MoreThanOrEqual } from 'typeorm';
+import {
+  Repository,
+  Like,
+  Between,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+} from 'typeorm';
 import { User } from '../user/user.entity';
 import {
   Subscription,
@@ -97,6 +103,24 @@ export class AdminService {
       else totalRevenueRubles = Number(row.total);
     }
 
+    // Conversion rate: users who ever had a subscription
+    const usersWithSubs = await this.subRepo
+      .createQueryBuilder('s')
+      .select('COUNT(DISTINCT s.userId)', 'cnt')
+      .getRawOne();
+    const conversionRate =
+      totalUsers > 0
+        ? Math.round((Number(usersWithSubs.cnt) / totalUsers) * 100)
+        : 0;
+
+    // Churn: expired in last 7 days
+    const churnedWeek = await this.subRepo.count({
+      where: {
+        status: SubscriptionStatus.EXPIRED,
+        expiresAt: Between(weekStart, now),
+      },
+    });
+
     return {
       totalUsers,
       totalActiveSubscriptions,
@@ -107,6 +131,8 @@ export class AdminService {
       newUsersMonth,
       activeServers,
       expiringIn3Days,
+      conversionRate,
+      churnedWeek,
     };
   }
 
@@ -185,7 +211,7 @@ export class AdminService {
   }
 
   async getUserById(id: number) {
-    return this.userRepo.findOne({
+    const user = await this.userRepo.findOne({
       where: { id },
       relations: [
         'subscriptions',
@@ -194,6 +220,20 @@ export class AdminService {
         'payments',
       ],
     });
+    if (!user) return null;
+
+    const referralCount = await this.userRepo.count({
+      where: { referrerId: id },
+    });
+
+    const referrals = await this.userRepo.find({
+      where: { referrerId: id },
+      select: ['id', 'telegramId', 'username', 'firstName', 'createdAt'],
+      order: { createdAt: 'DESC' },
+      take: 20,
+    });
+
+    return { ...user, referralCount, referrals };
   }
 
   // ─── Subscriptions ────────────────────────────────────

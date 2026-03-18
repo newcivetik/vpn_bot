@@ -38,6 +38,7 @@ export interface SubscriptionDTO {
   id: number;
   status: string;
   expiresAt: string;
+  createdAt: string;
   trafficUsedGB: number;
   connectionLink: string;
   plan: PlanDTO;
