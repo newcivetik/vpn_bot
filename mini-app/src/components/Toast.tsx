@@ -21,9 +21,9 @@ const ICONS = {
 };
 
 const COLORS = {
-  success: 'bg-brand-green',
-  error: 'bg-brand-red',
-  info: 'bg-brand-blue',
+  success: 'bg-gradient-to-r from-[#7DD4A8] to-[#5CC0C0] text-white',
+  error: 'bg-gradient-to-r from-[#FFB6C1] to-[#FF8C9A] text-white',
+  info: 'bg-gradient-to-r from-[#C9A0F0] to-[#89B8F8] text-white',
 };
 
 export function ToastContainer() {
@@ -62,9 +62,9 @@ export function ToastContainer() {
         exiting ? 'opacity-0 -translate-y-2' : 'opacity-100 animate-slide-up'
       }`}
     >
-      <div className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-white shadow-lg ${COLORS[data.type]}`}>
+      <div className={`flex items-center gap-2.5 px-5 py-3 rounded-[20px] shadow-[0_8px_32px_rgba(100,60,120,0.20)] backdrop-blur-sm ${COLORS[data.type]}`}>
         <Icon size={16} />
-        <span className="text-sm font-medium">{data.message}</span>
+        <span className="text-sm font-bold">{data.message}</span>
       </div>
     </div>
   );

@@ -157,21 +157,21 @@ export function PaymentPage() {
       <div className="p-4 flex flex-col items-center justify-center min-h-[70vh] animate-fade-in text-center">
         {/* Animated success circle */}
         <div className="relative mb-6">
-          <div className="w-24 h-24 rounded-full bg-brand-green/10 flex items-center justify-center animate-bounce-in">
-            <CheckCircle size={48} className="text-brand-green" />
+          <div className="w-24 h-24 rounded-full bg-[#C1F0DB] flex items-center justify-center animate-bounce-in">
+            <CheckCircle size={48} className="text-[#2D8B5E]" />
           </div>
-          {/* Decorative rings */}
-          <div className="absolute inset-0 w-24 h-24 rounded-full border-2 border-brand-green/20 animate-ping" />
+          {/* Decorative ping ring */}
+          <div className="absolute inset-0 w-24 h-24 rounded-full border-2 border-[#C1F0DB]/30 animate-ping" />
         </div>
 
-        <h2 className="text-2xl font-bold text-tg-text mb-2">Оплата прошла!</h2>
-        <p className="text-sm text-tg-hint mb-1">VPN подключение активировано</p>
-        <p className="text-xs text-tg-hint mb-6">Перенаправление на главную...</p>
+        <h2 className="text-2xl font-black text-[#3D2C4E] mb-2">Оплата прошла!</h2>
+        <p className="text-sm font-semibold text-[#6B5A7A] mb-1">VPN подключение активировано</p>
+        <p className="text-xs text-[#6B5A7A] mb-6">Перенаправление на главную...</p>
 
         {/* Progress bar */}
-        <div className="w-32 h-1 bg-tg-secondary rounded-full overflow-hidden">
+        <div className="w-32 h-1 bg-[#E8D5F5]/30 rounded-full overflow-hidden">
           <div
-            className="h-full bg-brand-green rounded-full transition-all duration-[2500ms] ease-linear"
+            className="h-full bg-[#C1F0DB] rounded-full transition-all duration-[2500ms] ease-linear"
             style={{ width: '100%' }}
           />
         </div>
@@ -182,9 +182,9 @@ export function PaymentPage() {
   if (loading || !plan) {
     return (
       <div className="p-4 space-y-4">
-        <div className="h-32 bg-tg-secondary rounded-3xl animate-pulse" />
-        <div className="h-16 bg-tg-secondary rounded-2xl animate-pulse" />
-        <div className="h-16 bg-tg-secondary rounded-2xl animate-pulse" />
+        <div className="h-32 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+        <div className="h-16 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+        <div className="h-16 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
       </div>
     );
   }
@@ -192,7 +192,7 @@ export function PaymentPage() {
   if (showWidget) {
     return (
       <div className="p-4 pb-8 space-y-4">
-        <div className="bg-gradient-primary rounded-3xl p-5 text-white text-center">
+        <div className="bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] rounded-3xl p-6 text-white text-center">
           <CreditCard size={28} className="mx-auto mb-2" />
           <h2 className="text-lg font-bold">Оплата картой</h2>
           <div className="text-sm text-white/80">{plan.name} — {plan.price} ₽</div>
@@ -209,15 +209,15 @@ export function PaymentPage() {
   const discountedPrice = discount > 0 ? Math.round(plan.price * (1 - discount / 100)) : plan.price;
 
   return (
-    <div className="p-4 pb-4 space-y-5 animate-fade-in">
+    <div className="p-4 space-y-5 animate-fade-in">
       {/* Plan summary */}
-      <div className="bg-gradient-primary rounded-3xl p-5 text-white text-center">
-        <h2 className="text-lg font-bold mb-1">{plan.name}</h2>
+      <div className="bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] rounded-3xl p-6 text-white text-center shadow-[0_6px_24px_rgba(160,130,210,0.3)] animate-bounce-in">
+        <h2 className="text-xl font-black mb-1">{plan.name}</h2>
         <div className="text-sm text-white/80 mb-3">
           {trafficLabel} · {plan.maxDevices} устр. · {plan.durationDays} дней
           {promoResult?.valid && promoResult.bonusDays ? ` + ${promoResult.bonusDays} бонус` : ''}
         </div>
-        <div className="text-3xl font-bold">
+        <div className="text-3xl font-black">
           {discount > 0 && (
             <span className="text-lg line-through text-white/50 mr-2">{plan.price} ₽</span>
           )}
@@ -229,18 +229,18 @@ export function PaymentPage() {
       </div>
 
       {/* Promo code */}
-      <div className="space-y-2">
+      <div className="space-y-2 animate-bounce-in" style={{ animationDelay: '60ms' }}>
         {!showPromo ? (
           <button
             onClick={() => setShowPromo(true)}
-            className="flex items-center gap-2 text-sm text-tg-link px-3 py-2.5 -mx-2"
+            className="flex items-center gap-2 text-sm text-[#6B5A7A] px-3 py-2.5 -mx-2"
           >
             <Tag size={14} />
             Есть промокод?
           </button>
         ) : (
-          <div className="bg-tg-secondary rounded-2xl p-3">
-            <div className="text-xs font-medium text-tg-hint mb-1.5">Промокод</div>
+          <div className="bg-white rounded-3xl p-4 shadow-[0_4px_20px_rgba(100,60,120,0.08)]">
+            <div className="text-xs font-medium text-[#9B8AAB] mb-1.5">Промокод</div>
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -250,20 +250,20 @@ export function PaymentPage() {
                   setPromoResult(null);
                 }}
                 placeholder="Введи промокод"
-                className="flex-1 bg-transparent text-tg-text text-sm outline-none placeholder:text-tg-hint"
+                className="flex-1 bg-[#FFF8F0] rounded-[18px] border-2 border-[#E8D5F5]/50 p-4 text-[#3D2C4E] font-semibold text-sm outline-none placeholder:text-[#9B8AAB] focus:border-[#E8D5F5] focus:shadow-[0_0_0_4px_rgba(232,213,245,0.25)] transition-all"
                 maxLength={32}
                 autoFocus
               />
               <button
                 onClick={handleValidatePromo}
                 disabled={validating || !promoCode.trim()}
-                className="px-3 py-1.5 rounded-lg bg-gradient-primary text-white text-xs font-semibold disabled:opacity-50"
+                className="bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] text-white rounded-2xl px-4 py-2 text-xs font-semibold disabled:opacity-50 transition-all"
               >
                 {validating ? '...' : 'Применить'}
               </button>
             </div>
             {promoResult && (
-              <div className={`flex items-center gap-1.5 mt-2 text-xs ${promoResult.valid ? 'text-brand-green' : 'text-brand-red'}`}>
+              <div className={`flex items-center gap-1.5 mt-2 text-xs ${promoResult.valid ? 'text-[#2D8B5E]' : 'text-[#FF6B6B]'}`}>
                 {promoResult.valid ? <Check size={12} /> : <X size={12} />}
                 {promoResult.valid
                   ? `Промокод активен!${promoResult.discountPercent ? ` −${promoResult.discountPercent}%` : ''}${promoResult.bonusDays ? ` +${promoResult.bonusDays} дн.` : ''}`
@@ -275,54 +275,56 @@ export function PaymentPage() {
       </div>
 
       {/* Payment methods */}
-      <div className="space-y-3">
+      <div className="space-y-3 animate-bounce-in" style={{ animationDelay: '120ms' }}>
         <div className="flex items-center gap-2 px-1 mb-1">
           <div className="flex gap-1">
-            <div className="w-2 h-2 rounded-full bg-brand-purple" />
-            <div className="w-2 h-2 rounded-full bg-brand-purple" />
-            <div className="w-2 h-2 rounded-full bg-brand-purple/30" />
+            <div className="w-2 h-2 rounded-full bg-[#C9A0F0]" />
+            <div className="w-2 h-2 rounded-full bg-[#C9A0F0]" />
+            <div className="w-2 h-2 rounded-full bg-[#E8D5F5]/40" />
           </div>
-          <span className="text-xs text-tg-hint">Шаг 2 из 3</span>
+          <span className="text-xs text-[#9B8AAB]">Шаг 2 из 3</span>
         </div>
-        <h3 className="text-sm font-semibold text-tg-hint px-1">
+        <h3 className="text-sm font-semibold text-[#9B8AAB] px-1">
           Способ оплаты
         </h3>
 
-        <button
-          onClick={handleStars}
-          disabled={paying}
-          className={`w-full flex items-center gap-4 p-4 bg-tg-secondary rounded-2xl active:scale-[0.98] transition-all text-left hover:shadow-card hover:-translate-y-0.5 ${paying ? 'opacity-50' : ''}`}
-        >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-            <Star size={22} className="text-white" />
-          </div>
-          <div className="flex-1">
-            <div className="font-semibold text-tg-text">Telegram Stars</div>
-            <div className="text-sm text-tg-hint">{plan.priceStars} Stars</div>
-          </div>
-          <span className="text-tg-hint">›</span>
-        </button>
+        <div className="bg-white rounded-3xl p-4 shadow-[0_8px_32px_rgba(100,60,120,0.10)] space-y-3">
+          <button
+            onClick={handleStars}
+            disabled={paying}
+            className={`w-full flex items-center gap-4 p-4 rounded-2xl active:scale-[0.98] transition-all text-left hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(100,60,120,0.15)] ${paying ? 'opacity-50' : ''}`}
+          >
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FFD4B8] to-[#FFAA80] flex items-center justify-center">
+              <Star size={22} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-[#3D2C4E]">Telegram Stars</div>
+              <div className="text-sm text-[#6B5A7A]">{plan.priceStars} Stars</div>
+            </div>
+            <span className="text-[#9B8AAB]">›</span>
+          </button>
 
-        <button
-          onClick={handleYokassa}
-          disabled={paying}
-          className={`w-full flex items-center gap-4 p-4 bg-tg-secondary rounded-2xl active:scale-[0.98] transition-all text-left hover:shadow-card hover:-translate-y-0.5 ${paying ? 'opacity-50' : ''}`}
-        >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center">
-            <CreditCard size={22} className="text-white" />
-          </div>
-          <div className="flex-1">
-            <div className="font-semibold text-tg-text">Банковская карта</div>
-            <div className="text-sm text-tg-hint">{discountedPrice} ₽ · СБП</div>
-          </div>
-          <span className="text-tg-hint">›</span>
-        </button>
+          <button
+            onClick={handleYokassa}
+            disabled={paying}
+            className={`w-full flex items-center gap-4 p-4 rounded-2xl active:scale-[0.98] transition-all text-left hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(100,60,120,0.15)] ${paying ? 'opacity-50' : ''}`}
+          >
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] flex items-center justify-center">
+              <CreditCard size={22} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-[#3D2C4E]">Банковская карта</div>
+              <div className="text-sm text-[#6B5A7A]">{discountedPrice} ₽ · СБП</div>
+            </div>
+            <span className="text-[#9B8AAB]">›</span>
+          </button>
+        </div>
       </div>
 
       {/* Back */}
       <button
         onClick={() => navigate('/plans')}
-        className="w-full flex items-center justify-center gap-2 py-3 text-tg-link text-sm"
+        className="w-full flex items-center justify-center gap-2 py-3 text-[#6B5A7A] text-sm font-semibold"
       >
         <ArrowLeft size={16} />
         Назад к тарифам
