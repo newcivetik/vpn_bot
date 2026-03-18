@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { PromoCode } from '../api/types.ts';
 import { Plus } from 'lucide-react';
+import { toast } from '../components/Toast.tsx';
 
 const emptyPromo = { code: '', discountPercent: 0, bonusDays: 0, maxUses: 0, expiresAt: '', isActive: true };
 
@@ -33,20 +34,31 @@ export function PromosPage() {
 
   const handleSave = async () => {
     if (!editPromo) return;
-    if (isNew) {
-      await adminApi.createPromo(editPromo);
-    } else {
-      await adminApi.updatePromo(editPromo.id!, editPromo);
+    try {
+      if (isNew) {
+        await adminApi.createPromo(editPromo);
+        toast('Промокод создан');
+      } else {
+        await adminApi.updatePromo(editPromo.id!, editPromo);
+        toast('Промокод обновлён');
+      }
+      setEditPromo(null);
+      load();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Ошибка сохранения', 'error');
     }
-    setEditPromo(null);
-    load();
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await adminApi.deletePromo(deleteId);
-    setDeleteId(null);
-    load();
+    try {
+      await adminApi.deletePromo(deleteId);
+      toast('Промокод удалён');
+      setDeleteId(null);
+      load();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Ошибка удаления', 'error');
+    }
   };
 
   const columns: Column<PromoCode>[] = [

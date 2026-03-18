@@ -108,6 +108,33 @@ export const messages = {
     `❓ Помощь — инструкция по настройке\n\n` +
     `Начни с выбора тарифа 👇`,
 
+  trafficStatus: (
+    planName: string,
+    usedGB: number,
+    limitGB: number,
+    daysLeft: number,
+  ) => {
+    if (limitGB <= 0) {
+      return (
+        `📊 Трафик\n\n` +
+        `🛡 Тариф: ${planName}\n` +
+        `📈 Использовано: ${usedGB.toFixed(1)} ГБ\n` +
+        `♾ Безлимитный\n` +
+        `📅 Осталось: ${daysLeft} дн.`
+      );
+    }
+    const pct = Math.round((usedGB / limitGB) * 100);
+    const filled = Math.round(pct / 10);
+    const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
+    return (
+      `📊 Трафик\n\n` +
+      `🛡 Тариф: ${planName}\n` +
+      `📈 ${usedGB.toFixed(1)} / ${limitGB} ГБ (${pct}%)\n` +
+      `[${bar}]\n` +
+      `📅 Осталось: ${daysLeft} дн.`
+    );
+  },
+
   trafficWarning: (planName: string, usedGB: number, limitGB: number) => {
     const pct = Math.round((usedGB / limitGB) * 100);
     return (

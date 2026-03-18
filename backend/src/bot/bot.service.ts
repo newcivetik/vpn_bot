@@ -111,6 +111,9 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     // /server
     this.bot.command('server', (ctx) => this.handleServer(ctx));
 
+    // /traffic
+    this.bot.command('traffic', (ctx) => this.handleTraffic(ctx));
+
     // /promo
     this.bot.command('promo', async (ctx) => {
       const code = ctx.match;
@@ -359,6 +362,37 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   private async handleHelp(ctx: any) {
     await this.sendOrEdit(ctx, messages.help, backToMenuKeyboard());
+  }
+
+  private async handleTraffic(ctx: any) {
+    const from = ctx.from || ctx.callbackQuery?.from;
+    if (!from) return;
+
+    const user = await this.userService.findByTelegramId(from.id);
+    const sub = user
+      ? await this.subscriptionService.getActiveSubscription(user.id)
+      : null;
+
+    if (!sub) {
+      await this.sendOrEdit(ctx, messages.noSubscription, backToMenuKeyboard());
+      return;
+    }
+
+    const daysLeft = Math.max(
+      0,
+      Math.ceil((new Date(sub.expiresAt).getTime() - Date.now()) / 86400000),
+    );
+
+    await this.sendOrEdit(
+      ctx,
+      messages.trafficStatus(
+        sub.plan.name,
+        Number(sub.trafficUsedGB),
+        sub.plan.trafficLimitGB,
+        daysLeft,
+      ),
+      backToMenuKeyboard(),
+    );
   }
 
   private async handleServer(ctx: any) {

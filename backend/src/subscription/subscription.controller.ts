@@ -198,7 +198,20 @@ export class SubscriptionController {
       referralBonusDays: user.referralBonusDays,
       isReturning,
       totalSubscriptions: allSubs.length,
+      notifyBeforeExpiry: user.notifyBeforeExpiry,
     };
+  }
+
+  @Post('profile/notifications')
+  async toggleNotifications(
+    @Body() body: { enabled: boolean; initData: string },
+  ) {
+    const telegramUser = this.validateAndExtractUser(body.initData);
+    const user = await this.userService.findByTelegramId(telegramUser.id);
+    if (!user) throw new UnauthorizedException('Пользователь не найден');
+
+    await this.userService.updateNotifyPreference(user.id, body.enabled);
+    return { notifyBeforeExpiry: body.enabled };
   }
 
   private sanitizeSubscription(sub: any) {

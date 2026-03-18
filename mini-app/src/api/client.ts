@@ -86,8 +86,15 @@ export const api = {
       referralBonusDays: number;
       isReturning: boolean;
       totalSubscriptions: number;
+      notifyBeforeExpiry: boolean;
     } | null>('/profile', {
       headers: authHeaders(initData),
+    }),
+
+  toggleNotifications: (enabled: boolean, initData: string) =>
+    request<{ notifyBeforeExpiry: boolean }>('/profile/notifications', {
+      method: 'POST',
+      body: JSON.stringify({ enabled, initData }),
     }),
 
   validatePromo: (code: string, initData: string) =>

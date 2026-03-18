@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award, History } from 'lucide-react';
+import { User, Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award, History, Bell, BellOff } from 'lucide-react';
 import type { SubscriptionDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
@@ -17,6 +17,7 @@ export function ProfilePage() {
     referralBonusDays: number;
     isReturning: boolean;
     totalSubscriptions: number;
+    notifyBeforeExpiry: boolean;
   } | null>(null);
   const [history, setHistory] = useState<SubscriptionDTO[]>([]);
 
@@ -206,6 +207,38 @@ export function ProfilePage() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Notifications toggle */}
+      {profile && (
+        <div className="bg-tg-secondary rounded-3xl p-4 animate-slide-up">
+          <button
+            onClick={async () => {
+              if (!initData) return;
+              const newValue = !profile.notifyBeforeExpiry;
+              try {
+                await api.toggleNotifications(newValue, initData);
+                setProfile({ ...profile, notifyBeforeExpiry: newValue });
+                haptic?.notificationOccurred('success');
+                toast(newValue ? 'Уведомления включены' : 'Уведомления отключены');
+              } catch {
+                toast('Ошибка');
+              }
+            }}
+            className="w-full flex items-center gap-3 active:opacity-80 transition-opacity"
+          >
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${profile.notifyBeforeExpiry ? 'bg-brand-purple/10' : 'bg-tg-hint/10'}`}>
+              {profile.notifyBeforeExpiry ? <Bell size={18} className="text-brand-purple" /> : <BellOff size={18} className="text-tg-hint" />}
+            </div>
+            <div className="flex-1 text-left">
+              <div className="text-sm font-medium text-tg-text">Уведомления</div>
+              <div className="text-xs text-tg-hint">Напоминание об окончании подписки</div>
+            </div>
+            <div className={`w-10 h-6 rounded-full transition-colors relative ${profile.notifyBeforeExpiry ? 'bg-brand-purple' : 'bg-tg-hint/30'}`}>
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${profile.notifyBeforeExpiry ? 'left-5' : 'left-1'}`} />
+            </div>
+          </button>
         </div>
       )}
 

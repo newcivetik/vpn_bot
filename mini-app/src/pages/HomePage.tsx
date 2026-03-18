@@ -7,7 +7,7 @@ import { StatusCard } from '../components/StatusCard';
 import { QuickStats } from '../components/QuickStats';
 import { QuickActions } from '../components/QuickActions';
 import { QRModal } from '../components/QRModal';
-import { Zap, AlertTriangle } from 'lucide-react';
+import { Zap, AlertTriangle, Shield, Globe, Wifi } from 'lucide-react';
 
 export function HomePage() {
   const { subscription, setSubscription, firstName, setFirstName } = useUserStore();
@@ -101,6 +101,25 @@ export function HomePage() {
         connectionLink={subscription?.connectionLink}
         onShowQR={() => setShowQR(true)}
       />
+
+      {/* Connection tips for active users */}
+      {subscription && (
+        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up">
+          <h3 className="text-sm font-bold text-tg-text">Советы</h3>
+          <div className="space-y-2">
+            {[
+              { icon: Shield, color: 'text-brand-purple', text: 'VLESS+Reality невидим для провайдера' },
+              { icon: Globe, color: 'text-brand-blue', text: 'Работает во всех приложениях и браузерах' },
+              { icon: Wifi, color: 'text-brand-green', text: 'Авто-подключение при потере сети' },
+            ].map((tip, i) => (
+              <div key={i} className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: `${i * 100}ms` }}>
+                <tip.icon size={16} className={tip.color} />
+                <span className="text-xs text-tg-hint">{tip.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Promo card when no subscription */}
       {!subscription && (

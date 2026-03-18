@@ -61,6 +61,13 @@ export class UserService {
     await this.userRepo.increment({ id: userId }, 'referralBonusDays', days);
   }
 
+  async updateNotifyPreference(
+    userId: number,
+    enabled: boolean,
+  ): Promise<void> {
+    await this.userRepo.update(userId, { notifyBeforeExpiry: enabled });
+  }
+
   async setReferrer(userId: number, referrerId: number): Promise<void> {
     const user = await this.findById(userId);
     if (!user || user.referrerId) return;

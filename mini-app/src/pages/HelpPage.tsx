@@ -57,13 +57,14 @@ export function HelpPage() {
         <p className="text-sm text-tg-hint">5 простых шагов</p>
       </div>
 
-      <div className="space-y-3 animate-slide-up">
+      <div className="space-y-3">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           return (
             <div
               key={i}
-              className="flex items-start gap-4 bg-tg-secondary rounded-2xl p-4"
+              className="flex items-start gap-4 bg-tg-secondary rounded-2xl p-4 animate-slide-up"
+              style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
             >
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center flex-shrink-0`}>
                 <Icon size={20} className="text-white" />
