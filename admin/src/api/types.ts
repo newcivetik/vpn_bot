@@ -122,6 +122,19 @@ export interface PromoCode {
   createdAt: string;
 }
 
+export interface PersonalDiscount {
+  id: number;
+  userId: number;
+  discountPercent: number;
+  bonusDays: number;
+  reason: string | null;
+  expiresAt: string | null;
+  isUsed: boolean;
+  usedAt: string | null;
+  createdAt: string;
+  user?: User;
+}
+
 export interface ServerHealth {
   online: boolean;
   clientCount: number;

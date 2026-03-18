@@ -7,6 +7,7 @@ import {
   Server,
   DollarSign,
   Tag,
+  Gift,
   Megaphone,
   Shield,
 } from 'lucide-react';
@@ -19,6 +20,7 @@ const links = [
   { to: '/servers', icon: Server, label: 'Серверы' },
   { to: '/payments', icon: DollarSign, label: 'Платежи' },
   { to: '/promos', icon: Tag, label: 'Промокоды' },
+  { to: '/personal-discounts', icon: Gift, label: 'Перс. скидки' },
   { to: '/broadcast', icon: Megaphone, label: 'Рассылка' },
 ];
 

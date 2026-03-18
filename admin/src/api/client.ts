@@ -11,6 +11,7 @@ import type {
   Subscription,
   Payment,
   PromoCode,
+  PersonalDiscount,
   PaginatedResponse,
   ServerHealth,
   BroadcastResult,
@@ -116,6 +117,15 @@ export const adminApi = {
 
   deletePromo: (id: number) =>
     api.delete(`/promos/${id}`),
+
+  getPersonalDiscounts: (page = 1, limit = 20, userId?: number) =>
+    api.get<PaginatedResponse<PersonalDiscount>>('/personal-discounts', { params: { page, limit, userId } }).then((r) => r.data),
+
+  createPersonalDiscount: (data: { userId: number; discountPercent?: number; bonusDays?: number; reason?: string; expiresAt?: string }) =>
+    api.post<PersonalDiscount>('/personal-discounts', data).then((r) => r.data),
+
+  deletePersonalDiscount: (id: number) =>
+    api.delete(`/personal-discounts/${id}`),
 
   broadcast: (text: string, onlyActive = false) =>
     api.post<BroadcastResult>('/broadcast', { text, onlyActive }).then((r) => r.data),
