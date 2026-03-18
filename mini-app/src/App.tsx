@@ -10,12 +10,14 @@ import { HelpPage } from './pages/HelpPage';
 import { ServerPage } from './pages/ServerPage';
 
 function App() {
-  const { ready, expand } = useTelegram();
+  const { tg, ready, expand } = useTelegram();
 
   useEffect(() => {
     ready();
     expand();
-  }, [ready, expand]);
+    tg?.setHeaderColor('#FFF8F0');
+    tg?.setBackgroundColor('#FFF8F0');
+  }, [ready, expand, tg]);
 
   return (
     <BrowserRouter>
