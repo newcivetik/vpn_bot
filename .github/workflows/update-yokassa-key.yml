@@ -1,0 +1,23 @@
+name: Update YooKassa Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update key via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 2m
+          script: |
+            set -e
+            cd /root/vpn_bot/backend
+            sed -i 's|YOKASSA_SECRET_KEY=.*|YOKASSA_SECRET_KEY=live_mbUCphKfAH2qR5au7tCtkA6nsyBTL8Q6NbSIs-J3rFg|' .env
+            echo "Key updated. Restarting backend..."
+            pm2 restart vpn-bot --update-env
+            echo "Done!"
