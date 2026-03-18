@@ -116,7 +116,9 @@ export function PaymentPage() {
         }
         setPaying(false);
       });
-    } catch {
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      toast(`Ошибка: ${msg.slice(0, 100)}`, 'error');
       setPaying(false);
     }
   };
@@ -145,10 +147,11 @@ export function PaymentPage() {
 
       widgetRef.current = checkout;
       await checkout.render('yokassa-widget');
-    } catch (err) {
+    } catch (err: any) {
       console.error('YooKassa payment error:', err);
       setShowWidget(false);
-      toast('Ошибка создания платежа', 'error');
+      const msg = err?.message || String(err);
+      toast(`Ошибка: ${msg.slice(0, 100)}`, 'error');
     } finally {
       setPaying(false);
     }
