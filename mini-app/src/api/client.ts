@@ -41,6 +41,16 @@ export interface SubscriptionDTO {
   trafficUsedGB: number;
   connectionLink: string;
   plan: PlanDTO;
+  serverId: number;
+  server?: ServerDTO;
+}
+
+export interface ServerDTO {
+  id: number;
+  location: string;
+  maxClients: number;
+  currentClients: number;
+  isActive: boolean;
 }
 
 export const api = {
@@ -83,4 +93,12 @@ export const api = {
         body: JSON.stringify({ code, initData }),
       },
     ),
+
+  getServers: () => request<ServerDTO[]>('/servers'),
+
+  changeServer: (serverId: number, initData: string) =>
+    request<SubscriptionDTO>('/subscription/change-server', {
+      method: 'POST',
+      body: JSON.stringify({ serverId, initData }),
+    }),
 };

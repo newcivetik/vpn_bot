@@ -1,9 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, ShoppingBag, User } from 'lucide-react';
+import { Home, ShoppingBag, Globe, User } from 'lucide-react';
 
 const TABS = [
   { path: '/', icon: Home, label: 'Главная' },
   { path: '/plans', icon: ShoppingBag, label: 'Тарифы' },
+  { path: '/servers', icon: Globe, label: 'Серверы' },
   { path: '/profile', icon: User, label: 'Профиль' },
 ];
 

@@ -7,6 +7,7 @@ import { PlansPage } from './pages/PlansPage';
 import { PaymentPage } from './pages/PaymentPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { HelpPage } from './pages/HelpPage';
+import { ServerPage } from './pages/ServerPage';
 
 function App() {
   const { ready, expand } = useTelegram();
@@ -23,6 +24,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/plans" element={<PlansPage />} />
           <Route path="/plans/:planId/pay" element={<PaymentPage />} />
+          <Route path="/servers" element={<ServerPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/help" element={<HelpPage />} />
         </Routes>
