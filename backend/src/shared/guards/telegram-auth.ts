@@ -8,7 +8,7 @@ export interface TelegramUser {
   language_code?: string;
 }
 
-const MAX_AUTH_AGE_SECONDS = 300; // 5 minutes
+const MAX_AUTH_AGE_SECONDS = 86400; // 24 hours — mini-app stays open long
 
 export function validateTelegramWebAppData(
   initData: string,
