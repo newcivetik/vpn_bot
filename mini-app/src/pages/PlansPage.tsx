@@ -64,6 +64,10 @@ export function PlansPage() {
     );
   }
 
+  // Calculate best price per day for savings comparison
+  const pricesPerDay = plans.map((p) => p.price / p.durationDays);
+  const maxPricePerDay = Math.max(...pricesPerDay);
+
   return (
     <div className="p-4 pb-4 space-y-4">
       <div className="animate-fade-in">
@@ -73,16 +77,29 @@ export function PlansPage() {
         </p>
       </div>
 
-      <div className="space-y-3 animate-slide-up">
-        {plans.map((plan, i) => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            onSelect={handleSelect}
-            popular={i === 1}
-            current={subscription?.plan.id === plan.id}
-          />
-        ))}
+      <div className="space-y-3">
+        {plans.map((plan, i) => {
+          const pricePerDay = plan.price / plan.durationDays;
+          const savingsPct = maxPricePerDay > pricePerDay
+            ? Math.round((1 - pricePerDay / maxPricePerDay) * 100)
+            : 0;
+
+          return (
+            <div
+              key={plan.id}
+              className="animate-slide-up"
+              style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
+            >
+              <PlanCard
+                plan={plan}
+                onSelect={handleSelect}
+                popular={i === 1}
+                current={subscription?.plan.id === plan.id}
+                savingsPct={savingsPct}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

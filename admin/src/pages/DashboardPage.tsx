@@ -1,49 +1,137 @@
 import { useEffect, useState } from 'react';
-import { Users, CreditCard, DollarSign, Star, UserPlus, Server, AlertTriangle } from 'lucide-react';
+import { Users, CreditCard, DollarSign, Star, UserPlus, Server, AlertTriangle, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Header } from '../components/Header.tsx';
 import { StatsCard } from '../components/StatsCard.tsx';
 import { adminApi } from '../api/client.ts';
-import type { DashboardStats, RevenueDataPoint, UserGrowthDataPoint } from '../api/types.ts';
+import type { DashboardStats, RevenueDataPoint, UserGrowthDataPoint, Server as ServerType } from '../api/types.ts';
 
 export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [revenue, setRevenue] = useState<RevenueDataPoint[]>([]);
   const [growth, setGrowth] = useState<UserGrowthDataPoint[]>([]);
+  const [servers, setServers] = useState<ServerType[]>([]);
 
   useEffect(() => {
     adminApi.getDashboard().then(setStats);
     adminApi.getRevenueChart(30).then(setRevenue);
     adminApi.getUserGrowth(30).then(setGrowth);
+    adminApi.getServers().then(setServers);
   }, []);
 
   if (!stats) {
     return (
       <>
         <Header title="Dashboard" />
-        <div className="p-6 text-slate-400">Загрузка...</div>
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-24 animate-pulse" />
+            ))}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-24 animate-pulse" />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-72 animate-pulse" />
+            ))}
+          </div>
+        </div>
       </>
     );
   }
+
+  const activeServers = servers.filter((s) => s.isActive);
 
   return (
     <>
       <Header title="Dashboard" />
       <div className="p-6 space-y-6 overflow-auto">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard title="Пользователи" value={stats.totalUsers} icon={Users} />
-          <StatsCard title="Активных подписок" value={stats.totalActiveSubscriptions} icon={CreditCard} color="text-green-600" />
-          <StatsCard title="Доход (руб)" value={`${stats.totalRevenueRubles.toLocaleString()} ₽`} icon={DollarSign} color="text-emerald-600" />
-          <StatsCard title="Доход (Stars)" value={stats.totalRevenueStars} icon={Star} color="text-amber-500" />
+          <StatsCard
+            title="Пользователи"
+            value={stats.totalUsers}
+            icon={Users}
+            trend={{ value: stats.newUsersWeek, label: 'за неделю' }}
+          />
+          <StatsCard
+            title="Активных подписок"
+            value={stats.totalActiveSubscriptions}
+            icon={CreditCard}
+            color="text-green-600"
+          />
+          <StatsCard
+            title="Доход (руб)"
+            value={`${stats.totalRevenueRubles.toLocaleString()} ₽`}
+            icon={DollarSign}
+            color="text-emerald-600"
+          />
+          <StatsCard
+            title="Доход (Stars)"
+            value={stats.totalRevenueStars}
+            icon={Star}
+            color="text-amber-500"
+          />
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <StatsCard title="Новых сегодня" value={stats.newUsersToday} icon={UserPlus} color="text-blue-600" />
-          <StatsCard title="Активных серверов" value={stats.activeServers} icon={Server} color="text-purple-600" />
-          <StatsCard title="Истекают (3 дня)" value={stats.expiringIn3Days} icon={AlertTriangle} color="text-red-500" />
+          <StatsCard
+            title="Новых сегодня"
+            value={stats.newUsersToday}
+            icon={UserPlus}
+            color="text-blue-600"
+            trend={{ value: stats.newUsersMonth, label: 'за месяц' }}
+          />
+          <StatsCard
+            title="Активных серверов"
+            value={stats.activeServers}
+            icon={Server}
+            color="text-purple-600"
+          />
+          <StatsCard
+            title="Истекают (3 дня)"
+            value={stats.expiringIn3Days}
+            icon={AlertTriangle}
+            color="text-red-500"
+          />
         </div>
 
+        {/* Server load widget */}
+        {activeServers.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-200 p-5 animate-slide-up">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity size={16} className="text-purple-600" />
+              <h3 className="text-sm font-semibold text-slate-700">Загрузка серверов</h3>
+            </div>
+            <div className="space-y-3">
+              {activeServers.map((server) => {
+                const pct = server.maxClients > 0
+                  ? Math.round((server.currentClients / server.maxClients) * 100)
+                  : 0;
+                const barColor = pct < 50 ? 'bg-green-500' : pct < 80 ? 'bg-amber-500' : 'bg-red-500';
+                return (
+                  <div key={server.id} className="flex items-center gap-3">
+                    <span className="text-sm text-slate-600 w-28 truncate">{server.location}</span>
+                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${barColor}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-slate-500 w-20 text-right">
+                      {server.currentClients}/{server.maxClients} ({pct}%)
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 animate-slide-up">
             <h3 className="text-sm font-semibold text-slate-700 mb-4">Доход (30 дней)</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={revenue}>
@@ -56,7 +144,7 @@ export function DashboardPage() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 animate-slide-up">
             <h3 className="text-sm font-semibold text-slate-700 mb-4">Рост пользователей (30 дней)</h3>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={growth}>

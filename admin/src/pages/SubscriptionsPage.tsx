@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Subscription, Plan } from '../api/types.ts';
 import { Plus } from 'lucide-react';
+import { toast } from '../components/Toast.tsx';
 
 export function SubscriptionsPage() {
   const [data, setData] = useState<Subscription[]>([]);
@@ -47,9 +48,11 @@ export function SubscriptionsPage() {
     try {
       await adminApi.extendSubscription(extendId, Number(extendDays));
       setExtendId(null);
+      toast(`Подписка #${extendId} продлена на ${extendDays} дн.`);
       load();
     } catch (e) {
       console.error('Extend failed:', e);
+      toast('Ошибка продления', 'error');
     } finally {
       setExtending(false);
     }
@@ -59,10 +62,12 @@ export function SubscriptionsPage() {
     if (!cancelId) return;
     try {
       await adminApi.cancelSubscription(cancelId);
+      toast(`Подписка #${cancelId} отменена`);
       setCancelId(null);
       load();
     } catch (e) {
       console.error('Cancel failed:', e);
+      toast('Ошибка отмены', 'error');
       setCancelId(null);
     }
   };
@@ -85,6 +90,7 @@ export function SubscriptionsPage() {
       await adminApi.grantSubscription(Number(grantUserId), Number(grantPlanId));
       setShowGrant(false);
       setGrantUserId('');
+      toast('Подписка выдана');
       load();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Ошибка создания подписки';

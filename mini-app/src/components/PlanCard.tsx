@@ -6,9 +6,10 @@ interface Props {
   onSelect: (plan: PlanDTO) => void;
   popular?: boolean;
   current?: boolean;
+  savingsPct?: number;
 }
 
-export function PlanCard({ plan, onSelect, popular, current }: Props) {
+export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props) {
   const trafficLabel =
     plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ трафика` : 'Безлимитный трафик';
 
@@ -51,6 +52,11 @@ export function PlanCard({ plan, onSelect, popular, current }: Props) {
           </div>
           <div className="text-xs text-tg-hint mt-0.5">{pricePerDay} ₽/день</div>
         </div>
+        {!!savingsPct && savingsPct > 0 && (
+          <span className="text-xs font-bold text-brand-green bg-brand-green/10 px-2.5 py-1 rounded-full">
+            -{savingsPct}%
+          </span>
+        )}
       </div>
 
       <div className="space-y-2 mb-4">

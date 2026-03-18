@@ -8,6 +8,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Server, ServerHealth } from '../api/types.ts';
 import { Plus, Activity } from 'lucide-react';
+import { toast } from '../components/Toast.tsx';
 
 const emptyServer = { name: '', host: '', port: 443, apiPort: 2096, username: '', password: '', inboundId: 1, location: 'Нидерланды', maxClients: 100 };
 
@@ -44,8 +45,10 @@ export function ServersPage() {
     try {
       if (isNew) {
         await adminApi.createServer(editServer);
+        toast('Сервер добавлен');
       } else {
         await adminApi.updateServer(editServer.id!, editServer);
+        toast('Сервер обновлён');
       }
       setEditServer(null);
       load();
