@@ -106,7 +106,8 @@ export function PaymentPage() {
     setPaying(true);
 
     try {
-      const { invoiceLink } = await api.createInvoice(plan.id, initData);
+      const validPromo = promoResult?.valid ? promoCode.trim() : undefined;
+      const { invoiceLink } = await api.createInvoice(plan.id, initData, validPromo);
       tg?.openInvoice(invoiceLink, (status) => {
         if (status === 'paid') {
           haptic?.notificationOccurred('success');
@@ -126,7 +127,8 @@ export function PaymentPage() {
     setPaying(true);
 
     try {
-      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData);
+      const validPromo = promoResult?.valid ? promoCode.trim() : undefined;
+      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData, validPromo);
       setShowWidget(true);
       await new Promise((r) => setTimeout(r, 100));
 
