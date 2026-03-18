@@ -85,7 +85,7 @@ export function ProfilePage() {
     <div className="p-4 pb-4 space-y-4">
       {/* Avatar & name */}
       <div className="flex items-center gap-4 animate-fade-in">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow-purple">
           <User size={28} className="text-white" />
         </div>
         <div>
@@ -96,9 +96,23 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {/* Profile completeness */}
+      {!subscription && (
+        <div className="bg-gradient-to-br from-brand-purple/5 to-brand-blue/5 rounded-3xl p-4 animate-slide-up">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-tg-text">Профиль</span>
+            <span className="text-xs font-bold text-brand-purple">1 из 3</span>
+          </div>
+          <div className="h-1.5 bg-tg-secondary rounded-full overflow-hidden">
+            <div className="h-full w-1/3 bg-gradient-primary rounded-full" />
+          </div>
+          <p className="text-xs text-tg-hint mt-2">Подключи VPN и активируй реферальную программу</p>
+        </div>
+      )}
+
       {/* Subscription info */}
       {subscription && (
-        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up">
+        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
           <h2 className="text-sm font-bold text-tg-text">Подписка</h2>
 
           <div className="flex items-center gap-3">
@@ -129,7 +143,7 @@ export function ProfilePage() {
 
       {/* Referral card */}
       {profile && (
-        <div className="bg-gradient-to-br from-brand-purple/10 to-brand-blue/10 rounded-3xl p-4 space-y-3 animate-slide-up">
+        <div className="bg-gradient-to-br from-brand-purple/10 to-brand-blue/10 rounded-3xl p-4 space-y-3 animate-slide-up" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
           <div className="flex items-center gap-2">
             <Users size={18} className="text-brand-purple" />
             <h2 className="text-sm font-bold text-tg-text">Реферальная программа</h2>
@@ -152,6 +166,7 @@ export function ProfilePage() {
           <div className="flex gap-2">
             <button
               onClick={handleCopyReferral}
+              aria-label="Копировать реферальную ссылку"
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-tg-secondary active:scale-95 transition-transform"
             >
               <Copy size={14} className="text-brand-purple" />
@@ -159,6 +174,7 @@ export function ProfilePage() {
             </button>
             <button
               onClick={handleShare}
+              aria-label="Поделиться реферальной ссылкой"
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-primary active:scale-95 transition-transform"
             >
               <Users size={14} className="text-white" />
@@ -170,7 +186,7 @@ export function ProfilePage() {
 
       {/* Loyalty card */}
       {profile?.isReturning && (
-        <div className="bg-gradient-to-br from-brand-amber/10 to-brand-orange/10 rounded-3xl p-4 space-y-2 animate-slide-up">
+        <div className="bg-gradient-to-br from-brand-amber/10 to-brand-orange/10 rounded-3xl p-4 space-y-2 animate-slide-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
           <div className="flex items-center gap-2">
             <Award size={18} className="text-brand-amber" />
             <h2 className="text-sm font-bold text-tg-text">Лояльность</h2>
@@ -186,7 +202,7 @@ export function ProfilePage() {
 
       {/* Subscription history */}
       {history.length > 1 && (
-        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up">
+        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
           <div className="flex items-center gap-2">
             <History size={18} className="text-tg-hint" />
             <h2 className="text-sm font-bold text-tg-text">История подписок</h2>
@@ -197,7 +213,7 @@ export function ProfilePage() {
               return (
                 <div key={sub.id} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-brand-green' : 'bg-tg-hint'}`} />
+                    <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-brand-green animate-pulse-soft' : 'bg-tg-hint'}`} />
                     <span className="text-tg-text">{sub.plan.name}</span>
                   </div>
                   <span className="text-xs text-tg-hint">
@@ -212,8 +228,10 @@ export function ProfilePage() {
 
       {/* Notifications toggle */}
       {profile && (
-        <div className="bg-tg-secondary rounded-3xl p-4 animate-slide-up">
+        <div className="bg-tg-secondary rounded-3xl p-4 animate-slide-up" style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
           <button
+            role="switch"
+            aria-checked={profile.notifyBeforeExpiry}
             onClick={async () => {
               if (!initData) return;
               const newValue = !profile.notifyBeforeExpiry;
@@ -235,18 +253,18 @@ export function ProfilePage() {
               <div className="text-sm font-medium text-tg-text">Уведомления</div>
               <div className="text-xs text-tg-hint">Напоминание об окончании подписки</div>
             </div>
-            <div className={`w-10 h-6 rounded-full transition-colors relative ${profile.notifyBeforeExpiry ? 'bg-brand-purple' : 'bg-tg-hint/30'}`}>
-              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${profile.notifyBeforeExpiry ? 'left-5' : 'left-1'}`} />
+            <div className={`w-11 h-[26px] rounded-full transition-colors duration-200 relative ${profile.notifyBeforeExpiry ? 'bg-brand-purple' : 'bg-tg-hint/30'}`}>
+              <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200 ${profile.notifyBeforeExpiry ? 'left-[22px]' : 'left-[3px]'}`} />
             </div>
           </button>
         </div>
       )}
 
       {/* Menu */}
-      <div className="space-y-1 animate-slide-up">
+      <div className="space-y-1 animate-slide-up" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
         <button
           onClick={() => navigate('/help')}
-          className="w-full flex items-center gap-3 p-4 bg-tg-secondary rounded-2xl active:opacity-80 transition-opacity"
+          className="w-full flex items-center gap-3 p-4 bg-tg-secondary rounded-2xl active:opacity-80 transition-all hover:shadow-card hover:-translate-y-0.5"
         >
           <div className="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center">
             <HelpCircle size={18} className="text-brand-green" />

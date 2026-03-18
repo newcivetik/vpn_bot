@@ -13,7 +13,7 @@ export function TabBar() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass border-t border-tg-secondary/50 z-50">
+    <nav aria-label="Основная навигация" className="fixed bottom-0 left-0 right-0 glass border-t border-tg-secondary/50 z-50">
       <div className="flex items-center justify-around px-2" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         {TABS.map(({ path, icon: Icon, label }) => {
           const isActive = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
@@ -21,7 +21,9 @@ export function TabBar() {
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`flex flex-col items-center gap-0.5 py-2 px-4 transition-colors ${
+              aria-label={label}
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex flex-col items-center gap-0.5 py-3 px-4 transition-colors hover:text-brand-purple/70 ${
                 isActive ? 'text-brand-purple' : 'text-tg-hint'
               }`}
             >

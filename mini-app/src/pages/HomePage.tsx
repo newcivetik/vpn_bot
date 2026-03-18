@@ -104,7 +104,7 @@ export function HomePage() {
                   })
                   .finally(() => setLoading(false));
               }}
-              className="text-xs text-tg-link mt-1"
+              className="text-xs text-tg-link mt-2 px-4 py-2.5 rounded-lg bg-tg-link/10 font-medium"
             >
               Попробовать снова
             </button>
@@ -119,15 +119,16 @@ export function HomePage() {
       {/* Greeting */}
       <div className="flex items-start justify-between animate-fade-in">
         <div>
-          <h1 className="text-xl font-bold text-tg-text">
+          <h1 className="text-xl font-bold text-tg-text tracking-tight">
             Привет{firstName ? `, ${firstName}` : ''}! 👋
           </h1>
-          <p className="text-sm text-tg-hint">Твой VPN-щит</p>
+          <p className="text-sm text-tg-hint mt-0.5">Твой VPN-щит</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="p-2 rounded-xl bg-tg-secondary active:scale-90 transition-transform"
+          aria-label="Обновить"
+          className="p-3 rounded-xl bg-tg-secondary active:scale-90 transition-transform"
         >
           <RefreshCw size={18} className={`text-tg-hint ${refreshing ? 'animate-spin' : ''}`} />
         </button>
@@ -164,7 +165,7 @@ export function HomePage() {
               { icon: Globe, color: 'text-brand-blue', text: 'Работает во всех приложениях и браузерах' },
               { icon: Wifi, color: 'text-brand-green', text: 'Авто-подключение при потере сети' },
             ].map((tip, i) => (
-              <div key={i} className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: `${i * 100}ms` }}>
+              <div key={i} className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'both' }}>
                 <tip.icon size={16} className={tip.color} />
                 <span className="text-xs text-tg-hint">{tip.text}</span>
               </div>
@@ -175,7 +176,27 @@ export function HomePage() {
 
       {/* Promo card when no subscription */}
       {!subscription && (
-        <div className="bg-gradient-primary rounded-3xl p-5 text-white animate-slide-up">
+        <>
+          {/* Social proof */}
+          <div className="flex items-center justify-center gap-6 py-2 animate-fade-in">
+            <div className="text-center">
+              <div className="text-lg font-bold text-tg-text">1,500+</div>
+              <div className="text-[10px] text-tg-hint">пользователей</div>
+            </div>
+            <div className="w-px h-8 bg-tg-secondary" />
+            <div className="text-center">
+              <div className="text-lg font-bold text-tg-text">99.9%</div>
+              <div className="text-[10px] text-tg-hint">uptime</div>
+            </div>
+            <div className="w-px h-8 bg-tg-secondary" />
+            <div className="text-center">
+              <div className="text-lg font-bold text-tg-text">10+</div>
+              <div className="text-[10px] text-tg-hint">серверов</div>
+            </div>
+          </div>
+
+          {/* Existing promo card below */}
+          <div className="bg-gradient-primary rounded-3xl p-5 text-white animate-slide-up">
           <div className="flex items-center gap-3 mb-2">
             <Zap size={24} />
             <span className="font-bold text-lg">Начни прямо сейчас</span>
@@ -185,11 +206,12 @@ export function HomePage() {
           </p>
           <button
             onClick={() => navigate('/plans')}
-            className="w-full py-3 rounded-xl bg-white text-brand-purple font-bold active:scale-95 transition-transform"
+            className="w-full py-3 rounded-xl bg-white text-brand-purple font-bold active:scale-95 transition-all hover:shadow-lg hover:shadow-white/20"
           >
             Выбрать тариф
           </button>
         </div>
+        </>
       )}
 
       {/* QR Modal */}

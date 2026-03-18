@@ -55,7 +55,7 @@ export function PlansPage() {
           <AlertTriangle size={20} className="text-brand-red shrink-0" />
           <div>
             <p className="text-sm font-medium text-tg-text">{error}</p>
-            <button onClick={loadPlans} className="text-xs text-tg-link mt-1">
+            <button onClick={loadPlans} className="text-xs text-tg-link mt-2 px-4 py-2.5 rounded-lg bg-tg-link/10 font-medium">
               Попробовать снова
             </button>
           </div>
@@ -78,28 +78,37 @@ export function PlansPage() {
       </div>
 
       <div className="space-y-3">
-        {plans.map((plan, i) => {
-          const pricePerDay = plan.price / plan.durationDays;
-          const savingsPct = maxPricePerDay > pricePerDay
-            ? Math.round((1 - pricePerDay / maxPricePerDay) * 100)
-            : 0;
+        {(() => {
+          const sortedPlans = [...plans].sort((a, b) => b.price - a.price);
+          const bestValueIdx = sortedPlans.reduce((best, plan, idx) => {
+            const ppd = plan.price / plan.durationDays;
+            const bestPpd = sortedPlans[best].price / sortedPlans[best].durationDays;
+            return ppd < bestPpd ? idx : best;
+          }, 0);
 
-          return (
-            <div
-              key={plan.id}
-              className="animate-slide-up"
-              style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
-            >
-              <PlanCard
-                plan={plan}
-                onSelect={handleSelect}
-                popular={i === 1}
-                current={subscription?.plan.id === plan.id}
-                savingsPct={savingsPct}
-              />
-            </div>
-          );
-        })}
+          return sortedPlans.map((plan, i) => {
+            const pricePerDay = plan.price / plan.durationDays;
+            const savingsPct = maxPricePerDay > pricePerDay
+              ? Math.round((1 - pricePerDay / maxPricePerDay) * 100)
+              : 0;
+
+            return (
+              <div
+                key={plan.id}
+                className="animate-slide-up"
+                style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
+              >
+                <PlanCard
+                  plan={plan}
+                  onSelect={handleSelect}
+                  popular={i === bestValueIdx}
+                  current={subscription?.plan.id === plan.id}
+                  savingsPct={savingsPct}
+                />
+              </div>
+            );
+          });
+        })()}
       </div>
     </div>
   );
