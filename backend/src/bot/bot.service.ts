@@ -3,6 +3,8 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Bot, GrammyError, HttpError, InlineKeyboard } from 'grammy';
@@ -33,6 +35,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     private readonly userService: UserService,
     private readonly planService: PlanService,
     private readonly subscriptionService: SubscriptionService,
+    @Inject(forwardRef(() => PaymentService))
     private readonly paymentService: PaymentService,
     private readonly serverService: ServerService,
     private readonly promoService: PromoService,
