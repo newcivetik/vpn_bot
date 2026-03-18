@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SubscriptionService } from '../../subscription/subscription.service';
 import { BotService } from '../../bot/bot.service';
+import { messages } from '../../bot/bot.messages';
 
 @Injectable()
 export class CronService {
@@ -54,23 +55,24 @@ export class CronService {
   async notifyExpiring() {
     for (const threshold of [7, 3, 1]) {
       try {
-        const expiring = await this.subscriptionService.getExpiringSubscriptions(threshold);
+        const expiring =
+          await this.subscriptionService.getExpiringSubscriptions(threshold);
         for (const sub of expiring) {
           if (!sub.user.notifyBeforeExpiry) continue;
 
           const daysLeft = Math.ceil(
-            (new Date(sub.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+            (new Date(sub.expiresAt).getTime() - Date.now()) /
+              (1000 * 60 * 60 * 24),
           );
 
           if (threshold === 7 && (daysLeft > 7 || daysLeft <= 3)) continue;
           if (threshold === 3 && (daysLeft > 3 || daysLeft <= 1)) continue;
           if (threshold === 1 && daysLeft > 1) continue;
 
-          const emoji = daysLeft <= 1 ? '🚨' : daysLeft <= 3 ? '⚠️' : '📢';
+          const pluralDays = this.pluralizeDays(daysLeft);
           await this.botService.sendNotification(
             sub.user.telegramId,
-            `${emoji} Твоя подписка «${sub.plan.name}» истекает через ${daysLeft} ${this.pluralizeDays(daysLeft)}!\n\n` +
-            `Продли, чтобы не потерять доступ 🛡`,
+            messages.expiryNotification(sub.plan.name, daysLeft, pluralDays),
           );
         }
       } catch (e) {
@@ -81,7 +83,8 @@ export class CronService {
 
   private pluralizeDays(n: number): string {
     if (n % 10 === 1 && n % 100 !== 11) return 'день';
-    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'дня';
+    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100))
+      return 'дня';
     return 'дней';
   }
 }

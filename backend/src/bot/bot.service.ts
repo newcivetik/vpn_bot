@@ -86,7 +86,15 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         }
       }
 
-      await ctx.reply(messages.welcome(from.first_name), {
+      // New users get onboarding, returning users get welcome
+      const activeSub = await this.subscriptionService.getActiveSubscription(
+        user.id,
+      );
+      const message = activeSub
+        ? messages.welcome(from.first_name)
+        : messages.onboarding(from.first_name);
+
+      await ctx.reply(message, {
         reply_markup: mainMenuKeyboard(miniAppUrl),
       });
     });

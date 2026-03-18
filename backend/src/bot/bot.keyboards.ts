@@ -1,7 +1,7 @@
 import { InlineKeyboard } from 'grammy';
 import { Plan } from '../plan/plan.entity';
 import { Server } from '../server/server.entity';
-import { getLocationFlag, getLoadEmoji } from './bot.messages';
+import { getLocationFlag, getLoadEmoji, getLoadLabel } from './bot.messages';
 
 export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
   return new InlineKeyboard()
@@ -17,7 +17,8 @@ export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
 export function plansKeyboard(plans: Plan[]): InlineKeyboard {
   const kb = new InlineKeyboard();
   for (const plan of plans) {
-    const trafficLabel = plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : '∞';
+    const trafficLabel =
+      plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : '∞';
     kb.text(
       `${plan.name} — ${plan.price}₽ · ${trafficLabel}`,
       `buy_stars:${plan.id}`,
@@ -40,14 +41,18 @@ export function backToMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard().text('« Меню', 'menu');
 }
 
-export function serverKeyboard(servers: Server[], currentServerId?: number): InlineKeyboard {
+export function serverKeyboard(
+  servers: Server[],
+  currentServerId?: number,
+): InlineKeyboard {
   const kb = new InlineKeyboard();
   for (const server of servers) {
     const flag = getLocationFlag(server.location);
     const load = getLoadEmoji(server.currentClients, server.maxClients);
+    const loadPct = getLoadLabel(server.currentClients, server.maxClients);
     const current = server.id === currentServerId ? ' ✓' : '';
     kb.text(
-      `${flag} ${server.location} ${load}${current}`,
+      `${flag} ${server.location} ${load} ${loadPct}${current}`,
       `change_server:${server.id}`,
     ).row();
   }
