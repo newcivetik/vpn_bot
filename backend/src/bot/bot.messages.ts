@@ -107,6 +107,21 @@ export const messages = {
     `🔑 Ключ — скопировать конфиг\n` +
     `❓ Помощь — инструкция по настройке\n\n` +
     `Начни с выбора тарифа 👇`,
+
+  trafficWarning: (planName: string, usedGB: number, limitGB: number) => {
+    const pct = Math.round((usedGB / limitGB) * 100);
+    return (
+      `⚠️ Трафик почти исчерпан\n\n` +
+      `Подписка «${planName}»: ${usedGB.toFixed(1)} из ${limitGB} ГБ (${pct}%)\n\n` +
+      `Когда лимит будет достигнут, VPN отключится.\n` +
+      `💡 Перейди на безлимитный тариф!`
+    );
+  },
+
+  trafficExhausted: (planName: string) =>
+    `🚫 Лимит трафика исчерпан\n\n` +
+    `Подписка «${planName}» отключена.\n\n` +
+    `Оформи новую подписку, чтобы продолжить 👇`,
 };
 
 const LOCATION_FLAGS: Record<string, string> = {

@@ -136,12 +136,14 @@ export class SubscriptionService {
     return count;
   }
 
-  async syncTraffic(): Promise<void> {
+  async syncTraffic(): Promise<{ synced: number; disabled: number }> {
     const active = await this.subRepo.find({
       where: { status: SubscriptionStatus.ACTIVE },
-      relations: ['server'],
+      relations: ['server', 'plan'],
     });
 
+    let synced = 0;
+    let disabled = 0;
     const batchSize = 5;
     for (let i = 0; i < active.length; i += batchSize) {
       const batch = active.slice(i, i + batchSize);
@@ -158,6 +160,27 @@ export class SubscriptionService {
                 (totalBytes / (1024 * 1024 * 1024)).toFixed(2),
               );
               await this.subRepo.save(sub);
+              synced++;
+
+              // Enforce traffic limit
+              if (
+                sub.plan.trafficLimitGB > 0 &&
+                sub.trafficUsedGB >= sub.plan.trafficLimitGB
+              ) {
+                await this.vpnService.toggleClient(
+                  sub.server,
+                  sub.vpnClientId,
+                  sub.vpnClientEmail,
+                  false,
+                );
+                sub.status = SubscriptionStatus.EXPIRED;
+                await this.subRepo.save(sub);
+                await this.serverService.decrementClients(sub.serverId);
+                this.logger.warn(
+                  `Подписка #${sub.id} отключена: лимит трафика ${sub.plan.trafficLimitGB} ГБ исчерпан`,
+                );
+                disabled++;
+              }
             }
           } catch (e) {
             this.logger.warn(
@@ -167,6 +190,8 @@ export class SubscriptionService {
         }),
       );
     }
+
+    return { synced, disabled };
   }
 
   async changeServer(
@@ -235,6 +260,54 @@ export class SubscriptionService {
         expiresAt: LessThan(threshold),
       },
       relations: ['user', 'plan'],
+    });
+  }
+
+  async extendSubscription(
+    subscriptionId: number,
+    days: number,
+  ): Promise<Subscription> {
+    const sub = await this.subRepo.findOne({
+      where: { id: subscriptionId },
+      relations: ['server'],
+    });
+    if (!sub) throw new NotFoundException('Подписка не найдена');
+
+    // If expired, reactivate
+    if (sub.status === SubscriptionStatus.EXPIRED) {
+      await this.vpnService.toggleClient(
+        sub.server,
+        sub.vpnClientId,
+        sub.vpnClientEmail,
+        true,
+      );
+      sub.status = SubscriptionStatus.ACTIVE;
+      sub.expiresAt = new Date();
+      await this.serverService.incrementClients(sub.serverId);
+    }
+
+    sub.expiresAt = new Date(
+      new Date(sub.expiresAt).getTime() + days * 86400000,
+    );
+    await this.subRepo.save(sub);
+
+    this.logger.log(`Подписка #${sub.id} продлена на ${days} дн.`);
+    return sub;
+  }
+
+  async getTrafficWarningSubscriptions(
+    thresholdPercent = 80,
+  ): Promise<Subscription[]> {
+    const active = await this.subRepo.find({
+      where: { status: SubscriptionStatus.ACTIVE },
+      relations: ['user', 'plan'],
+    });
+
+    return active.filter((sub) => {
+      if (sub.plan.trafficLimitGB <= 0) return false;
+      const usedPct =
+        (Number(sub.trafficUsedGB) / sub.plan.trafficLimitGB) * 100;
+      return usedPct >= thresholdPercent && usedPct < 100;
     });
   }
 }

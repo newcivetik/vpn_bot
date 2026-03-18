@@ -21,9 +21,7 @@ export class VpnService {
     });
 
     const cookies = res.headers.getSetCookie?.() || [];
-    const sessionCookie = cookies
-      .map((c) => c.split(';')[0])
-      .join('; ');
+    const sessionCookie = cookies.map((c) => c.split(';')[0]).join('; ');
 
     if (!sessionCookie) {
       throw new Error(`Не удалось авторизоваться в 3X-UI: ${server.host}`);
@@ -62,7 +60,7 @@ export class VpnService {
     // Если сессия истекла, перелогиниваемся
     if (res.status === 401 || res.status === 307) {
       cookie = await this.login(server);
-      options.headers = { ...options.headers as any, Cookie: cookie };
+      options.headers = { ...(options.headers as any), Cookie: cookie };
       res = await fetch(url, options);
     }
 
@@ -101,24 +99,17 @@ export class VpnService {
       subId: '',
     };
 
-    const result = await this.apiCall(
-      server,
-      `/panel/api/inbounds/addClient`,
-      {
-        id: server.inboundId,
-        settings: JSON.stringify({ clients: [clientSettings] }),
-      },
-    );
+    const result = await this.apiCall(server, `/panel/api/inbounds/addClient`, {
+      id: server.inboundId,
+      settings: JSON.stringify({ clients: [clientSettings] }),
+    });
 
     if (!result.success) {
       throw new Error(`Ошибка создания VPN-клиента: ${result.msg}`);
     }
 
     // Получаем настройки inbound для генерации ссылки
-    const connectionLink = await this.generateConnectionLink(
-      server,
-      clientId,
-    );
+    const connectionLink = await this.generateConnectionLink(server, clientId);
 
     this.logger.log(`Создан VPN-клиент: ${email} на сервере ${server.name}`);
 
@@ -175,6 +166,22 @@ export class VpnService {
     return result.obj;
   }
 
+  async checkServerHealth(
+    server: Server,
+  ): Promise<{ online: boolean; version?: string }> {
+    try {
+      const result = await this.apiCall<any>(
+        server,
+        '/server/status',
+        undefined,
+        'POST',
+      );
+      return { online: result.success, version: result.obj?.xray?.version };
+    } catch {
+      return { online: false };
+    }
+  }
+
   private async generateConnectionLink(
     server: Server,
     clientId: string,
@@ -197,7 +204,10 @@ export class VpnService {
     const serverNames = reality?.serverNames?.[0] || 'google.com';
     const publicKey = reality?.settings?.publicKey || '';
     const shortId = reality?.shortIds?.[0] || '';
-    const fingerprint = stream?.tlsSettings?.fingerprint || reality?.settings?.fingerprint || 'chrome';
+    const fingerprint =
+      stream?.tlsSettings?.fingerprint ||
+      reality?.settings?.fingerprint ||
+      'chrome';
 
     const params = new URLSearchParams({
       type: stream?.network || 'tcp',

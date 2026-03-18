@@ -1,11 +1,18 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PromoCode } from './promo.entity';
 import { PromoUsage } from './promo-usage.entity';
 
 @Injectable()
-export class PromoService {
+export class PromoService implements OnModuleInit {
+  private readonly logger = new Logger(PromoService.name);
+
   constructor(
     @InjectRepository(PromoCode)
     private readonly promoRepo: Repository<PromoCode>,
@@ -13,6 +20,28 @@ export class PromoService {
     private readonly usageRepo: Repository<PromoUsage>,
     private readonly dataSource: DataSource,
   ) {}
+
+  async onModuleInit() {
+    await this.seedDefaults();
+  }
+
+  private async seedDefaults() {
+    const existing = await this.promoRepo.findOne({
+      where: { code: 'RENEW15' },
+    });
+    if (!existing) {
+      await this.promoRepo.save(
+        this.promoRepo.create({
+          code: 'RENEW15',
+          discountPercent: 15,
+          bonusDays: 0,
+          maxUses: 0, // unlimited
+          isActive: true,
+        }),
+      );
+      this.logger.log('Промокод RENEW15 создан (15% скидка)');
+    }
+  }
 
   async validatePromo(
     code: string,

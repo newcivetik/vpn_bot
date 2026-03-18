@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SubscriptionService } from '../../subscription/subscription.service';
+import { ServerService } from '../../server/server.service';
+import { VpnService } from '../../vpn/vpn.service';
 import { BotService } from '../../bot/bot.service';
 import { messages } from '../../bot/bot.messages';
 
@@ -12,6 +14,8 @@ export class CronService {
 
   constructor(
     private readonly subscriptionService: SubscriptionService,
+    private readonly serverService: ServerService,
+    private readonly vpnService: VpnService,
     private readonly botService: BotService,
   ) {}
 
@@ -42,8 +46,15 @@ export class CronService {
     }
     this.syncing = true;
     try {
-      await this.subscriptionService.syncTraffic();
-      this.logger.debug('Трафик синхронизирован');
+      const { synced, disabled } =
+        await this.subscriptionService.syncTraffic();
+      if (disabled > 0) {
+        this.logger.warn(
+          `Трафик: синхронизировано ${synced}, отключено по лимиту ${disabled}`,
+        );
+      } else {
+        this.logger.debug(`Трафик синхронизирован: ${synced}`);
+      }
     } catch (e) {
       this.logger.error(`Ошибка синхронизации трафика: ${e}`);
     } finally {
@@ -78,6 +89,51 @@ export class CronService {
       } catch (e) {
         this.logger.error(`Ошибка уведомлений (threshold=${threshold}): ${e}`);
       }
+    }
+  }
+
+  // Every 6 hours: warn users approaching traffic limit (80%+)
+  @Cron('0 */6 * * *')
+  async notifyTrafficWarning() {
+    try {
+      const approaching =
+        await this.subscriptionService.getTrafficWarningSubscriptions(80);
+      for (const sub of approaching) {
+        if (!sub.user.notifyBeforeExpiry) continue;
+        await this.botService.sendNotification(
+          sub.user.telegramId,
+          messages.trafficWarning(
+            sub.plan.name,
+            Number(sub.trafficUsedGB),
+            sub.plan.trafficLimitGB,
+          ),
+        );
+      }
+      if (approaching.length > 0) {
+        this.logger.log(
+          `Отправлено ${approaching.length} предупреждений о трафике`,
+        );
+      }
+    } catch (e) {
+      this.logger.error(`Ошибка уведомлений о трафике: ${e}`);
+    }
+  }
+
+  // Every 10 minutes: check server health
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async checkServerHealth() {
+    try {
+      const servers = await this.serverService.findAllActive();
+      for (const server of servers) {
+        const health = await this.vpnService.checkServerHealth(server);
+        if (!health.online) {
+          this.logger.error(
+            `Сервер ${server.location} (${server.host}) не отвечает!`,
+          );
+        }
+      }
+    } catch (e) {
+      this.logger.error(`Ошибка проверки здоровья серверов: ${e}`);
     }
   }
 
