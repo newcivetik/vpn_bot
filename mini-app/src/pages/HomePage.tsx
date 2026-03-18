@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
@@ -7,26 +7,7 @@ import { StatusCard } from '../components/StatusCard';
 import { QuickStats } from '../components/QuickStats';
 import { QuickActions } from '../components/QuickActions';
 import { QRModal } from '../components/QRModal';
-import { Zap, AlertTriangle, Shield, Globe, Wifi, Clock, RefreshCw } from 'lucide-react';
-
-function useUptime(createdAt: string | undefined) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (!createdAt) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [createdAt]);
-  return useMemo(() => {
-    if (!createdAt) return null;
-    const diff = Math.max(0, now - new Date(createdAt).getTime());
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor((diff % 86400000) / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    if (d > 0) return `${d}д ${h}ч ${m}м`;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }, [createdAt, now]);
-}
+import { Zap, AlertTriangle, Shield, Globe, Wifi, RefreshCw } from 'lucide-react';
 
 export function HomePage() {
   const { subscription, setSubscription, firstName, setFirstName } = useUserStore();
@@ -36,7 +17,6 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const uptime = useUptime(subscription?.createdAt);
 
   useEffect(() => {
     const user = tg?.initDataUnsafe?.user;
@@ -144,18 +124,6 @@ export function HomePage() {
       >
         <StatusCard subscription={subscription} />
       </div>
-
-      {/* Uptime counter */}
-      {subscription && uptime && (
-        <div
-          className="bg-[#E8D5F5]/15 rounded-2xl py-2 flex items-center justify-center gap-2 animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
-          style={{ animationDelay: '120ms' }}
-        >
-          <Clock size={14} className="text-[#9B8AAB]" />
-          <span className="text-sm text-[#3D2C4E] font-mono tracking-wider">{uptime}</span>
-          <span className="text-xs text-[#9B8AAB]">активна</span>
-        </div>
-      )}
 
       {/* Quick stats (only if subscribed) */}
       {subscription && (
