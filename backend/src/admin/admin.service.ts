@@ -197,6 +197,7 @@ export class AdminService {
       const num = Number(search);
       if (!isNaN(num)) {
         where.push({ telegramId: num });
+        where.push({ id: num });
       }
     }
 

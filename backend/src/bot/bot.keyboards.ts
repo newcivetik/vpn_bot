@@ -41,6 +41,17 @@ export function backToMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard().text('« Меню', 'menu');
 }
 
+export function statusKeyboard(miniAppUrl: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('🔑 Ключ', 'key')
+    .text('🌍 Сервер', 'server')
+    .row()
+    .text('📊 Трафик', 'traffic')
+    .webApp('🛒 Продлить', miniAppUrl)
+    .row()
+    .text('« Меню', 'menu');
+}
+
 export function serverKeyboard(
   servers: Server[],
   currentServerId?: number,

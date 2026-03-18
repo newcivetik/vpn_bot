@@ -19,6 +19,7 @@ import {
   paymentMethodKeyboard,
   backToMenuKeyboard,
   serverKeyboard,
+  statusKeyboard,
 } from './bot.keyboards';
 
 @Injectable()
@@ -218,6 +219,8 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         await this.handleHelp(ctx);
       } else if (data === 'server') {
         await this.handleServer(ctx);
+      } else if (data === 'traffic') {
+        await this.handleTraffic(ctx);
       } else if (data === 'plans') {
         const plans = await this.planService.findAll();
         await ctx.editMessageText(messages.plans, {
@@ -326,6 +329,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         ? `${sub.trafficUsedGB} / ${sub.plan.trafficLimitGB} ГБ`
         : `${sub.trafficUsedGB} ГБ (безлимит)`;
 
+    const miniAppUrl = this.config.getOrThrow<string>('MINI_APP_URL');
     await this.sendOrEdit(
       ctx,
       messages.status(
@@ -334,7 +338,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         trafficLimit,
         sub.server.location,
       ),
-      backToMenuKeyboard(),
+      statusKeyboard(miniAppUrl),
     );
   }
 

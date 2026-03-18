@@ -6,6 +6,8 @@ import { StatusBadge } from '../components/StatusBadge.tsx';
 import { Pagination } from '../components/Pagination.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Payment } from '../api/types.ts';
+import { Download } from 'lucide-react';
+import { toast } from '../components/Toast.tsx';
 
 export function PaymentsPage() {
   const [data, setData] = useState<Payment[]>([]);
@@ -24,6 +26,28 @@ export function PaymentsPage() {
   }, [page, status, method]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleExportCSV = async () => {
+    try {
+      const all = await adminApi.getPayments(1, 10000, status || undefined, method || undefined);
+      const rows = [
+        ['ID', 'User', 'Amount', 'Method', 'Status', 'External ID', 'Date'].join(','),
+        ...all.data.map((p) =>
+          [p.id, p.user?.username || p.userId, p.amount, p.method, p.status, p.externalId || '', new Date(p.createdAt).toLocaleDateString('ru-RU')].join(',')
+        ),
+      ].join('\n');
+      const blob = new Blob(['\uFEFF' + rows], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payments-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('CSV скачан');
+    } catch {
+      toast('Ошибка экспорта', 'error');
+    }
+  };
 
   const columns: Column<Payment>[] = [
     { key: 'id', header: 'ID' },
@@ -47,7 +71,7 @@ export function PaymentsPage() {
     <>
       <Header title="Платежи" />
       <div className="p-6 space-y-4">
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <select
             value={status}
             onChange={(e) => { setStatus(e.target.value); setPage(1); }}
@@ -68,6 +92,13 @@ export function PaymentsPage() {
             <option value="stars">Stars</option>
             <option value="yokassa">YooKassa</option>
           </select>
+          <button
+            onClick={handleExportCSV}
+            className="ml-auto flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"
+          >
+            <Download size={14} />
+            CSV
+          </button>
         </div>
         <DataTable columns={columns} data={data} loading={loading} />
         <Pagination page={page} total={total} limit={20} onChange={setPage} />

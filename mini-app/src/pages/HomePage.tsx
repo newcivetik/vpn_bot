@@ -7,7 +7,7 @@ import { StatusCard } from '../components/StatusCard';
 import { QuickStats } from '../components/QuickStats';
 import { QuickActions } from '../components/QuickActions';
 import { QRModal } from '../components/QRModal';
-import { Zap, AlertTriangle, Shield, Globe, Wifi, Clock } from 'lucide-react';
+import { Zap, AlertTriangle, Shield, Globe, Wifi, Clock, RefreshCw } from 'lucide-react';
 
 function useUptime(createdAt: string | undefined) {
   const [now, setNow] = useState(Date.now());
@@ -34,6 +34,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const uptime = useUptime(subscription?.createdAt);
 
@@ -56,6 +57,19 @@ export function HomePage() {
       setLoading(false);
     }
   }, [initData, setSubscription, setFirstName, tg]);
+
+  const handleRefresh = async () => {
+    if (!initData || refreshing) return;
+    setRefreshing(true);
+    try {
+      const sub = await api.getSubscription(initData);
+      setSubscription(sub);
+    } catch {
+      // silent
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -103,11 +117,20 @@ export function HomePage() {
   return (
     <div className="p-4 pb-4 space-y-4">
       {/* Greeting */}
-      <div className="animate-fade-in">
-        <h1 className="text-xl font-bold text-tg-text">
-          Привет{firstName ? `, ${firstName}` : ''}! 👋
-        </h1>
-        <p className="text-sm text-tg-hint">Твой VPN-щит</p>
+      <div className="flex items-start justify-between animate-fade-in">
+        <div>
+          <h1 className="text-xl font-bold text-tg-text">
+            Привет{firstName ? `, ${firstName}` : ''}! 👋
+          </h1>
+          <p className="text-sm text-tg-hint">Твой VPN-щит</p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="p-2 rounded-xl bg-tg-secondary active:scale-90 transition-transform"
+        >
+          <RefreshCw size={18} className={`text-tg-hint ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {/* Status card */}
