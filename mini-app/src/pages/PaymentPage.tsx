@@ -123,19 +123,43 @@ export function PaymentPage() {
     }
   };
 
+  const loadYokassaWidget = (): Promise<boolean> => {
+    if (window.YooMoneyCheckoutWidget) return Promise.resolve(true);
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://yookassa.ru/checkout-widget/v1/checkout-widget.js';
+      script.onload = () => resolve(!!window.YooMoneyCheckoutWidget);
+      script.onerror = () => resolve(false);
+      document.head.appendChild(script);
+    });
+  };
+
   const handleYokassa = async () => {
     if (paying || !plan) return;
     haptic?.impactOccurred('medium');
     setPaying(true);
 
     try {
+      const widgetAvailable = await loadYokassaWidget();
       const validPromo = promoResult?.valid ? promoCode.trim() : undefined;
-      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData, validPromo);
+
+      if (!widgetAvailable) {
+        // Fallback: redirect-based payment for mobile WebView
+        const { confirmationUrl } = await api.createYokassaPayment(plan.id, initData, validPromo, false);
+        if (confirmationUrl) {
+          window.location.href = confirmationUrl;
+        } else {
+          toast('Ошибка: не удалось создать платёж', 'error');
+        }
+        return;
+      }
+
+      const { confirmationToken } = await api.createYokassaPayment(plan.id, initData, validPromo, true);
       setShowWidget(true);
       await new Promise((r) => setTimeout(r, 100));
 
       const checkout = new window.YooMoneyCheckoutWidget!({
-        confirmation_token: confirmationToken,
+        confirmation_token: confirmationToken!,
         return_url: `${window.location.origin}/`,
         error_callback: (error) => {
           console.error('YooKassa widget error:', error);

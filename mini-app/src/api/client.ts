@@ -74,10 +74,10 @@ export const api = {
       body: JSON.stringify({ planId, initData, promoCode }),
     }),
 
-  createYokassaPayment: (planId: number, initData: string, promoCode?: string) =>
-    request<{ confirmationToken: string }>('/create-yokassa-payment', {
+  createYokassaPayment: (planId: number, initData: string, promoCode?: string, embedded = true) =>
+    request<{ confirmationToken?: string; confirmationUrl?: string }>('/create-yokassa-payment', {
       method: 'POST',
-      body: JSON.stringify({ planId, initData, promoCode }),
+      body: JSON.stringify({ planId, initData, promoCode, embedded }),
     }),
 
   getProfile: (initData: string) =>

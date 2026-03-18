@@ -104,7 +104,13 @@ export class SubscriptionController {
 
   @Post('create-yokassa-payment')
   async createYokassaPayment(
-    @Body() body: { planId: number; initData: string; promoCode?: string },
+    @Body()
+    body: {
+      planId: number;
+      initData: string;
+      promoCode?: string;
+      embedded?: boolean;
+    },
   ) {
     const telegramUser = this.validateAndExtractUser(body.initData);
     const plan = await this.planService.findById(body.planId);
@@ -116,15 +122,20 @@ export class SubscriptionController {
       firstName: telegramUser.first_name,
     });
 
-    const { confirmationToken } =
-      await this.paymentService.createYokassaPayment(
-        user.id,
-        plan.id,
-        plan.price,
-        { embedded: true, promoCode: body.promoCode },
-      );
+    const embedded = body.embedded !== false; // default true for backward compat
 
-    return { confirmationToken };
+    const result = await this.paymentService.createYokassaPayment(
+      user.id,
+      plan.id,
+      plan.price,
+      { embedded, promoCode: body.promoCode },
+    );
+
+    if (embedded) {
+      return { confirmationToken: result.confirmationToken };
+    } else {
+      return { confirmationUrl: result.confirmationUrl };
+    }
   }
 
   @Get('servers')
