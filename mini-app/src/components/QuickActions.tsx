@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Copy, QrCode, ShoppingBag, HelpCircle } from 'lucide-react';
 import { useTelegram } from '../hooks/useTelegram';
+import { toast } from './Toast';
 
 interface Props {
   connectionLink?: string;
@@ -16,6 +17,7 @@ export function QuickActions({ connectionLink, onShowQR }: Props) {
     try {
       await navigator.clipboard.writeText(connectionLink);
       haptic?.notificationOccurred('success');
+      toast('Ключ скопирован');
     } catch {
       const input = document.createElement('textarea');
       input.value = connectionLink;
@@ -24,6 +26,7 @@ export function QuickActions({ connectionLink, onShowQR }: Props) {
       document.execCommand('copy');
       document.body.removeChild(input);
       haptic?.notificationOccurred('success');
+      toast('Ключ скопирован');
     }
   };
 

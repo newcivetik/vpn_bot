@@ -4,6 +4,7 @@ import type { ServerDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
 import { Globe, Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { toast } from '../components/Toast';
 
 const LOCATION_FLAGS: Record<string, string> = {
   Нидерланды: '🇳🇱',
@@ -53,9 +54,10 @@ export function ServerPage() {
       const updated = await api.changeServer(serverId, initData);
       setSubscription(updated);
       haptic?.notificationOccurred('success');
+      toast('Сервер переключён');
     } catch {
-      setError('Не удалось сменить сервер');
       haptic?.notificationOccurred('error');
+      toast('Не удалось сменить сервер', 'error');
     } finally {
       setSwitching(null);
     }

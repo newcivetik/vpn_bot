@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award } from 'lucide-react';
+import { User, Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award, History } from 'lucide-react';
+import type { SubscriptionDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
 import { api } from '../api/client';
+import { toast } from '../components/Toast';
 
 export function ProfilePage() {
   const { subscription, setSubscription, firstName, setFirstName } = useUserStore();
@@ -16,6 +18,7 @@ export function ProfilePage() {
     isReturning: boolean;
     totalSubscriptions: number;
   } | null>(null);
+  const [history, setHistory] = useState<SubscriptionDTO[]>([]);
 
   useEffect(() => {
     const user = tg?.initDataUnsafe?.user;
@@ -29,6 +32,9 @@ export function ProfilePage() {
       }
       api.getProfile(initData).then(setProfile).catch((e) => {
         console.error('Failed to load profile:', e);
+      });
+      api.getSubscriptions(initData).then(setHistory).catch((e) => {
+        console.error('Failed to load history:', e);
       });
     }
   }, [initData, tg, subscription, setSubscription, setFirstName]);
@@ -54,6 +60,7 @@ export function ProfilePage() {
     try {
       await navigator.clipboard.writeText(referralLink);
       haptic?.notificationOccurred('success');
+      toast('Ссылка скопирована');
     } catch {
       const input = document.createElement('textarea');
       input.value = referralLink;
@@ -62,6 +69,7 @@ export function ProfilePage() {
       document.execCommand('copy');
       document.body.removeChild(input);
       haptic?.notificationOccurred('success');
+      toast('Ссылка скопирована');
     }
   };
 
@@ -171,6 +179,32 @@ export function ProfilePage() {
           </div>
           <div className="text-xs text-tg-hint">
             Используй промокод <span className="font-bold text-brand-amber">RENEW15</span> для скидки 15% при продлении
+          </div>
+        </div>
+      )}
+
+      {/* Subscription history */}
+      {history.length > 1 && (
+        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up">
+          <div className="flex items-center gap-2">
+            <History size={18} className="text-tg-hint" />
+            <h2 className="text-sm font-bold text-tg-text">История подписок</h2>
+          </div>
+          <div className="space-y-2">
+            {history.slice(0, 5).map((sub) => {
+              const isActive = sub.status === 'active';
+              return (
+                <div key={sub.id} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-brand-green' : 'bg-tg-hint'}`} />
+                    <span className="text-tg-text">{sub.plan.name}</span>
+                  </div>
+                  <span className="text-xs text-tg-hint">
+                    {new Date(sub.expiresAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: '2-digit' })}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

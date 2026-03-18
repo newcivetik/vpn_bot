@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { PlanDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
+import { useUserStore } from '../stores/userStore';
 import { Star, CreditCard, ArrowLeft, Tag, Check, X } from 'lucide-react';
 
 declare global {
@@ -26,6 +27,7 @@ export function PaymentPage() {
   const [paying, setPaying] = useState(false);
   const navigate = useNavigate();
   const { tg, haptic, backButton, initData } = useTelegram();
+  const { subscription } = useUserStore();
   const widgetRef = useRef<{ destroy: () => void } | null>(null);
 
   // Promo state
@@ -63,6 +65,15 @@ export function PaymentPage() {
       console.error('Failed to load plans:', e);
       setLoading(false);
     });
+
+    // Auto-suggest RENEW15 for returning users
+    if (subscription && initData) {
+      setShowPromo(true);
+      setPromoCode('RENEW15');
+      api.validatePromo('RENEW15', initData)
+        .then((result) => { if (result.valid) setPromoResult(result); })
+        .catch(() => {});
+    }
 
     return () => {
       backButton?.offClick(goBack);
