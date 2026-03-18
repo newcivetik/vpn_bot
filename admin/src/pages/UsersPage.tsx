@@ -16,25 +16,42 @@ export function UsersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await adminApi.getUsers(page, 20, search || undefined);
-    setData(res.data);
-    setTotal(res.total);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await adminApi.getUsers(page, 20, search || undefined);
+      setData(res.data);
+      setTotal(res.total);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка загрузки');
+    } finally {
+      setLoading(false);
+    }
   }, [page, search]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleExportCSV = async () => {
     try {
-      const all = await adminApi.getUsers(1, 50000, search || undefined);
+      const all = await adminApi.getUsers(1, 10000, search || undefined);
+      const escapeCSV = (val: string | number | undefined | null): string => {
+        const str = String(val ?? '');
+        // Prevent formula injection
+        const sanitized = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+        // Wrap in quotes if contains comma, quote, or newline
+        if (/[",\n\r]/.test(sanitized)) {
+          return `"${sanitized.replace(/"/g, '""')}"`;
+        }
+        return sanitized;
+      };
       const rows = [
         ['ID', 'Telegram ID', 'Username', 'Name', 'Referral Code', 'Bonus Days', 'Created'].join(','),
         ...all.data.map((u) =>
-          [u.id, u.telegramId, u.username || '', u.firstName || '', u.referralCode || '', u.referralBonusDays, new Date(u.createdAt).toLocaleDateString('ru-RU')].join(',')
+          [escapeCSV(u.id), escapeCSV(u.telegramId), escapeCSV(u.username), escapeCSV(u.firstName), escapeCSV(u.referralCode), escapeCSV(u.referralBonusDays), escapeCSV(new Date(u.createdAt).toLocaleDateString('ru-RU'))].join(',')
         ),
       ].join('\n');
       const blob = new Blob(['\uFEFF' + rows], { type: 'text/csv;charset=utf-8;' });
@@ -83,6 +100,12 @@ export function UsersPage() {
             CSV
           </button>
         </div>
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 rounded-lg p-3 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={load} className="text-red-700 underline text-xs">Повторить</button>
+          </div>
+        )}
         <DataTable
           columns={columns}
           data={data}

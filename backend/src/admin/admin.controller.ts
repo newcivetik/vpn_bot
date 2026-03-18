@@ -14,6 +14,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { timingSafeEqual } from 'crypto';
 import { AdminAuthGuard } from './admin-auth.guard';
 import { AdminService } from './admin.service';
 import {
@@ -49,7 +50,12 @@ export class AdminController {
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   async login(@Body() dto: LoginDto) {
     const adminPassword = this.config.get<string>('ADMIN_PASSWORD');
-    if (!adminPassword || dto.password !== adminPassword) {
+    if (!adminPassword) {
+      throw new UnauthorizedException('Admin login is disabled');
+    }
+    const a = Buffer.from(dto.password);
+    const b = Buffer.from(adminPassword);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
       throw new UnauthorizedException('Invalid password');
     }
     const token = await this.jwtService.signAsync({ role: 'admin' });

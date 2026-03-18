@@ -140,8 +140,9 @@ export class PaymentService {
       ? { type: 'embedded' }
       : { type: 'redirect', return_url: returnUrl || 'https://t.me' };
 
-    const idempotencyKey = `vpn_${saved.id}_${Date.now()}`;
+    const idempotencyKey = `vpn_payment_${saved.id}`;
     const res = await fetch('https://api.yookassa.ru/v3/payments', {
+      signal: AbortSignal.timeout(15000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

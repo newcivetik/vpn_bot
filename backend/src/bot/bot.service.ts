@@ -60,7 +60,10 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
     const webhookDomain = this.config.get<string>('WEBHOOK_DOMAIN');
     if (webhookDomain) {
-      await this.bot.api.setWebhook(`${webhookDomain}/bot/webhook`);
+      const webhookSecret = this.config.get<string>('WEBHOOK_SECRET') || '';
+      await this.bot.api.setWebhook(`${webhookDomain}/bot/webhook`, {
+        secret_token: webhookSecret || undefined,
+      });
       this.logger.log(`Webhook установлен: ${webhookDomain}/bot/webhook`);
     } else {
       this.bot.start();
@@ -252,6 +255,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         });
       } else if (data.startsWith('buy_stars:')) {
         const planId = parseInt(data.split(':')[1]);
+        if (isNaN(planId)) return;
         await ctx.editMessageText(messages.selectPayment, {
           reply_markup: paymentMethodKeyboard(planId),
         });
@@ -266,9 +270,40 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       await ctx.answerCallbackQuery();
     });
 
-    // Telegram Stars: pre_checkout_query
+    // Telegram Stars: pre_checkout_query — validate before approving
     this.bot.on('pre_checkout_query', async (ctx) => {
-      await ctx.answerPreCheckoutQuery(true);
+      try {
+        const query = ctx.preCheckoutQuery;
+        const paymentId = parseInt(query.invoice_payload);
+        if (isNaN(paymentId)) {
+          await ctx.answerPreCheckoutQuery(false, {
+            error_message: 'Неверные данные платежа',
+          });
+          return;
+        }
+
+        const payment = await this.paymentService.findById(paymentId);
+        if (!payment || payment.status !== 'pending') {
+          await ctx.answerPreCheckoutQuery(false, {
+            error_message: 'Платёж не найден или уже обработан',
+          });
+          return;
+        }
+
+        if (query.currency !== 'XTR' || query.total_amount !== payment.amount) {
+          await ctx.answerPreCheckoutQuery(false, {
+            error_message: 'Сумма или валюта не совпадают',
+          });
+          return;
+        }
+
+        await ctx.answerPreCheckoutQuery(true);
+      } catch (e) {
+        this.logger.error(`Pre-checkout validation error: ${e}`);
+        await ctx.answerPreCheckoutQuery(false, {
+          error_message: 'Ошибка проверки платежа',
+        });
+      }
     });
 
     // Telegram Stars: successful_payment
@@ -511,6 +546,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   private async handleChangeServer(ctx: any, data: string) {
     const newServerId = parseInt(data.split(':')[1]);
+    if (isNaN(newServerId)) return;
     const from = ctx.callbackQuery?.from;
     if (!from) return;
 
@@ -548,6 +584,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   private async handleStarsPayment(ctx: any, data: string) {
     const planId = parseInt(data.split(':')[1]);
+    if (isNaN(planId)) return;
     const plan = await this.planService.findById(planId);
     if (!plan) return;
 
@@ -576,6 +613,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   private async handleYokassaPayment(ctx: any, data: string) {
     const planId = parseInt(data.split(':')[1]);
+    if (isNaN(planId)) return;
     const plan = await this.planService.findById(planId);
     if (!plan) return;
 

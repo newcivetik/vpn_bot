@@ -213,7 +213,7 @@ export function ProfilePage() {
             Всего подписок: <span className="font-bold text-[#3D2C4E]">{profile.totalSubscriptions}</span>
           </div>
           <div className="text-xs text-[#6B5A7A]">
-            Используй промокод <span className="font-bold text-[#FFAA80]">RENEW15</span> для скидки 15% при продлении
+            Проверяй наличие скидок при продлении подписки
           </div>
         </div>
       )}

@@ -53,10 +53,9 @@ export class PaymentController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const clientIp =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      req.socket.remoteAddress ||
-      '';
+    // Use socket address to prevent X-Forwarded-For spoofing
+    // If behind a trusted reverse proxy, configure trust proxy in NestJS
+    const clientIp = req.socket.remoteAddress?.replace('::ffff:', '') || '';
 
     if (process.env.NODE_ENV === 'production' && !isYokassaIP(clientIp)) {
       this.logger.warn(`YooKassa webhook rejected: untrusted IP ${clientIp}`);

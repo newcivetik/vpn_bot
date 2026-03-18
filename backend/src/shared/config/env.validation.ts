@@ -31,13 +31,12 @@ export const envValidationSchema = Joi.object({
   YOKASSA_RETURN_URL: Joi.string().optional().allow(''),
 
   // Admin
-  ADMIN_PASSWORD: Joi.string().optional().allow('').default(''),
-  JWT_SECRET: Joi.string().when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().min(32).required(),
-    otherwise: Joi.string().default('dev-jwt-secret-do-not-use-in-production'),
-  }),
+  ADMIN_PASSWORD: Joi.string().required().min(1),
+  JWT_SECRET: Joi.string().required().min(16),
   ADMIN_APP_URL: Joi.string().optional().allow(''),
+
+  // Webhook
+  WEBHOOK_SECRET: Joi.string().optional().default(''),
 
   // Referral
   REFERRAL_BONUS_DAYS: Joi.number().optional().default(3),

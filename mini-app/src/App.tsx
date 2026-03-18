@@ -1,13 +1,23 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTelegram } from './hooks/useTelegram';
 import { Layout } from './components/Layout';
 import { HomePage } from './pages/HomePage';
-import { PlansPage } from './pages/PlansPage';
-import { PaymentPage } from './pages/PaymentPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { HelpPage } from './pages/HelpPage';
-import { ServerPage } from './pages/ServerPage';
+
+const PlansPage = lazy(() => import('./pages/PlansPage').then((m) => ({ default: m.PlansPage })));
+const PaymentPage = lazy(() => import('./pages/PaymentPage').then((m) => ({ default: m.PaymentPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const HelpPage = lazy(() => import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })));
+const ServerPage = lazy(() => import('./pages/ServerPage').then((m) => ({ default: m.ServerPage })));
+
+function PageLoader() {
+  return (
+    <div className="p-4 space-y-4">
+      <div className="h-32 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+      <div className="h-16 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+    </div>
+  );
+}
 
 function App() {
   const { tg, ready, expand } = useTelegram();
@@ -22,14 +32,17 @@ function App() {
   return (
     <BrowserRouter>
       <Layout>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/plans" element={<PlansPage />} />
-          <Route path="/plans/:planId/pay" element={<PaymentPage />} />
-          <Route path="/servers" element={<ServerPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/help" element={<HelpPage />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/plans" element={<PlansPage />} />
+            <Route path="/plans/:planId/pay" element={<PaymentPage />} />
+            <Route path="/servers" element={<ServerPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/help" element={<HelpPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </Layout>
     </BrowserRouter>
   );

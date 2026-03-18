@@ -71,13 +71,15 @@ export const api = {
   createInvoice: (planId: number, initData: string, promoCode?: string) =>
     request<{ invoiceLink: string }>('/create-invoice', {
       method: 'POST',
-      body: JSON.stringify({ planId, initData, promoCode }),
+      headers: authHeaders(initData),
+      body: JSON.stringify({ planId, promoCode }),
     }),
 
   createYokassaPayment: (planId: number, initData: string, promoCode?: string, embedded = true) =>
     request<{ confirmationToken?: string; confirmationUrl?: string }>('/create-yokassa-payment', {
       method: 'POST',
-      body: JSON.stringify({ planId, initData, promoCode, embedded }),
+      headers: authHeaders(initData),
+      body: JSON.stringify({ planId, promoCode, embedded }),
     }),
 
   getPersonalDiscount: (initData: string) =>
@@ -87,7 +89,9 @@ export const api = {
       bonusDays: number;
       reason?: string;
       expiresAt?: string;
-    } | null>(`/personal-discount?initData=${encodeURIComponent(initData)}`),
+    } | null>('/personal-discount', {
+      headers: authHeaders(initData),
+    }),
 
   getProfile: (initData: string) =>
     request<{
@@ -104,7 +108,8 @@ export const api = {
   toggleNotifications: (enabled: boolean, initData: string) =>
     request<{ notifyBeforeExpiry: boolean }>('/profile/notifications', {
       method: 'POST',
-      body: JSON.stringify({ enabled, initData }),
+      headers: authHeaders(initData),
+      body: JSON.stringify({ enabled }),
     }),
 
   validatePromo: (code: string, initData: string) =>
@@ -112,7 +117,8 @@ export const api = {
       '/validate-promo',
       {
         method: 'POST',
-        body: JSON.stringify({ code, initData }),
+        headers: authHeaders(initData),
+        body: JSON.stringify({ code }),
       },
     ),
 
@@ -121,6 +127,7 @@ export const api = {
   changeServer: (serverId: number, initData: string) =>
     request<SubscriptionDTO>('/subscription/change-server', {
       method: 'POST',
-      body: JSON.stringify({ serverId, initData }),
+      headers: authHeaders(initData),
+      body: JSON.stringify({ serverId }),
     }),
 };

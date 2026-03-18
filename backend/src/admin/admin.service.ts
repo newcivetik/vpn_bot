@@ -217,9 +217,14 @@ export class AdminService {
   async getUsers(page: number, limit: number, search?: string) {
     let where: any = undefined;
     if (search) {
+      // Escape SQL LIKE special characters
+      const escaped = search
+        .replace(/\\/g, '\\\\')
+        .replace(/%/g, '\\%')
+        .replace(/_/g, '\\_');
       where = [
-        { username: Like(`%${search}%`) },
-        { firstName: Like(`%${search}%`) },
+        { username: Like(`%${escaped}%`) },
+        { firstName: Like(`%${escaped}%`) },
       ];
       const num = Number(search);
       if (!isNaN(num)) {
@@ -366,7 +371,22 @@ export class AdminService {
   // ─── Servers ──────────────────────────────────────────
 
   async getAllServers() {
-    return this.serverRepo.find({ order: { id: 'ASC' } });
+    return this.serverRepo.find({
+      select: [
+        'id',
+        'name',
+        'host',
+        'port',
+        'apiPort',
+        'username',
+        'inboundId',
+        'location',
+        'maxClients',
+        'currentClients',
+        'isActive',
+      ],
+      order: { id: 'ASC' },
+    });
   }
 
   async createServer(dto: any) {
@@ -515,27 +535,67 @@ export class AdminService {
   // ─── Broadcast ────────────────────────────────────────
 
   async broadcastMessage(text: string, onlyActive: boolean) {
-    let users: User[];
-
-    if (onlyActive) {
-      const activeSubs = await this.subRepo.find({
-        where: { status: SubscriptionStatus.ACTIVE },
-        relations: ['user'],
-      });
-      const userMap = new Map<number, User>();
-      for (const sub of activeSubs) {
-        userMap.set(sub.user.id, sub.user);
-      }
-      users = Array.from(userMap.values());
-    } else {
-      users = await this.userRepo.find();
-    }
-
     let sent = 0;
     let failed = 0;
+    let total = 0;
+    const pageSize = 100;
 
-    // Telegram rate limit: ~30 messages per second
+    if (onlyActive) {
+      // Paginated query for active subscriptions
+      let page = 0;
+      const seenUserIds = new Set<number>();
+      while (true) {
+        const activeSubs = await this.subRepo.find({
+          where: { status: SubscriptionStatus.ACTIVE },
+          relations: ['user'],
+          skip: page * pageSize,
+          take: pageSize,
+        });
+        if (activeSubs.length === 0) break;
+
+        const uniqueUsers: User[] = [];
+        for (const sub of activeSubs) {
+          if (!seenUserIds.has(sub.user.id)) {
+            seenUserIds.add(sub.user.id);
+            uniqueUsers.push(sub.user);
+          }
+        }
+
+        const res = await this.sendBatch(uniqueUsers, text);
+        sent += res.sent;
+        failed += res.failed;
+        total += uniqueUsers.length;
+        page++;
+      }
+    } else {
+      let page = 0;
+      while (true) {
+        const users = await this.userRepo.find({
+          skip: page * pageSize,
+          take: pageSize,
+        });
+        if (users.length === 0) break;
+
+        const res = await this.sendBatch(users, text);
+        sent += res.sent;
+        failed += res.failed;
+        total += users.length;
+        page++;
+      }
+    }
+
+    this.logger.log(`Broadcast: sent ${sent}, failed ${failed}`);
+    return { sent, failed, total };
+  }
+
+  private async sendBatch(
+    users: User[],
+    text: string,
+  ): Promise<{ sent: number; failed: number }> {
+    let sent = 0;
+    let failed = 0;
     const batchSize = 25;
+
     for (let i = 0; i < users.length; i += batchSize) {
       const batch = users.slice(i, i + batchSize);
       const results = await Promise.allSettled(
@@ -547,13 +607,11 @@ export class AdminService {
         if (r.status === 'fulfilled') sent++;
         else failed++;
       }
-      // Pause between batches to respect Telegram rate limits
       if (i + batchSize < users.length) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
-    this.logger.log(`Broadcast: sent ${sent}, failed ${failed}`);
-    return { sent, failed, total: users.length };
+    return { sent, failed };
   }
 }

@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { DataSource, LessThan, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Subscription, SubscriptionStatus } from './subscription.entity';
 import { VpnService } from '../vpn/vpn.service';
@@ -25,6 +25,7 @@ export class SubscriptionService {
     private readonly planService: PlanService,
     private readonly userService: UserService,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async createSubscription(
@@ -225,30 +226,44 @@ export class SubscriptionService {
     if (!newServer || !newServer.isActive)
       throw new BadRequestException('Сервер недоступен');
 
-    // Удаляем клиента на старом сервере
-    await this.vpnService.deleteClient(sub.server, sub.vpnClientId);
-    await this.serverService.decrementClients(sub.serverId);
-
     const remainingDays = Math.max(1, Math.ceil(remainingMs / 86400000));
-
     const plan = await this.planService.findById(sub.planId);
-
-    // Создаём клиента на новом сервере
     const user = await this.userService.findById(sub.userId);
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    // Create on new server FIRST (safe: if this fails, old connection still works)
     const vpnClient = await this.vpnService.createClient(newServer, {
-      telegramId: user!.telegramId,
+      telegramId: user.telegramId,
       trafficLimitGB: plan?.trafficLimitGB || 0,
       expiryDays: remainingDays,
       maxDevices: plan?.maxDevices || 1,
     });
 
-    sub.serverId = newServer.id;
-    sub.server = newServer;
-    sub.vpnClientId = vpnClient.clientId;
-    sub.vpnClientEmail = vpnClient.email;
-    sub.connectionLink = vpnClient.connectionLink;
-    await this.subRepo.save(sub);
+    // Delete from old server (best effort — client already has new connection)
+    const oldServer = sub.server;
+    const oldVpnClientId = sub.vpnClientId;
+    const oldServerId = sub.serverId;
+
+    await this.dataSource.transaction(async (manager) => {
+      sub.serverId = newServer.id;
+      sub.server = newServer;
+      sub.vpnClientId = vpnClient.clientId;
+      sub.vpnClientEmail = vpnClient.email;
+      sub.connectionLink = vpnClient.connectionLink;
+      await manager.save(sub);
+    });
+
     await this.serverService.incrementClients(newServer.id);
+
+    // Cleanup old server (fire-and-forget, non-critical)
+    try {
+      await this.vpnService.deleteClient(oldServer, oldVpnClientId);
+      await this.serverService.decrementClients(oldServerId);
+    } catch (e) {
+      this.logger.warn(
+        `Не удалось удалить клиента на старом сервере #${oldServerId}: ${e}`,
+      );
+    }
 
     this.logger.log(
       `Подписка #${sub.id} перенесена на сервер #${newServer.id}`,
@@ -306,16 +321,16 @@ export class SubscriptionService {
   async getTrafficWarningSubscriptions(
     thresholdPercent = 80,
   ): Promise<Subscription[]> {
-    const active = await this.subRepo.find({
-      where: { status: SubscriptionStatus.ACTIVE },
-      relations: ['user', 'plan'],
-    });
-
-    return active.filter((sub) => {
-      if (sub.plan.trafficLimitGB <= 0) return false;
-      const usedPct =
-        (Number(sub.trafficUsedGB) / sub.plan.trafficLimitGB) * 100;
-      return usedPct >= thresholdPercent && usedPct < 100;
-    });
+    return this.subRepo
+      .createQueryBuilder('s')
+      .innerJoinAndSelect('s.plan', 'plan')
+      .innerJoinAndSelect('s.user', 'user')
+      .where('s.status = :status', { status: SubscriptionStatus.ACTIVE })
+      .andWhere('plan.trafficLimitGB > 0')
+      .andWhere('s.trafficUsedGB >= plan.trafficLimitGB * :threshold / 100', {
+        threshold: thresholdPercent,
+      })
+      .andWhere('s.trafficUsedGB < plan.trafficLimitGB')
+      .getMany();
   }
 }

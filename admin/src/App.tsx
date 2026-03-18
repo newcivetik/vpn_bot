@@ -14,9 +14,24 @@ import { BroadcastPage } from './pages/BroadcastPage.tsx';
 import { PersonalDiscountsPage } from './pages/PersonalDiscountsPage.tsx';
 import type { ReactNode } from 'react';
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp ? payload.exp * 1000 < Date.now() : false;
+  } catch {
+    return true;
+  }
+}
+
 function PrivateRoute({ children }: { children: ReactNode }) {
   const token = useAuthStore((s) => s.token);
-  if (!token) return <Navigate to="/login" replace />;
+  const logout = useAuthStore((s) => s.logout);
+
+  if (!token || isTokenExpired(token)) {
+    if (token) logout();
+    return <Navigate to="/login" replace />;
+  }
+
   return <Layout>{children}</Layout>;
 }
 

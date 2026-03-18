@@ -90,16 +90,12 @@ export function PaymentPage() {
     };
   }, [planId, navigate, backButton]);
 
-  // Auto-suggest RENEW15 for returning users
+  // Open promo field for returning users (no hardcoded code)
   useEffect(() => {
-    if (subscription && initData) {
+    if (subscription) {
       setShowPromo(true);
-      setPromoCode('RENEW15');
-      api.validatePromo('RENEW15', initData)
-        .then((result) => { if (result.valid) setPromoResult(result); })
-        .catch(() => {});
     }
-  }, [subscription, initData]);
+  }, [subscription]);
 
   const handleValidatePromo = async () => {
     if (!promoCode.trim() || validating) return;
@@ -223,12 +219,28 @@ export function PaymentPage() {
     );
   }
 
-  if (loading || !plan) {
+  if (loading) {
     return (
       <div className="p-4 space-y-4">
         <div className="h-32 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
         <div className="h-16 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
         <div className="h-16 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+      </div>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <div className="p-4 flex flex-col items-center justify-center min-h-[50vh] text-center">
+        <div className="text-4xl mb-4">😕</div>
+        <h2 className="text-lg font-bold text-[#3D2C4E] mb-2">Тариф не найден</h2>
+        <p className="text-sm text-[#6B5A7A] mb-4">Возможно, он был удалён или изменён</p>
+        <button
+          onClick={() => navigate('/plans')}
+          className="px-6 py-2.5 bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] text-white rounded-2xl text-sm font-semibold"
+        >
+          К тарифам
+        </button>
       </div>
     );
   }

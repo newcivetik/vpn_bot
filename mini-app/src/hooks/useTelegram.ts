@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 declare global {
   interface Window {
     Telegram?: {
@@ -59,16 +61,19 @@ interface TelegramWebApp {
 export function useTelegram() {
   const tg = window.Telegram?.WebApp;
 
-  return {
-    tg,
-    user: tg?.initDataUnsafe?.user,
-    initData: tg?.initData || '',
-    colorScheme: tg?.colorScheme || 'light',
-    ready: () => tg?.ready(),
-    expand: () => tg?.expand(),
-    close: () => tg?.close(),
-    haptic: tg?.HapticFeedback,
-    mainButton: tg?.MainButton,
-    backButton: tg?.BackButton,
-  };
+  return useMemo(
+    () => ({
+      tg,
+      user: tg?.initDataUnsafe?.user,
+      initData: tg?.initData || '',
+      colorScheme: tg?.colorScheme || 'light',
+      ready: () => tg?.ready(),
+      expand: () => tg?.expand(),
+      close: () => tg?.close(),
+      haptic: tg?.HapticFeedback,
+      mainButton: tg?.MainButton,
+      backButton: tg?.BackButton,
+    }),
+    [tg],
+  );
 }
