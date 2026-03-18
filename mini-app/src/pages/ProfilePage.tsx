@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award, History, Bell, BellOff } from 'lucide-react';
+import { Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award, History, Bell, BellOff } from 'lucide-react';
 import type { SubscriptionDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
@@ -83,57 +83,69 @@ export function ProfilePage() {
 
   return (
     <div className="p-4 pb-4 space-y-4">
-      {/* Avatar & name */}
-      <div className="flex items-center gap-4 animate-fade-in">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow-purple">
-          <User size={28} className="text-white" />
+      {/* Profile Card */}
+      <div
+        className="bg-gradient-to-br from-[#F0E4FA] to-[#D0EAFF] rounded-[32px] p-8 text-center shadow-[0_8px_32px_rgba(100,60,120,0.10)] animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+        style={{ animationDelay: '0ms' }}
+      >
+        <div className="w-[90px] h-[90px] rounded-full bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] flex items-center justify-center mx-auto mb-4 shadow-[0_6px_24px_rgba(160,130,210,0.3)]">
+          <span className="text-[42px]">🦊</span>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-tg-text">{firstName || 'Пользователь'}</h1>
-          <p className="text-sm text-tg-hint">
-            {subscription ? `Тариф: ${subscription.plan.name}` : 'Нет активной подписки'}
-          </p>
-        </div>
+        <h1 className="text-2xl font-black text-[#3D2C4E]">{firstName || 'Пользователь'}</h1>
+        <p className="text-sm font-semibold text-[#6B5A7A] mt-1">
+          {subscription ? `Тариф: ${subscription.plan.name}` : 'Нет активной подписки'}
+        </p>
+        {subscription && (
+          <div className="inline-block bg-white/50 px-4 py-1.5 rounded-2xl text-xs font-extrabold text-[#3D2C4E] mt-3">
+            {subscription.plan.name}
+          </div>
+        )}
       </div>
 
       {/* Profile completeness */}
       {!subscription && (
-        <div className="bg-gradient-to-br from-brand-purple/5 to-brand-blue/5 rounded-3xl p-4 animate-slide-up">
+        <div
+          className="bg-gradient-to-br from-[#E8D5F5]/20 to-[#BDE0FE]/20 rounded-3xl p-4 animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+          style={{ animationDelay: '80ms' }}
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-tg-text">Профиль</span>
-            <span className="text-xs font-bold text-brand-purple">1 из 3</span>
+            <span className="text-sm font-extrabold text-[#3D2C4E]">Профиль</span>
+            <span className="text-xs font-bold text-[#C9A0F0]">1 из 3</span>
           </div>
-          <div className="h-1.5 bg-tg-secondary rounded-full overflow-hidden">
-            <div className="h-full w-1/3 bg-gradient-primary rounded-full" />
+          <div className="h-1.5 bg-[#E8D5F5]/30 rounded-full overflow-hidden">
+            <div className="h-full w-1/3 bg-gradient-to-r from-[#C9A0F0] to-[#89B8F8] rounded-full" />
           </div>
-          <p className="text-xs text-tg-hint mt-2">Подключи VPN и активируй реферальную программу</p>
+          <p className="text-xs text-[#6B5A7A] mt-2">Подключи VPN и активируй реферальную программу</p>
         </div>
       )}
 
       {/* Subscription info */}
       {subscription && (
-        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
-          <h2 className="text-sm font-bold text-tg-text">Подписка</h2>
+        <div
+          className="bg-white rounded-3xl p-5 space-y-3 shadow-[0_4px_20px_rgba(100,60,120,0.08)] animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+          style={{ animationDelay: '100ms' }}
+        >
+          <h2 className="text-sm font-extrabold text-[#3D2C4E]">Подписка</h2>
 
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-purple/10 flex items-center justify-center">
-              <Calendar size={18} className="text-brand-purple" />
+            <div className="w-9 h-9 rounded-xl bg-[#E8D5F5]/30 flex items-center justify-center">
+              <Calendar size={18} className="text-[#C9A0F0]" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-medium text-tg-text">{daysLeft} дн. осталось</div>
-              <div className="text-xs text-tg-hint">
+              <div className="text-sm font-medium text-[#3D2C4E]">{daysLeft} дн. осталось</div>
+              <div className="text-xs text-[#6B5A7A]">
                 до {new Date(subscription.expiresAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand-blue/10 flex items-center justify-center">
-              <Activity size={18} className="text-brand-blue" />
+            <div className="w-9 h-9 rounded-xl bg-[#BDE0FE]/30 flex items-center justify-center">
+              <Activity size={18} className="text-[#89B8F8]" />
             </div>
             <div className="flex-1">
-              <div className="text-sm font-medium text-tg-text">Трафик: {trafficLabel}</div>
-              <div className="text-xs text-tg-hint">
+              <div className="text-sm font-medium text-[#3D2C4E]">Трафик: {trafficLabel}</div>
+              <div className="text-xs text-[#6B5A7A]">
                 {subscription.plan.trafficLimitGB > 0 ? 'Лимитированный' : 'Безлимитный'}
               </div>
             </div>
@@ -143,39 +155,42 @@ export function ProfilePage() {
 
       {/* Referral card */}
       {profile && (
-        <div className="bg-gradient-to-br from-brand-purple/10 to-brand-blue/10 rounded-3xl p-4 space-y-3 animate-slide-up" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
+        <div
+          className="bg-gradient-to-br from-[#E8D5F5]/20 to-[#BDE0FE]/20 rounded-3xl p-5 space-y-3 shadow-[0_4px_20px_rgba(100,60,120,0.08)] animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+          style={{ animationDelay: '200ms' }}
+        >
           <div className="flex items-center gap-2">
-            <Users size={18} className="text-brand-purple" />
-            <h2 className="text-sm font-bold text-tg-text">Реферальная программа</h2>
+            <Users size={18} className="text-[#C9A0F0]" />
+            <h2 className="text-sm font-extrabold text-[#3D2C4E]">Реферальная программа</h2>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-4 text-sm">
-                <span className="text-tg-hint">Приглашено:</span>
-                <span className="font-bold text-tg-text">{profile.referralCount}</span>
+                <span className="text-[#9B8AAB]">Приглашено:</span>
+                <span className="font-bold text-[#3D2C4E]">{profile.referralCount}</span>
               </div>
               <div className="flex items-center gap-4 text-sm">
-                <span className="text-tg-hint">Бонус дней:</span>
-                <span className="font-bold text-brand-green">{profile.referralBonusDays}</span>
+                <span className="text-[#9B8AAB]">Бонус дней:</span>
+                <span className="font-bold text-[#3D2C4E]">{profile.referralBonusDays}</span>
               </div>
             </div>
-            <Gift size={32} className="text-brand-purple/30" />
+            <Gift size={32} className="text-[#E8D5F5]" />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={handleCopyReferral}
               aria-label="Копировать реферальную ссылку"
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-tg-secondary active:scale-95 transition-transform"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-white border border-[#E8D5F5]/40 active:scale-95 transition-transform"
             >
-              <Copy size={14} className="text-brand-purple" />
-              <span className="text-xs font-medium text-tg-text">Копировать</span>
+              <Copy size={14} className="text-[#C9A0F0]" />
+              <span className="text-xs font-medium text-[#3D2C4E]">Копировать</span>
             </button>
             <button
               onClick={handleShare}
               aria-label="Поделиться реферальной ссылкой"
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-primary active:scale-95 transition-transform"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] active:scale-95 transition-transform"
             >
               <Users size={14} className="text-white" />
               <span className="text-xs font-medium text-white">Поделиться</span>
@@ -186,26 +201,32 @@ export function ProfilePage() {
 
       {/* Loyalty card */}
       {profile?.isReturning && (
-        <div className="bg-gradient-to-br from-brand-amber/10 to-brand-orange/10 rounded-3xl p-4 space-y-2 animate-slide-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
+        <div
+          className="bg-gradient-to-br from-[#FFF8EE] to-[#FFE8CC] rounded-3xl p-5 space-y-2 animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+          style={{ animationDelay: '300ms' }}
+        >
           <div className="flex items-center gap-2">
-            <Award size={18} className="text-brand-amber" />
-            <h2 className="text-sm font-bold text-tg-text">Лояльность</h2>
+            <Award size={18} className="text-[#FFAA80]" />
+            <h2 className="text-sm font-extrabold text-[#3D2C4E]">Лояльность</h2>
           </div>
-          <div className="text-sm text-tg-hint">
-            Всего подписок: <span className="font-bold text-tg-text">{profile.totalSubscriptions}</span>
+          <div className="text-sm text-[#6B5A7A]">
+            Всего подписок: <span className="font-bold text-[#3D2C4E]">{profile.totalSubscriptions}</span>
           </div>
-          <div className="text-xs text-tg-hint">
-            Используй промокод <span className="font-bold text-brand-amber">RENEW15</span> для скидки 15% при продлении
+          <div className="text-xs text-[#6B5A7A]">
+            Используй промокод <span className="font-bold text-[#FFAA80]">RENEW15</span> для скидки 15% при продлении
           </div>
         </div>
       )}
 
       {/* Subscription history */}
       {history.length > 1 && (
-        <div className="bg-tg-secondary rounded-3xl p-4 space-y-3 animate-slide-up" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
+        <div
+          className="bg-white rounded-3xl p-5 space-y-3 shadow-[0_4px_20px_rgba(100,60,120,0.08)] animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+          style={{ animationDelay: '400ms' }}
+        >
           <div className="flex items-center gap-2">
-            <History size={18} className="text-tg-hint" />
-            <h2 className="text-sm font-bold text-tg-text">История подписок</h2>
+            <History size={18} className="text-[#9B8AAB]" />
+            <h2 className="text-sm font-extrabold text-[#3D2C4E]">История подписок</h2>
           </div>
           <div className="space-y-2">
             {history.slice(0, 5).map((sub) => {
@@ -213,10 +234,10 @@ export function ProfilePage() {
               return (
                 <div key={sub.id} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-brand-green animate-pulse-soft' : 'bg-tg-hint'}`} />
-                    <span className="text-tg-text">{sub.plan.name}</span>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-400 animate-pulse' : 'bg-[#9B8AAB]'}`} />
+                    <span className="text-[#3D2C4E]">{sub.plan.name}</span>
                   </div>
-                  <span className="text-xs text-tg-hint">
+                  <span className="text-xs text-[#9B8AAB]">
                     {new Date(sub.expiresAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: '2-digit' })}
                   </span>
                 </div>
@@ -228,7 +249,10 @@ export function ProfilePage() {
 
       {/* Notifications toggle */}
       {profile && (
-        <div className="bg-tg-secondary rounded-3xl p-4 animate-slide-up" style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
+        <div
+          className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgba(100,60,120,0.08)] animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+          style={{ animationDelay: '500ms' }}
+        >
           <button
             role="switch"
             aria-checked={profile.notifyBeforeExpiry}
@@ -246,31 +270,37 @@ export function ProfilePage() {
             }}
             className="w-full flex items-center gap-3 active:opacity-80 transition-opacity"
           >
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${profile.notifyBeforeExpiry ? 'bg-brand-purple/10' : 'bg-tg-hint/10'}`}>
-              {profile.notifyBeforeExpiry ? <Bell size={18} className="text-brand-purple" /> : <BellOff size={18} className="text-tg-hint" />}
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${profile.notifyBeforeExpiry ? 'bg-[#E8D5F5]/30' : 'bg-[#DDD]/30'}`}>
+              {profile.notifyBeforeExpiry ? <Bell size={18} className="text-[#C9A0F0]" /> : <BellOff size={18} className="text-[#9B8AAB]" />}
             </div>
             <div className="flex-1 text-left">
-              <div className="text-sm font-medium text-tg-text">Уведомления</div>
-              <div className="text-xs text-tg-hint">Напоминание об окончании подписки</div>
+              <div className="text-sm font-medium text-[#3D2C4E]">Уведомления</div>
+              <div className="text-xs text-[#6B5A7A]">Напоминание об окончании подписки</div>
             </div>
-            <div className={`w-11 h-[26px] rounded-full transition-colors duration-200 relative ${profile.notifyBeforeExpiry ? 'bg-brand-purple' : 'bg-tg-hint/30'}`}>
-              <div className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200 ${profile.notifyBeforeExpiry ? 'left-[22px]' : 'left-[3px]'}`} />
+            <div className={`w-11 h-[26px] rounded-full transition-all duration-300 relative ${profile.notifyBeforeExpiry ? 'bg-gradient-to-r from-[#C9A0F0] to-[#89B8F8]' : 'bg-[#DDD]'}`}>
+              <div
+                className={`absolute top-[3px] w-5 h-5 rounded-full bg-white shadow-sm ${profile.notifyBeforeExpiry ? 'left-[22px]' : 'left-[3px]'}`}
+                style={{ transition: 'all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+              />
             </div>
           </button>
         </div>
       )}
 
-      {/* Menu */}
-      <div className="space-y-1 animate-slide-up" style={{ animationDelay: '600ms', animationFillMode: 'both' }}>
+      {/* Help menu */}
+      <div
+        className="animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+        style={{ animationDelay: '600ms' }}
+      >
         <button
           onClick={() => navigate('/help')}
-          className="w-full flex items-center gap-3 p-4 bg-tg-secondary rounded-2xl active:opacity-80 transition-all hover:shadow-card hover:-translate-y-0.5"
+          className="w-full flex items-center gap-3 p-4 bg-white rounded-3xl shadow-[0_4px_20px_rgba(100,60,120,0.08)] active:opacity-80 transition-all hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(100,60,120,0.15)]"
         >
-          <div className="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center">
-            <HelpCircle size={18} className="text-brand-green" />
+          <div className="w-9 h-9 rounded-xl bg-[#C1F0DB]/30 flex items-center justify-center">
+            <HelpCircle size={18} className="text-green-500" />
           </div>
-          <span className="flex-1 text-sm font-medium text-tg-text text-left">Как подключиться</span>
-          <ChevronRight size={18} className="text-tg-hint" />
+          <span className="flex-1 text-sm font-medium text-[#3D2C4E] text-left">Как подключиться</span>
+          <ChevronRight size={18} className="text-[#9B8AAB]" />
         </button>
       </div>
     </div>

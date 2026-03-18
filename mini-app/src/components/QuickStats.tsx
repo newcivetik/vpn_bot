@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { Globe } from 'lucide-react';
 import type { SubscriptionDTO } from '../api/client';
 
 interface Props {
@@ -33,7 +32,7 @@ function CircleProgress({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-tg-bg"
+          className="text-white/30"
         />
         <circle
           cx={size / 2}
@@ -68,47 +67,45 @@ export function QuickStats({ subscription }: Props) {
     ? Math.min(100, Math.round((traffic / subscription.plan.trafficLimitGB) * 100))
     : 0;
 
-  const daysUsedPct = Math.min(100, Math.round(
-    ((subscription.plan.durationDays - daysLeft) / subscription.plan.durationDays) * 100
-  ));
-
   const trafficColor = trafficPct > 80 ? '#ef4444' : trafficPct > 50 ? '#f59e0b' : '#3b82f6';
-  const daysColor = daysLeft <= 3 ? '#ef4444' : daysLeft <= 7 ? '#f59e0b' : '#8b5cf6';
   const serverLocation = subscription.server?.location || '—';
 
   return (
-    <div className="grid grid-cols-3 gap-2 animate-slide-up">
+    <div className="grid grid-cols-2 gap-3 animate-slide-up">
       {/* Traffic */}
-      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center transition-all duration-200 hover:shadow-card hover:-translate-y-0.5 cursor-default" aria-label={`Трафик: ${trafficLabel} ГБ`}>
+      <div
+        className="bg-gradient-to-br from-[#FFE8D4] to-[#FFD4B8] rounded-3xl p-5 flex flex-col items-center shadow-[0_8px_32px_rgba(100,60,120,0.10)] transition-all duration-200 hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(100,60,120,0.15)] active:scale-95 cursor-default"
+        aria-label={`Трафик: ${trafficLabel} ГБ`}
+      >
         {hasLimit ? (
           <CircleProgress pct={trafficPct} color={trafficColor}>
-            <span className="text-[10px] font-bold text-tg-text">{trafficPct}%</span>
+            <span className="text-[10px] font-bold text-[#3D2C4E]">{trafficPct}%</span>
           </CircleProgress>
         ) : (
-          <div className="w-12 h-12 rounded-full bg-brand-blue/10 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-brand-blue">&infin;</span>
-          </div>
+          <div className="text-[32px] leading-none mb-1">📊</div>
         )}
-        <div className="text-[11px] font-bold text-tg-text mt-1.5">{trafficLabel}</div>
-        <div className="text-[10px] text-tg-hint">ГБ трафик</div>
+        <div className="text-2xl font-black text-[#3D2C4E] mt-1.5">{trafficLabel}</div>
+        <div className="text-xs font-bold text-[#6B5A7A]">ГБ трафик</div>
       </div>
 
       {/* Days left */}
-      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center transition-all duration-200 hover:shadow-card hover:-translate-y-0.5 cursor-default" aria-label={`Осталось ${daysLeft} дней`}>
-        <CircleProgress pct={daysUsedPct} color={daysColor}>
-          <span className="text-xs font-bold text-tg-text">{daysLeft}</span>
-        </CircleProgress>
-        <div className="text-[11px] font-bold text-tg-text mt-1.5">дн.</div>
-        <div className="text-[10px] text-tg-hint">Осталось</div>
+      <div
+        className="bg-gradient-to-br from-[#FFD0D8] to-[#FFB6C1] rounded-3xl p-5 flex flex-col items-center shadow-[0_8px_32px_rgba(100,60,120,0.10)] transition-all duration-200 hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(100,60,120,0.15)] active:scale-95 cursor-default"
+        aria-label={`Осталось ${daysLeft} дней`}
+      >
+        <div className="text-[32px] leading-none mb-1">📅</div>
+        <div className="text-2xl font-black text-[#3D2C4E] mt-1.5">{daysLeft}</div>
+        <div className="text-xs font-bold text-[#6B5A7A]">дн. осталось</div>
       </div>
 
       {/* Server */}
-      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center justify-center transition-all duration-200 hover:shadow-card hover:-translate-y-0.5 cursor-default" aria-label={`Сервер: ${serverLocation}`}>
-        <div className="w-12 h-12 rounded-full bg-brand-green/10 flex items-center justify-center">
-          <Globe size={20} className="text-brand-green" />
-        </div>
-        <div className="text-[11px] font-bold text-tg-text mt-1.5 truncate max-w-full">{serverLocation}</div>
-        <div className="text-[10px] text-tg-hint">Сервер</div>
+      <div
+        className="col-span-2 bg-gradient-to-br from-[#D0EAFF] to-[#BDE0FE] rounded-3xl p-5 flex flex-col items-center shadow-[0_8px_32px_rgba(100,60,120,0.10)] transition-all duration-200 hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(100,60,120,0.15)] active:scale-95 cursor-default"
+        aria-label={`Сервер: ${serverLocation}`}
+      >
+        <div className="text-[32px] leading-none mb-1">🌐</div>
+        <div className="text-2xl font-black text-[#3D2C4E] mt-1.5 truncate max-w-full">{serverLocation}</div>
+        <div className="text-xs font-bold text-[#6B5A7A]">Сервер</div>
       </div>
     </div>
   );
