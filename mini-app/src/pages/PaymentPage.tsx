@@ -147,7 +147,7 @@ export function PaymentPage() {
         // Fallback: redirect-based payment for mobile WebView
         const { confirmationUrl } = await api.createYokassaPayment(plan.id, initData, validPromo, false);
         if (confirmationUrl) {
-          window.location.href = confirmationUrl;
+          tg?.openLink(confirmationUrl, { try_instant_view: false });
         } else {
           toast('Ошибка: не удалось создать платёж', 'error');
         }
