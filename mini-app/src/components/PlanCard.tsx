@@ -12,6 +12,8 @@ export function PlanCard({ plan, onSelect, popular, current }: Props) {
   const trafficLabel =
     plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ трафика` : 'Безлимитный трафик';
 
+  const pricePerDay = (plan.price / plan.durationDays).toFixed(1);
+
   const features = [
     trafficLabel,
     `${plan.maxDevices} устройств`,
@@ -45,8 +47,9 @@ export function PlanCard({ plan, onSelect, popular, current }: Props) {
           <h3 className="text-lg font-bold text-tg-text">{plan.name}</h3>
           <div className="text-2xl font-bold text-tg-text mt-1">
             {plan.price} ₽
-            <span className="text-sm font-normal text-tg-hint"> / мес</span>
+            <span className="text-sm font-normal text-tg-hint"> / {plan.durationDays} дн.</span>
           </div>
+          <div className="text-xs text-tg-hint mt-0.5">{pricePerDay} ₽/день</div>
         </div>
       </div>
 

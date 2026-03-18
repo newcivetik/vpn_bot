@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../hooks/useTelegram';
-import { ShoppingCart, Key, Smartphone, Plus, Rocket } from 'lucide-react';
+import { ShoppingCart, Key, Smartphone, Plus, Rocket, ExternalLink } from 'lucide-react';
 
 const STEPS = [
   {
@@ -38,7 +38,7 @@ const STEPS = [
 
 export function HelpPage() {
   const navigate = useNavigate();
-  const { backButton } = useTelegram();
+  const { tg, backButton } = useTelegram();
 
   useEffect(() => {
     backButton?.show();
@@ -77,6 +77,27 @@ export function HelpPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Download links */}
+      <div className="bg-tg-secondary rounded-2xl p-4 space-y-2 animate-slide-up">
+        <div className="text-sm text-tg-text font-semibold mb-2">
+          Скачать Hiddify
+        </div>
+        {[
+          { label: '📱 iPhone / iPad', url: 'https://apps.apple.com/app/hiddify-proxy-vpn/id6596777532' },
+          { label: '🤖 Android', url: 'https://play.google.com/store/apps/details?id=app.hiddify.com' },
+          { label: '💻 Windows / Mac / Linux', url: 'https://hiddify.com/app/' },
+        ].map(({ label, url }) => (
+          <button
+            key={url}
+            onClick={() => tg?.openLink(url, { try_instant_view: false })}
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-tg-bg active:opacity-80 transition-opacity"
+          >
+            <span className="text-sm text-tg-text">{label}</span>
+            <ExternalLink size={14} className="text-tg-hint" />
+          </button>
+        ))}
       </div>
 
       <div className="bg-brand-purple/10 rounded-2xl p-4 animate-slide-up">

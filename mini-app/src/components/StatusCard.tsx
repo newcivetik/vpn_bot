@@ -1,4 +1,4 @@
-import { Shield, ShieldOff } from 'lucide-react';
+import { Shield, ShieldOff, AlertTriangle } from 'lucide-react';
 import type { SubscriptionDTO } from '../api/client';
 
 interface Props {
@@ -11,11 +11,20 @@ export function StatusCard({ subscription }: Props) {
     ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / 86400000))
     : 0;
 
+  const isExpiring = isActive && daysLeft <= 3;
+  const isWarning = isActive && daysLeft <= 7 && daysLeft > 3;
+
+  const gradient = !isActive
+    ? 'bg-gradient-to-br from-gray-400 to-gray-500'
+    : isExpiring
+      ? 'bg-gradient-to-br from-brand-red to-brand-orange'
+      : isWarning
+        ? 'bg-gradient-to-br from-brand-amber to-brand-orange'
+        : 'bg-gradient-success';
+
   return (
     <div
-      className={`rounded-3xl p-5 text-white relative overflow-hidden animate-fade-in ${
-        isActive ? 'bg-gradient-success' : 'bg-gradient-to-br from-gray-400 to-gray-500'
-      }`}
+      className={`rounded-3xl p-5 text-white relative overflow-hidden animate-fade-in ${gradient}`}
     >
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-8 translate-x-8" />
@@ -23,13 +32,25 @@ export function StatusCard({ subscription }: Props) {
 
       <div className="relative z-10 flex items-center gap-4">
         <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
-          {isActive ? <Shield size={28} /> : <ShieldOff size={28} />}
+          {!isActive ? (
+            <ShieldOff size={28} />
+          ) : isExpiring ? (
+            <AlertTriangle size={28} />
+          ) : (
+            <Shield size={28} />
+          )}
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-0.5">
-            {isActive && <div className="w-2 h-2 rounded-full bg-white animate-pulse-soft" />}
+            {isActive && (
+              <div className={`w-2 h-2 rounded-full ${isExpiring ? 'bg-white animate-pulse' : 'bg-white animate-pulse-soft'}`} />
+            )}
             <span className="font-bold text-lg">
-              {isActive ? 'Защита активна' : 'Нет подписки'}
+              {!isActive
+                ? 'Нет подписки'
+                : isExpiring
+                  ? 'Подписка истекает!'
+                  : 'Защита активна'}
             </span>
           </div>
           <span className="text-sm text-white/80">
