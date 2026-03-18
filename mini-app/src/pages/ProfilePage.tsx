@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift } from 'lucide-react';
+import { User, Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award } from 'lucide-react';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
 import { api } from '../api/client';
@@ -13,6 +13,8 @@ export function ProfilePage() {
     referralCode: string;
     referralCount: number;
     referralBonusDays: number;
+    isReturning: boolean;
+    totalSubscriptions: number;
   } | null>(null);
 
   useEffect(() => {
@@ -153,6 +155,22 @@ export function ProfilePage() {
               <Users size={14} className="text-white" />
               <span className="text-xs font-medium text-white">Поделиться</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loyalty card */}
+      {profile?.isReturning && (
+        <div className="bg-gradient-to-br from-brand-amber/10 to-brand-orange/10 rounded-3xl p-4 space-y-2 animate-slide-up">
+          <div className="flex items-center gap-2">
+            <Award size={18} className="text-brand-amber" />
+            <h2 className="text-sm font-bold text-tg-text">Лояльность</h2>
+          </div>
+          <div className="text-sm text-tg-hint">
+            Всего подписок: <span className="font-bold text-tg-text">{profile.totalSubscriptions}</span>
+          </div>
+          <div className="text-xs text-tg-hint">
+            Используй промокод <span className="font-bold text-brand-amber">RENEW15</span> для скидки 15% при продлении
           </div>
         </div>
       )}

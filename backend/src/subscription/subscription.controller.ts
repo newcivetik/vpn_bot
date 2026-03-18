@@ -52,7 +52,7 @@ export class SubscriptionController {
     const subscription = await this.subscriptionService.getActiveSubscription(
       user.id,
     );
-    return subscription;
+    return subscription ? this.sanitizeSubscription(subscription) : null;
   }
 
   @Get('subscriptions')
@@ -129,7 +129,16 @@ export class SubscriptionController {
 
   @Get('servers')
   async getServers() {
-    return this.serverService.findAllActive();
+    const servers = await this.serverService.findAllActive();
+    const best = servers[0]; // already sorted by currentClients ASC
+    return servers.map((s) => ({
+      id: s.id,
+      location: s.location,
+      maxClients: s.maxClients,
+      currentClients: s.currentClients,
+      isActive: s.isActive,
+      recommended: s.id === best?.id,
+    }));
   }
 
   @Post('subscription/change-server')
@@ -145,7 +154,7 @@ export class SubscriptionController {
     const updated = await this.subscriptionService.getActiveSubscription(
       user.id,
     );
-    return updated;
+    return updated ? this.sanitizeSubscription(updated) : null;
   }
 
   @Post('validate-promo')
@@ -179,10 +188,32 @@ export class SubscriptionController {
     const code = await this.userService.generateReferralCode(user.id);
     const referralCount = await this.userService.getReferralCount(user.id);
 
+    // Check if user has had any subscriptions (for renewal discount badge)
+    const allSubs = await this.subscriptionService.getAllSubscriptions(user.id);
+    const isReturning = allSubs.length > 0;
+
     return {
       referralCode: code,
       referralCount,
       referralBonusDays: user.referralBonusDays,
+      isReturning,
+      totalSubscriptions: allSubs.length,
+    };
+  }
+
+  private sanitizeSubscription(sub: any) {
+    const { server, ...rest } = sub;
+    return {
+      ...rest,
+      server: server
+        ? {
+            id: server.id,
+            location: server.location,
+            maxClients: server.maxClients,
+            currentClients: server.currentClients,
+            isActive: server.isActive,
+          }
+        : undefined,
     };
   }
 

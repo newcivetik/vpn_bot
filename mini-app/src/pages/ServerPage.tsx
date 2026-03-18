@@ -115,6 +115,11 @@ export function ServerPage() {
                       Текущий
                     </span>
                   )}
+                  {server.recommended && !isCurrent && (
+                    <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-full">
+                      Лучший
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <div className="flex-1 h-1.5 bg-tg-secondary rounded-full overflow-hidden">

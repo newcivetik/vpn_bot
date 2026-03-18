@@ -51,6 +51,7 @@ export interface ServerDTO {
   maxClients: number;
   currentClients: number;
   isActive: boolean;
+  recommended?: boolean;
 }
 
 export const api = {
@@ -79,11 +80,15 @@ export const api = {
     }),
 
   getProfile: (initData: string) =>
-    request<{ referralCode: string; referralCount: number; referralBonusDays: number } | null>(
-      '/profile', {
-        headers: authHeaders(initData),
-      },
-    ),
+    request<{
+      referralCode: string;
+      referralCount: number;
+      referralBonusDays: number;
+      isReturning: boolean;
+      totalSubscriptions: number;
+    } | null>('/profile', {
+      headers: authHeaders(initData),
+    }),
 
   validatePromo: (code: string, initData: string) =>
     request<{ valid: boolean; error?: string; discountPercent?: number; bonusDays?: number }>(
