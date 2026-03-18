@@ -75,9 +75,12 @@ export class SubscriptionController {
 
   @Post('create-invoice')
   async createInvoice(
-    @Body() body: { planId: number; initData: string; promoCode?: string },
+    @Headers('x-init-data') headerInitData: string,
+    @Body() body: { planId: number; initData?: string; promoCode?: string },
   ) {
-    const telegramUser = this.validateAndExtractUser(body.initData);
+    const telegramUser = this.validateAndExtractUser(
+      headerInitData || body.initData || '',
+    );
     const plan = await this.planService.findById(body.planId);
     if (!plan) throw new UnauthorizedException('Тариф не найден');
 
@@ -109,15 +112,18 @@ export class SubscriptionController {
 
   @Post('create-yokassa-payment')
   async createYokassaPayment(
+    @Headers('x-init-data') headerInitData: string,
     @Body()
     body: {
       planId: number;
-      initData: string;
+      initData?: string;
       promoCode?: string;
       embedded?: boolean;
     },
   ) {
-    const telegramUser = this.validateAndExtractUser(body.initData);
+    const telegramUser = this.validateAndExtractUser(
+      headerInitData || body.initData || '',
+    );
     const plan = await this.planService.findById(body.planId);
     if (!plan) throw new UnauthorizedException('Тариф не найден');
 
@@ -158,8 +164,13 @@ export class SubscriptionController {
   }
 
   @Post('subscription/change-server')
-  async changeServer(@Body() body: { serverId: number; initData: string }) {
-    const telegramUser = this.validateAndExtractUser(body.initData);
+  async changeServer(
+    @Headers('x-init-data') headerInitData: string,
+    @Body() body: { serverId: number; initData?: string },
+  ) {
+    const telegramUser = this.validateAndExtractUser(
+      headerInitData || body.initData || '',
+    );
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) throw new UnauthorizedException('Пользователь не найден');
 
@@ -174,8 +185,13 @@ export class SubscriptionController {
   }
 
   @Post('validate-promo')
-  async validatePromo(@Body() body: { code: string; initData: string }) {
-    const telegramUser = this.validateAndExtractUser(body.initData);
+  async validatePromo(
+    @Headers('x-init-data') headerInitData: string,
+    @Body() body: { code: string; initData?: string },
+  ) {
+    const telegramUser = this.validateAndExtractUser(
+      headerInitData || body.initData || '',
+    );
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) throw new UnauthorizedException('Пользователь не найден');
 
@@ -220,9 +236,12 @@ export class SubscriptionController {
 
   @Post('profile/notifications')
   async toggleNotifications(
-    @Body() body: { enabled: boolean; initData: string },
+    @Headers('x-init-data') headerInitData: string,
+    @Body() body: { enabled: boolean; initData?: string },
   ) {
-    const telegramUser = this.validateAndExtractUser(body.initData);
+    const telegramUser = this.validateAndExtractUser(
+      headerInitData || body.initData || '',
+    );
     const user = await this.userService.findByTelegramId(telegramUser.id);
     if (!user) throw new UnauthorizedException('Пользователь не найден');
 
