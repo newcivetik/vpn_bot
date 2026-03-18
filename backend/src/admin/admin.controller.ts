@@ -30,6 +30,8 @@ import {
   BroadcastDto,
   SubscriptionFilterQuery,
   PaymentFilterQuery,
+  CreatePersonalDiscountDto,
+  PersonalDiscountFilterQuery,
 } from './admin.dto';
 
 @Controller('api/admin')
@@ -237,6 +239,30 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   deletePromo(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deletePromo(id);
+  }
+
+  // ─── Personal Discounts ──────────────────────────────
+
+  @Get('personal-discounts')
+  @UseGuards(AdminAuthGuard)
+  getPersonalDiscounts(@Query() query: PersonalDiscountFilterQuery) {
+    return this.adminService.getPersonalDiscounts(
+      query.page || 1,
+      query.limit || 20,
+      query.userId,
+    );
+  }
+
+  @Post('personal-discounts')
+  @UseGuards(AdminAuthGuard)
+  createPersonalDiscount(@Body() dto: CreatePersonalDiscountDto) {
+    return this.adminService.createPersonalDiscount(dto);
+  }
+
+  @Delete('personal-discounts/:id')
+  @UseGuards(AdminAuthGuard)
+  deletePersonalDiscount(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deletePersonalDiscount(id);
   }
 
   // ─── Broadcast ────────────────────────────────────────

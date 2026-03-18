@@ -225,6 +225,28 @@ export class SubscriptionController {
     return { notifyBeforeExpiry: body.enabled };
   }
 
+  @Get('personal-discount')
+  async getPersonalDiscount(
+    @Headers('x-init-data') headerInitData: string,
+    @Query('initData') queryInitData: string,
+  ) {
+    const initData = headerInitData || queryInitData;
+    const telegramUser = this.validateAndExtractUser(initData);
+    const user = await this.userService.findByTelegramId(telegramUser.id);
+    if (!user) return null;
+
+    const discount = await this.promoService.getActiveDiscount(user.id);
+    if (!discount) return null;
+
+    return {
+      id: discount.id,
+      discountPercent: discount.discountPercent,
+      bonusDays: discount.bonusDays,
+      reason: discount.reason,
+      expiresAt: discount.expiresAt,
+    };
+  }
+
   private sanitizeSubscription(sub: any) {
     const { server, ...rest } = sub;
     return {

@@ -61,6 +61,9 @@ export class Payment {
   @Column({ nullable: true, comment: 'ID использованного промокода' })
   promoCodeId: number;
 
+  @Column({ nullable: true, comment: 'ID персональной скидки' })
+  personalDiscountId: number;
+
   @CreateDateColumn()
   createdAt: Date;
 }

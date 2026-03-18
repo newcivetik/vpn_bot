@@ -27,9 +27,22 @@ export class CronService {
     }
     this.deactivating = true;
     try {
-      const count = await this.subscriptionService.deactivateExpired();
+      const { count, deactivated } =
+        await this.subscriptionService.deactivateExpired();
       if (count > 0) {
         this.logger.log(`Деактивировано ${count} истёкших подписок`);
+        for (const sub of deactivated) {
+          try {
+            await this.botService.sendNotification(
+              sub.userId,
+              messages.subscriptionExpired(sub.planName),
+            );
+          } catch (e) {
+            this.logger.error(
+              `Ошибка уведомления об истечении (tg=${sub.userId}): ${e}`,
+            );
+          }
+        }
       }
     } catch (e) {
       this.logger.error(`Ошибка деактивации: ${e}`);
@@ -46,8 +59,7 @@ export class CronService {
     }
     this.syncing = true;
     try {
-      const { synced, disabled } =
-        await this.subscriptionService.syncTraffic();
+      const { synced, disabled } = await this.subscriptionService.syncTraffic();
       if (disabled > 0) {
         this.logger.warn(
           `Трафик: синхронизировано ${synced}, отключено по лимиту ${disabled}`,

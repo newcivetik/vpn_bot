@@ -1,4 +1,13 @@
-import { IsString, IsInt, IsOptional, IsBoolean, Min, Max, IsDateString, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsOptional,
+  IsBoolean,
+  Min,
+  Max,
+  IsDateString,
+  MinLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class LoginDto {
@@ -260,6 +269,37 @@ export class BroadcastDto {
   @IsOptional()
   @IsBoolean()
   onlyActive?: boolean = false;
+}
+
+export class CreatePersonalDiscountDto {
+  @IsInt()
+  userId: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number = 0;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  bonusDays?: number = 0;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expiresAt?: string;
+}
+
+export class PersonalDiscountFilterQuery extends PaginationQuery {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  userId?: number;
 }
 
 export class SubscriptionFilterQuery extends PaginationQuery {

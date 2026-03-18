@@ -9,7 +9,14 @@ import { ServerModule } from '../server/server.module';
 import { PromoModule } from '../promo/promo.module';
 
 @Module({
-  imports: [UserModule, PlanModule, forwardRef(() => SubscriptionModule), PaymentModule, ServerModule, PromoModule],
+  imports: [
+    UserModule,
+    PlanModule,
+    forwardRef(() => SubscriptionModule),
+    forwardRef(() => PaymentModule),
+    ServerModule,
+    PromoModule,
+  ],
   providers: [BotService],
   controllers: [BotController],
   exports: [BotService],

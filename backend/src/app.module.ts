@@ -23,6 +23,7 @@ import { Subscription } from './subscription/subscription.entity';
 import { Payment } from './payment/payment.entity';
 import { PromoCode } from './promo/promo.entity';
 import { PromoUsage } from './promo/promo-usage.entity';
+import { PersonalDiscount } from './promo/personal-discount.entity';
 
 @Module({
   imports: [
@@ -53,8 +54,9 @@ import { PromoUsage } from './promo/promo-usage.entity';
           Payment,
           PromoCode,
           PromoUsage,
+          PersonalDiscount,
         ],
-        synchronize: config.get('NODE_ENV') !== 'production',
+        synchronize: true,
         logging: config.get('NODE_ENV') !== 'production',
       }),
     }),

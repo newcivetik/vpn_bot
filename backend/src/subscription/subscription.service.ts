@@ -99,16 +99,20 @@ export class SubscriptionService {
     });
   }
 
-  async deactivateExpired(): Promise<number> {
+  async deactivateExpired(): Promise<{
+    count: number;
+    deactivated: { userId: number; planName: string }[];
+  }> {
     const expired = await this.subRepo.find({
       where: {
         status: SubscriptionStatus.ACTIVE,
         expiresAt: LessThan(new Date()),
       },
-      relations: ['server'],
+      relations: ['server', 'user', 'plan'],
     });
 
     let count = 0;
+    const deactivated: { userId: number; planName: string }[] = [];
     const batchSize = 5;
     for (let i = 0; i < expired.length; i += batchSize) {
       const batch = expired.slice(i, i + batchSize);
@@ -124,6 +128,10 @@ export class SubscriptionService {
             sub.status = SubscriptionStatus.EXPIRED;
             await this.subRepo.save(sub);
             await this.serverService.decrementClients(sub.serverId);
+            deactivated.push({
+              userId: sub.user.telegramId,
+              planName: sub.plan.name,
+            });
             this.logger.log(`Подписка #${sub.id} истекла`);
             count++;
           } catch (e) {
@@ -133,7 +141,7 @@ export class SubscriptionService {
       );
     }
 
-    return count;
+    return { count, deactivated };
   }
 
   async syncTraffic(): Promise<{ synced: number; disabled: number }> {

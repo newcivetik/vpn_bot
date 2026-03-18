@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { PromoCode } from './promo.entity';
 import { PromoUsage } from './promo-usage.entity';
+import { PersonalDiscount } from './personal-discount.entity';
 
 @Injectable()
 export class PromoService implements OnModuleInit {
@@ -18,6 +19,8 @@ export class PromoService implements OnModuleInit {
     private readonly promoRepo: Repository<PromoCode>,
     @InjectRepository(PromoUsage)
     private readonly usageRepo: Repository<PromoUsage>,
+    @InjectRepository(PersonalDiscount)
+    private readonly personalDiscountRepo: Repository<PersonalDiscount>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -101,5 +104,65 @@ export class PromoService implements OnModuleInit {
 
   async findByCode(code: string): Promise<PromoCode | null> {
     return this.promoRepo.findOne({ where: { code: code.toUpperCase() } });
+  }
+
+  // ─── Personal Discounts ─────────────────────────────
+
+  async createPersonalDiscount(
+    userId: number,
+    discountPercent: number,
+    bonusDays: number,
+    reason?: string,
+    expiresAt?: Date,
+  ): Promise<PersonalDiscount> {
+    const discount = this.personalDiscountRepo.create({
+      userId,
+      discountPercent,
+      bonusDays,
+      reason,
+      expiresAt,
+    });
+    return this.personalDiscountRepo.save(discount);
+  }
+
+  async getActiveDiscount(userId: number): Promise<PersonalDiscount | null> {
+    const discount = await this.personalDiscountRepo.findOne({
+      where: { userId, isUsed: false },
+      order: { createdAt: 'DESC' },
+    });
+    if (!discount) return null;
+    if (discount.expiresAt && new Date(discount.expiresAt) < new Date())
+      return null;
+    return discount;
+  }
+
+  async applyPersonalDiscount(discountId: number): Promise<void> {
+    await this.personalDiscountRepo.update(discountId, {
+      isUsed: true,
+      usedAt: new Date(),
+    });
+  }
+
+  async getPersonalDiscounts(
+    page: number,
+    limit: number,
+    userId?: number,
+  ): Promise<{ data: PersonalDiscount[]; total: number }> {
+    const where: any = {};
+    if (userId) where.userId = userId;
+
+    const [data, total] = await this.personalDiscountRepo.findAndCount({
+      where,
+      relations: ['user'],
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return { data, total };
+  }
+
+  async deletePersonalDiscount(id: number): Promise<void> {
+    await this.personalDiscountRepo.delete(id);
   }
 }

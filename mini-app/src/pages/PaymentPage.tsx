@@ -32,6 +32,15 @@ export function PaymentPage() {
   const { subscription } = useUserStore();
   const widgetRef = useRef<{ destroy: () => void } | null>(null);
 
+  // Personal discount
+  const [personalDiscount, setPersonalDiscount] = useState<{
+    id: number;
+    discountPercent: number;
+    bonusDays: number;
+    reason?: string;
+    expiresAt?: string;
+  } | null>(null);
+
   // Promo state
   const [showPromo, setShowPromo] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -67,6 +76,12 @@ export function PaymentPage() {
       console.error('Failed to load plans:', e);
       setLoading(false);
     });
+
+    if (initData) {
+      api.getPersonalDiscount(initData)
+        .then((d) => setPersonalDiscount(d))
+        .catch(() => {});
+    }
 
     return () => {
       backButton?.offClick(goBack);
@@ -234,7 +249,10 @@ export function PaymentPage() {
   const trafficLabel =
     plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : 'Безлимит';
 
-  const discount = promoResult?.valid ? promoResult.discountPercent || 0 : 0;
+  // Personal discount takes priority over promo
+  const pdDiscount = personalDiscount?.discountPercent || 0;
+  const promoDiscount = promoResult?.valid ? promoResult.discountPercent || 0 : 0;
+  const discount = pdDiscount > 0 ? pdDiscount : promoDiscount;
   const discountedPrice = discount > 0 ? Math.round(plan.price * (1 - discount / 100)) : plan.price;
 
   return (
@@ -256,6 +274,24 @@ export function PaymentPage() {
           <div className="text-sm text-white/80 mt-1">Скидка {discount}%</div>
         )}
       </div>
+
+      {/* Personal discount badge */}
+      {personalDiscount && personalDiscount.discountPercent > 0 && (
+        <div className="bg-gradient-to-r from-[#C1F0DB] to-[#A8E6CF] rounded-3xl p-4 animate-bounce-in" style={{ animationDelay: '50ms' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🎁</span>
+            <span className="font-bold text-[#2D8B5E] text-sm">Персональная скидка {personalDiscount.discountPercent}%</span>
+          </div>
+          {personalDiscount.reason && (
+            <div className="text-xs text-[#2D8B5E]/80">{personalDiscount.reason}</div>
+          )}
+          {personalDiscount.expiresAt && (
+            <div className="text-xs text-[#2D8B5E]/60 mt-1">
+              До {new Date(personalDiscount.expiresAt).toLocaleDateString('ru-RU')}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Promo code */}
       <div className="space-y-2 animate-bounce-in" style={{ animationDelay: '60ms' }}>

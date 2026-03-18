@@ -180,6 +180,33 @@ export const messages = {
     `🚫 Лимит трафика исчерпан\n\n` +
     `Подписка «${planName}» отключена.\n\n` +
     `Оформи новую подписку, чтобы продолжить 👇`,
+
+  subscriptionExpired: (planName: string) =>
+    `😔 Подписка «${planName}» истекла\n\n` +
+    `VPN отключён. Продли подписку, чтобы вернуть доступ!\n\n` +
+    `💰 Используй промокод RENEW15 для скидки 15% 🎁`,
+
+  paymentSuccessNotification: (planName: string, expiresDate: string) =>
+    `✅ Оплата прошла!\n\n` +
+    `🛡 Тариф: ${planName}\n` +
+    `📅 Активна до: ${expiresDate}\n\n` +
+    `Подключение готово — наслаждайся VPN! 🚀`,
+
+  personalDiscountNotification: (
+    discountPercent: number,
+    bonusDays: number,
+    reason?: string,
+    expiresDate?: string,
+  ) => {
+    let text = `🎁 Персональное предложение!\n\n`;
+    if (discountPercent > 0)
+      text += `💰 Скидка ${discountPercent}% на следующую подписку\n`;
+    if (bonusDays > 0) text += `📅 +${bonusDays} бонусных дней\n`;
+    if (reason) text += `\n💬 ${reason}\n`;
+    if (expiresDate) text += `\n⏳ Действует до: ${expiresDate}`;
+    text += `\n\nОткрой приложение и оформи подписку! 👇`;
+    return text;
+  },
 };
 
 const LOCATION_FLAGS: Record<string, string> = {

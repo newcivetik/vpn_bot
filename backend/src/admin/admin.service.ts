@@ -23,6 +23,8 @@ import { PromoCode } from '../promo/promo.entity';
 import { VpnService } from '../vpn/vpn.service';
 import { BotService } from '../bot/bot.service';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { PromoService } from '../promo/promo.service';
+import { messages } from '../bot/bot.messages';
 
 @Injectable()
 export class AdminService {
@@ -41,6 +43,7 @@ export class AdminService {
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly promoService: PromoService,
   ) {}
 
   // ─── Dashboard ─────────────────────────────────────────
@@ -455,6 +458,58 @@ export class AdminService {
 
   async deletePromo(id: number) {
     await this.promoRepo.update(id, { isActive: false });
+  }
+
+  // ─── Personal Discounts ──────────────────────────────
+
+  async getPersonalDiscounts(page: number, limit: number, userId?: number) {
+    return this.promoService.getPersonalDiscounts(page, limit, userId);
+  }
+
+  async createPersonalDiscount(dto: {
+    userId: number;
+    discountPercent?: number;
+    bonusDays?: number;
+    reason?: string;
+    expiresAt?: string;
+  }) {
+    const user = await this.userRepo.findOne({ where: { id: dto.userId } });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const discount = await this.promoService.createPersonalDiscount(
+      dto.userId,
+      dto.discountPercent || 0,
+      dto.bonusDays || 0,
+      dto.reason,
+      dto.expiresAt ? new Date(dto.expiresAt) : undefined,
+    );
+
+    // Send notification to user
+    try {
+      const expiresDate = dto.expiresAt
+        ? new Date(dto.expiresAt).toLocaleDateString('ru-RU')
+        : undefined;
+      await this.botService.sendNotification(
+        user.telegramId,
+        messages.personalDiscountNotification(
+          dto.discountPercent || 0,
+          dto.bonusDays || 0,
+          dto.reason,
+          expiresDate,
+        ),
+      );
+    } catch (e) {
+      this.logger.error(`Ошибка отправки уведомления о скидке: ${e}`);
+    }
+
+    this.logger.log(
+      `Персональная скидка создана для пользователя #${dto.userId}`,
+    );
+    return discount;
+  }
+
+  async deletePersonalDiscount(id: number) {
+    await this.promoService.deletePersonalDiscount(id);
   }
 
   // ─── Broadcast ────────────────────────────────────────

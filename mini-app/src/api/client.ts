@@ -80,6 +80,15 @@ export const api = {
       body: JSON.stringify({ planId, initData, promoCode, embedded }),
     }),
 
+  getPersonalDiscount: (initData: string) =>
+    request<{
+      id: number;
+      discountPercent: number;
+      bonusDays: number;
+      reason?: string;
+      expiresAt?: string;
+    } | null>(`/personal-discount?initData=${encodeURIComponent(initData)}`),
+
   getProfile: (initData: string) =>
     request<{
       referralCode: string;

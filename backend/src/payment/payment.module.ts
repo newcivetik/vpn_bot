@@ -5,11 +5,13 @@ import { PaymentService } from './payment.service';
 import { PaymentController } from './payment.controller';
 import { SubscriptionModule } from '../subscription/subscription.module';
 import { PromoModule } from '../promo/promo.module';
+import { BotModule } from '../bot/bot.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Payment]),
     forwardRef(() => SubscriptionModule),
+    forwardRef(() => BotModule),
     PromoModule,
   ],
   providers: [PaymentService],

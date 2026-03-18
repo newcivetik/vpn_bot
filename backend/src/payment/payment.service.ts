@@ -1,10 +1,21 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Payment, PaymentMethod, PaymentStatus } from './payment.entity';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { ConfigService } from '@nestjs/config';
 import { PromoService } from '../promo/promo.service';
+import { BotService } from '../bot/bot.service';
+import { messages } from '../bot/bot.messages';
+import { User } from '../user/user.entity';
+import { Plan } from '../plan/plan.entity';
 
 @Injectable()
 export class PaymentService {
@@ -16,6 +27,8 @@ export class PaymentService {
     private readonly subscriptionService: SubscriptionService,
     private readonly configService: ConfigService,
     private readonly promoService: PromoService,
+    @Inject(forwardRef(() => BotService))
+    private readonly botService: BotService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -25,20 +38,8 @@ export class PaymentService {
     amount: number,
     promoCode?: string,
   ): Promise<Payment> {
-    let discountPercent = 0;
-    let promoCodeId: number | undefined;
-    let finalAmount = amount;
-
-    if (promoCode) {
-      const result = await this.promoService.validatePromo(promoCode, userId);
-      if (result.valid && result.promo) {
-        discountPercent = result.promo.discountPercent;
-        promoCodeId = result.promo.id;
-        if (discountPercent > 0) {
-          finalAmount = Math.max(1, Math.round(amount * (1 - discountPercent / 100)));
-        }
-      }
-    }
+    const { discountPercent, promoCodeId, personalDiscountId, finalAmount } =
+      await this.resolveDiscount(userId, amount, promoCode);
 
     const payment = this.paymentRepo.create({
       userId,
@@ -48,6 +49,7 @@ export class PaymentService {
       status: PaymentStatus.PENDING,
       discountPercent,
       promoCodeId,
+      personalDiscountId,
     });
     return this.paymentRepo.save(payment);
   }
@@ -78,8 +80,23 @@ export class PaymentService {
       if (payment.promoCodeId) {
         await this.promoService.applyPromo(payment.promoCodeId, payment.userId);
       }
+      if (payment.personalDiscountId) {
+        await this.promoService.applyPersonalDiscount(
+          payment.personalDiscountId,
+        );
+      }
 
-      this.logger.log(`Оплата Stars #${payment.id} подтверждена, подписка #${subscription.id}`);
+      this.logger.log(
+        `Оплата Stars #${payment.id} подтверждена, подписка #${subscription.id}`,
+      );
+
+      // Send notification outside transaction (fire-and-forget)
+      this.sendPaymentNotification(
+        payment.userId,
+        payment.planId,
+        subscription.id,
+      );
+
       return payment;
     });
   }
@@ -89,7 +106,11 @@ export class PaymentService {
     planId: number,
     amount: number,
     options?: { embedded?: boolean; promoCode?: string },
-  ): Promise<{ payment: Payment; confirmationToken?: string; confirmationUrl?: string }> {
+  ): Promise<{
+    payment: Payment;
+    confirmationToken?: string;
+    confirmationUrl?: string;
+  }> {
     const shopId = this.configService.get<string>('YOKASSA_SHOP_ID');
     const secretKey = this.configService.get<string>('YOKASSA_SECRET_KEY');
     const returnUrl = this.configService.get<string>('YOKASSA_RETURN_URL');
@@ -100,20 +121,8 @@ export class PaymentService {
 
     const embedded = options?.embedded ?? false;
 
-    let discountPercent = 0;
-    let promoCodeId: number | undefined;
-    let finalAmount = amount;
-
-    if (options?.promoCode) {
-      const result = await this.promoService.validatePromo(options.promoCode, userId);
-      if (result.valid && result.promo) {
-        discountPercent = result.promo.discountPercent;
-        promoCodeId = result.promo.id;
-        if (discountPercent > 0) {
-          finalAmount = Math.max(1, Math.round(amount * (1 - discountPercent / 100)));
-        }
-      }
-    }
+    const { discountPercent, promoCodeId, personalDiscountId, finalAmount } =
+      await this.resolveDiscount(userId, amount, options?.promoCode);
 
     const payment = this.paymentRepo.create({
       userId,
@@ -123,6 +132,7 @@ export class PaymentService {
       status: PaymentStatus.PENDING,
       discountPercent,
       promoCodeId,
+      personalDiscountId,
     });
     const saved = await this.paymentRepo.save(payment);
 
@@ -164,7 +174,9 @@ export class PaymentService {
 
     if (!res.ok) {
       this.logger.error(`ЮKassa API ошибка: ${JSON.stringify(yokassaPayment)}`);
-      throw new BadRequestException(`ЮKassa: ${yokassaPayment.description || 'Ошибка создания платежа'}`);
+      throw new BadRequestException(
+        `ЮKassa: ${yokassaPayment.description || 'Ошибка создания платежа'}`,
+      );
     }
 
     saved.externalId = yokassaPayment.id;
@@ -173,14 +185,18 @@ export class PaymentService {
     if (embedded) {
       const confirmationToken = yokassaPayment.confirmation?.confirmation_token;
       if (!confirmationToken) {
-        this.logger.error(`ЮKassa: нет confirmation_token: ${JSON.stringify(yokassaPayment)}`);
+        this.logger.error(
+          `ЮKassa: нет confirmation_token: ${JSON.stringify(yokassaPayment)}`,
+        );
         throw new BadRequestException('ЮKassa: не получен токен оплаты');
       }
       return { payment: saved, confirmationToken };
     } else {
       const confirmationUrl = yokassaPayment.confirmation?.confirmation_url;
       if (!confirmationUrl) {
-        this.logger.error(`ЮKassa: нет confirmation_url: ${JSON.stringify(yokassaPayment)}`);
+        this.logger.error(
+          `ЮKassa: нет confirmation_url: ${JSON.stringify(yokassaPayment)}`,
+        );
         throw new BadRequestException('ЮKassa: не получена ссылка на оплату');
       }
       return { payment: saved, confirmationUrl };
@@ -212,12 +228,95 @@ export class PaymentService {
       if (payment.promoCodeId) {
         await this.promoService.applyPromo(payment.promoCodeId, payment.userId);
       }
+      if (payment.personalDiscountId) {
+        await this.promoService.applyPersonalDiscount(
+          payment.personalDiscountId,
+        );
+      }
 
-      this.logger.log(`Оплата ЮKassa #${payment.id} подтверждена, подписка #${subscription.id}`);
+      this.logger.log(
+        `Оплата ЮKassa #${payment.id} подтверждена, подписка #${subscription.id}`,
+      );
+
+      this.sendPaymentNotification(
+        payment.userId,
+        payment.planId,
+        subscription.id,
+      );
     });
   }
 
   async findById(id: number): Promise<Payment | null> {
     return this.paymentRepo.findOne({ where: { id } });
+  }
+
+  private async sendPaymentNotification(
+    userId: number,
+    planId: number,
+    subscriptionId: number,
+  ): Promise<void> {
+    try {
+      const user = await this.dataSource
+        .getRepository(User)
+        .findOne({ where: { id: userId } });
+      const plan = await this.dataSource
+        .getRepository(Plan)
+        .findOne({ where: { id: planId } });
+      if (!user || !plan) return;
+
+      const sub = await this.subscriptionService.getActiveSubscription(userId);
+      const expiresDate = sub
+        ? new Date(sub.expiresAt).toLocaleDateString('ru-RU')
+        : 'N/A';
+      await this.botService.sendNotification(
+        user.telegramId,
+        messages.paymentSuccessNotification(plan.name, expiresDate),
+      );
+    } catch (e) {
+      this.logger.error(`Ошибка уведомления об оплате: ${e}`);
+    }
+  }
+
+  private async resolveDiscount(
+    userId: number,
+    amount: number,
+    promoCode?: string,
+  ): Promise<{
+    discountPercent: number;
+    promoCodeId?: number;
+    personalDiscountId?: number;
+    finalAmount: number;
+  }> {
+    // Personal discount takes priority over promo code
+    const personalDiscount = await this.promoService.getActiveDiscount(userId);
+    if (personalDiscount && personalDiscount.discountPercent > 0) {
+      const finalAmount = Math.max(
+        1,
+        Math.round(amount * (1 - personalDiscount.discountPercent / 100)),
+      );
+      return {
+        discountPercent: personalDiscount.discountPercent,
+        personalDiscountId: personalDiscount.id,
+        finalAmount,
+      };
+    }
+
+    // Fall back to promo code
+    if (promoCode) {
+      const result = await this.promoService.validatePromo(promoCode, userId);
+      if (result.valid && result.promo && result.promo.discountPercent > 0) {
+        const finalAmount = Math.max(
+          1,
+          Math.round(amount * (1 - result.promo.discountPercent / 100)),
+        );
+        return {
+          discountPercent: result.promo.discountPercent,
+          promoCodeId: result.promo.id,
+          finalAmount,
+        };
+      }
+    }
+
+    return { discountPercent: 0, finalAmount: amount };
   }
 }

@@ -11,9 +11,11 @@ import { Payment } from '../payment/payment.entity';
 import { Plan } from '../plan/plan.entity';
 import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
+import { PersonalDiscount } from '../promo/personal-discount.entity';
 import { VpnModule } from '../vpn/vpn.module';
 import { BotModule } from '../bot/bot.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
+import { PromoModule } from '../promo/promo.module';
 
 @Module({
   imports: [
@@ -25,10 +27,19 @@ import { SubscriptionModule } from '../subscription/subscription.module';
         signOptions: { expiresIn: '24h' },
       }),
     }),
-    TypeOrmModule.forFeature([User, Subscription, Payment, Plan, Server, PromoCode]),
+    TypeOrmModule.forFeature([
+      User,
+      Subscription,
+      Payment,
+      Plan,
+      Server,
+      PromoCode,
+      PersonalDiscount,
+    ]),
     VpnModule,
     forwardRef(() => BotModule),
     forwardRef(() => SubscriptionModule),
+    PromoModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, AdminAuthGuard],
