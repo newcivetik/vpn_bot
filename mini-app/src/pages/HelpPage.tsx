@@ -70,14 +70,20 @@ export function HelpPage() {
                 <Icon size={20} className="text-white" />
               </div>
               <div>
-                <div className="font-semibold text-tg-text text-sm">
-                  {i + 1}. {step.title}
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[10px] font-mono text-tg-hint">0{i + 1}</span>
+                  <span className="font-semibold text-tg-text text-sm">{step.title}</span>
                 </div>
                 <div className="text-sm text-tg-hint mt-0.5">{step.text}</div>
               </div>
             </div>
           );
         })}
+
+        {/* Completion */}
+        <div className="text-center py-4 animate-fade-in" style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
+          <p className="text-sm text-tg-hint">Готово за 2 минуты</p>
+        </div>
       </div>
 
       {/* Download links */}
@@ -93,7 +99,8 @@ export function HelpPage() {
           <button
             key={url}
             onClick={() => tg?.openLink(url, { try_instant_view: false })}
-            className="w-full flex items-center justify-between p-3 rounded-xl bg-tg-bg active:opacity-80 transition-opacity"
+            aria-label={`Скачать Hiddify для ${label}`}
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-tg-bg active:opacity-80 transition-all hover:bg-tg-hint/5"
           >
             <span className="text-sm text-tg-text">{label}</span>
             <ExternalLink size={14} className="text-tg-hint" />

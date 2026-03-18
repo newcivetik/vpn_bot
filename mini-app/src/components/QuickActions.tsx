@@ -61,20 +61,22 @@ export function QuickActions({ connectionLink, onShowQR }: Props) {
 
   return (
     <div className="grid grid-cols-2 gap-2 animate-slide-up">
-      {actions.map(({ icon: Icon, label, color, onClick, disabled }) => (
-        <button
-          key={label}
-          onClick={onClick}
-          disabled={disabled}
-          className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl bg-tg-secondary active:scale-95 transition-transform ${
-            disabled ? 'opacity-40' : ''
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
-            <Icon size={20} className="text-white" />
-          </div>
-          <span className="text-xs font-medium text-tg-text">{label}</span>
-        </button>
+      {actions.map(({ icon: Icon, label, color, onClick, disabled }, i) => (
+        <div key={label} className="animate-scale-in" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
+          <button
+            onClick={onClick}
+            disabled={disabled}
+            aria-label={label}
+            className={`w-full flex flex-col items-center gap-1.5 p-4 rounded-2xl bg-tg-secondary active:scale-95 transition-all duration-200 hover:shadow-card hover:-translate-y-0.5 ${
+              disabled ? 'opacity-40 cursor-not-allowed' : ''
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
+              <Icon size={20} className="text-white" />
+            </div>
+            <span className="text-xs font-medium text-tg-text">{label}</span>
+          </button>
+        </div>
       ))}
     </div>
   );

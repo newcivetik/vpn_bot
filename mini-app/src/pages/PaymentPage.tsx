@@ -5,6 +5,7 @@ import type { PlanDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
 import { Star, CreditCard, ArrowLeft, Tag, Check, X, CheckCircle } from 'lucide-react';
+import { toast } from '../components/Toast';
 
 declare global {
   interface Window {
@@ -67,7 +68,15 @@ export function PaymentPage() {
       setLoading(false);
     });
 
-    // Auto-suggest RENEW15 for returning users
+    return () => {
+      backButton?.offClick(goBack);
+      backButton?.hide();
+      widgetRef.current?.destroy();
+    };
+  }, [planId, navigate, backButton]);
+
+  // Auto-suggest RENEW15 for returning users
+  useEffect(() => {
     if (subscription && initData) {
       setShowPromo(true);
       setPromoCode('RENEW15');
@@ -75,13 +84,7 @@ export function PaymentPage() {
         .then((result) => { if (result.valid) setPromoResult(result); })
         .catch(() => {});
     }
-
-    return () => {
-      backButton?.offClick(goBack);
-      backButton?.hide();
-      widgetRef.current?.destroy();
-    };
-  }, [planId, navigate, backButton]);
+  }, [subscription, initData]);
 
   const handleValidatePromo = async () => {
     if (!promoCode.trim() || validating) return;
@@ -134,7 +137,7 @@ export function PaymentPage() {
           console.error('YooKassa widget error:', error);
           setShowWidget(false);
           setPaying(false);
-          alert('Ошибка оплаты. Попробуйте позже.');
+          toast('Ошибка оплаты. Попробуйте позже', 'error');
         },
       });
 
@@ -143,7 +146,7 @@ export function PaymentPage() {
     } catch (err) {
       console.error('YooKassa payment error:', err);
       setShowWidget(false);
-      alert('Ошибка создания платежа. Попробуйте позже или выберите оплату Stars.');
+      toast('Ошибка создания платежа', 'error');
     } finally {
       setPaying(false);
     }
@@ -151,12 +154,27 @@ export function PaymentPage() {
 
   if (paymentSuccess) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in text-center">
-        <div className="w-20 h-20 rounded-full bg-brand-green/10 flex items-center justify-center mb-4 animate-bounce">
-          <CheckCircle size={40} className="text-brand-green" />
+      <div className="p-4 flex flex-col items-center justify-center min-h-[70vh] animate-fade-in text-center">
+        {/* Animated success circle */}
+        <div className="relative mb-6">
+          <div className="w-24 h-24 rounded-full bg-brand-green/10 flex items-center justify-center animate-bounce-in">
+            <CheckCircle size={48} className="text-brand-green" />
+          </div>
+          {/* Decorative rings */}
+          <div className="absolute inset-0 w-24 h-24 rounded-full border-2 border-brand-green/20 animate-ping" />
         </div>
-        <h2 className="text-xl font-bold text-tg-text mb-2">Оплата прошла!</h2>
-        <p className="text-sm text-tg-hint">VPN подключение активировано</p>
+
+        <h2 className="text-2xl font-bold text-tg-text mb-2">Оплата прошла!</h2>
+        <p className="text-sm text-tg-hint mb-1">VPN подключение активировано</p>
+        <p className="text-xs text-tg-hint mb-6">Перенаправление на главную...</p>
+
+        {/* Progress bar */}
+        <div className="w-32 h-1 bg-tg-secondary rounded-full overflow-hidden">
+          <div
+            className="h-full bg-brand-green rounded-full transition-all duration-[2500ms] ease-linear"
+            style={{ width: '100%' }}
+          />
+        </div>
       </div>
     );
   }
@@ -215,13 +233,14 @@ export function PaymentPage() {
         {!showPromo ? (
           <button
             onClick={() => setShowPromo(true)}
-            className="flex items-center gap-2 text-sm text-tg-link px-1"
+            className="flex items-center gap-2 text-sm text-tg-link px-3 py-2.5 -mx-2"
           >
             <Tag size={14} />
             Есть промокод?
           </button>
         ) : (
           <div className="bg-tg-secondary rounded-2xl p-3">
+            <div className="text-xs font-medium text-tg-hint mb-1.5">Промокод</div>
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -233,6 +252,7 @@ export function PaymentPage() {
                 placeholder="Введи промокод"
                 className="flex-1 bg-transparent text-tg-text text-sm outline-none placeholder:text-tg-hint"
                 maxLength={32}
+                autoFocus
               />
               <button
                 onClick={handleValidatePromo}
@@ -256,6 +276,14 @@ export function PaymentPage() {
 
       {/* Payment methods */}
       <div className="space-y-3">
+        <div className="flex items-center gap-2 px-1 mb-1">
+          <div className="flex gap-1">
+            <div className="w-2 h-2 rounded-full bg-brand-purple" />
+            <div className="w-2 h-2 rounded-full bg-brand-purple" />
+            <div className="w-2 h-2 rounded-full bg-brand-purple/30" />
+          </div>
+          <span className="text-xs text-tg-hint">Шаг 2 из 3</span>
+        </div>
         <h3 className="text-sm font-semibold text-tg-hint px-1">
           Способ оплаты
         </h3>
@@ -263,7 +291,7 @@ export function PaymentPage() {
         <button
           onClick={handleStars}
           disabled={paying}
-          className="w-full flex items-center gap-4 p-4 bg-tg-secondary rounded-2xl active:scale-[0.98] transition-transform text-left"
+          className={`w-full flex items-center gap-4 p-4 bg-tg-secondary rounded-2xl active:scale-[0.98] transition-all text-left hover:shadow-card hover:-translate-y-0.5 ${paying ? 'opacity-50' : ''}`}
         >
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
             <Star size={22} className="text-white" />
@@ -278,7 +306,7 @@ export function PaymentPage() {
         <button
           onClick={handleYokassa}
           disabled={paying}
-          className="w-full flex items-center gap-4 p-4 bg-tg-secondary rounded-2xl active:scale-[0.98] transition-transform text-left"
+          className={`w-full flex items-center gap-4 p-4 bg-tg-secondary rounded-2xl active:scale-[0.98] transition-all text-left hover:shadow-card hover:-translate-y-0.5 ${paying ? 'opacity-50' : ''}`}
         >
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-blue to-brand-purple flex items-center justify-center">
             <CreditCard size={22} className="text-white" />

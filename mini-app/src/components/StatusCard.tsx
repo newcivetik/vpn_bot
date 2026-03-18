@@ -33,11 +33,16 @@ export function StatusCard({ subscription }: Props) {
 
   return (
     <div
+      role="status"
+      aria-label={isActive ? `VPN активен, ${daysLeft} дней осталось` : 'VPN не активен'}
       className={`rounded-3xl p-5 text-white relative overflow-hidden animate-fade-in ${gradient}`}
     >
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-white/10 -translate-y-8 translate-x-8" />
       <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-white/5 translate-y-6 -translate-x-6" />
+      {isActive && (
+        <div className="absolute top-1/2 right-1/4 w-16 h-16 rounded-full bg-white/5 animate-pulse-soft" />
+      )}
 
       <div className="relative z-10 flex items-center gap-4">
         <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">
@@ -52,7 +57,7 @@ export function StatusCard({ subscription }: Props) {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-0.5">
             {isActive && (
-              <div className={`w-2 h-2 rounded-full ${isExpiring ? 'bg-white animate-pulse' : 'bg-white animate-pulse-soft'}`} />
+              <div className={`w-2 h-2 rounded-full ${isExpiring ? 'bg-white animate-pulse' : 'bg-green-300 animate-pulse-soft'}`} />
             )}
             <span className="font-bold text-lg">
               {!isActive

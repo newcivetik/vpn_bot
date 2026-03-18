@@ -18,7 +18,10 @@ export function QRModal({ connectionLink, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-label="QR-код подключения"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
@@ -29,7 +32,8 @@ export function QRModal({ connectionLink, onClose }: Props) {
           <h3 className="text-lg font-bold text-tg-text">QR-код подключения</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-tg-secondary flex items-center justify-center"
+            aria-label="Закрыть"
+            className="w-11 h-11 rounded-full bg-tg-secondary flex items-center justify-center hover:bg-tg-hint/20 transition-colors"
           >
             <X size={18} className="text-tg-hint" />
           </button>

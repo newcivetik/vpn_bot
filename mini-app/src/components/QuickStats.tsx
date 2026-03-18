@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Globe } from 'lucide-react';
 import type { SubscriptionDTO } from '../api/client';
 
@@ -16,7 +17,7 @@ function CircleProgress({
   color: string;
   size?: number;
   strokeWidth?: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
@@ -24,7 +25,7 @@ function CircleProgress({
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -78,7 +79,7 @@ export function QuickStats({ subscription }: Props) {
   return (
     <div className="grid grid-cols-3 gap-2 animate-slide-up">
       {/* Traffic */}
-      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center">
+      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center transition-all duration-200 hover:shadow-card hover:-translate-y-0.5 cursor-default" aria-label={`Трафик: ${trafficLabel} ГБ`}>
         {hasLimit ? (
           <CircleProgress pct={trafficPct} color={trafficColor}>
             <span className="text-[10px] font-bold text-tg-text">{trafficPct}%</span>
@@ -93,7 +94,7 @@ export function QuickStats({ subscription }: Props) {
       </div>
 
       {/* Days left */}
-      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center">
+      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center transition-all duration-200 hover:shadow-card hover:-translate-y-0.5 cursor-default" aria-label={`Осталось ${daysLeft} дней`}>
         <CircleProgress pct={daysUsedPct} color={daysColor}>
           <span className="text-xs font-bold text-tg-text">{daysLeft}</span>
         </CircleProgress>
@@ -102,7 +103,7 @@ export function QuickStats({ subscription }: Props) {
       </div>
 
       {/* Server */}
-      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center justify-center">
+      <div className="bg-tg-secondary rounded-2xl p-3 flex flex-col items-center justify-center transition-all duration-200 hover:shadow-card hover:-translate-y-0.5 cursor-default" aria-label={`Сервер: ${serverLocation}`}>
         <div className="w-12 h-12 rounded-full bg-brand-green/10 flex items-center justify-center">
           <Globe size={20} className="text-brand-green" />
         </div>

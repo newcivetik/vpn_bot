@@ -24,7 +24,7 @@ export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props
 
   return (
     <div
-      className={`relative rounded-3xl p-5 border-2 transition-all ${
+      className={`relative rounded-3xl p-5 border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover ${
         popular
           ? 'border-brand-purple bg-brand-purple/5 shadow-glow'
           : current
@@ -33,7 +33,7 @@ export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props
       }`}
     >
       {popular && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-primary text-white text-xs font-bold px-4 py-1 rounded-full">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-primary text-white text-xs font-bold px-4 py-1 rounded-full shadow-glow-purple">
           Популярный
         </span>
       )}
@@ -53,7 +53,7 @@ export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props
           <div className="text-xs text-tg-hint mt-0.5">{pricePerDay} ₽/день</div>
         </div>
         {!!savingsPct && savingsPct > 0 && (
-          <span className="text-xs font-bold text-brand-green bg-brand-green/10 px-2.5 py-1 rounded-full">
+          <span className="text-xs font-bold text-brand-green bg-brand-green/10 px-2.5 py-1 rounded-full animate-scale-in">
             -{savingsPct}%
           </span>
         )}
@@ -70,10 +70,10 @@ export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props
 
       <button
         onClick={() => onSelect(plan)}
-        className={`w-full py-3 rounded-xl font-semibold active:scale-95 transition-transform ${
+        className={`w-full py-3 rounded-xl font-semibold active:scale-95 transition-all duration-200 ${
           popular
-            ? 'bg-gradient-primary text-white'
-            : 'bg-tg-button text-tg-button-text'
+            ? 'bg-gradient-primary text-white hover:shadow-glow-purple'
+            : 'bg-tg-button text-tg-button-text hover:opacity-90'
         }`}
       >
         {current ? 'Продлить' : 'Выбрать'}

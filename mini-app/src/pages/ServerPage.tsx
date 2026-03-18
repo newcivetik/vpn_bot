@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { ServerDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
@@ -37,6 +38,7 @@ export function ServerPage() {
   const [error, setError] = useState<string | null>(null);
   const { subscription, setSubscription } = useUserStore();
   const { initData, haptic } = useTelegram();
+  const navigate = useNavigate();
 
   useEffect(() => {
     api
@@ -90,66 +92,78 @@ export function ServerPage() {
         </div>
       )}
 
-      <div className="space-y-2 animate-slide-up">
-        {servers.map((server) => {
+      <div className="space-y-2">
+        {servers.map((server, i) => {
           const isCurrent = subscription?.serverId === server.id;
           const loadPct = Math.round((server.currentClients / server.maxClients) * 100);
           const loadColor = getLoadColor(server.currentClients, server.maxClients);
 
           return (
-            <button
+            <div
               key={server.id}
-              onClick={() => handleSwitch(server.id)}
-              disabled={!subscription || isCurrent || switching !== null}
-              className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all active:scale-[0.98] ${
-                isCurrent
-                  ? 'bg-brand-purple/10 border-2 border-brand-purple'
-                  : 'bg-tg-secondary border-2 border-transparent'
-              } ${!subscription ? 'opacity-60' : ''}`}
+              className="animate-slide-up"
+              style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'both' }}
             >
-              <span className="text-2xl">{getFlag(server.location)}</span>
+              <button
+                onClick={() => handleSwitch(server.id)}
+                disabled={!subscription || isCurrent || switching !== null}
+                aria-label={`Сервер ${server.location}, загрузка ${loadPct}%${isCurrent ? ', текущий' : ''}`}
+                className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all duration-200 active:scale-[0.98] hover:shadow-card ${
+                  isCurrent
+                    ? 'bg-brand-purple/10 border-2 border-brand-purple shadow-glow-purple'
+                    : 'bg-tg-secondary border-2 border-transparent hover:-translate-y-0.5'
+                } ${!subscription ? 'opacity-60' : ''}`}
+              >
+                <span className="text-2xl">{getFlag(server.location)}</span>
 
-              <div className="flex-1 text-left">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-tg-text">{server.location}</span>
-                  {isCurrent && (
-                    <span className="text-[10px] font-bold text-brand-purple bg-brand-purple/10 px-2 py-0.5 rounded-full">
-                      Текущий
-                    </span>
-                  )}
-                  {server.recommended && !isCurrent && (
-                    <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-full">
-                      Лучший
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 h-1.5 bg-tg-secondary rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${loadColor}`}
-                      style={{ width: `${loadPct}%` }}
-                    />
+                <div className="flex-1 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-tg-text">{server.location}</span>
+                    {isCurrent && (
+                      <span className="text-[10px] font-bold text-brand-purple bg-brand-purple/10 px-2 py-0.5 rounded-full">
+                        Текущий
+                      </span>
+                    )}
+                    {server.recommended && !isCurrent && (
+                      <span className="text-[10px] font-bold text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-full">
+                        Лучший
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[10px] text-tg-hint w-8 text-right">{loadPct}%</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-1.5 bg-tg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ease-out ${loadColor}`}
+                        style={{ width: `${loadPct}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-tg-hint w-8 text-right">{loadPct}%</span>
+                  </div>
                 </div>
-              </div>
 
-              {switching === server.id ? (
-                <Loader2 size={18} className="text-brand-purple animate-spin" />
-              ) : isCurrent ? (
-                <Check size={18} className="text-brand-purple" />
-              ) : (
-                <Globe size={18} className="text-tg-hint" />
-              )}
-            </button>
+                {switching === server.id ? (
+                  <Loader2 size={18} className="text-brand-purple animate-spin" />
+                ) : isCurrent ? (
+                  <Check size={18} className="text-brand-purple" />
+                ) : (
+                  <Globe size={18} className="text-tg-hint" />
+                )}
+              </button>
+            </div>
           );
         })}
       </div>
 
       {!subscription && (
-        <p className="text-xs text-tg-hint text-center px-4">
-          Оформи подписку, чтобы выбрать сервер
-        </p>
+        <div className="text-center py-3 animate-fade-in">
+          <p className="text-xs text-tg-hint mb-2">Оформи подписку, чтобы выбрать сервер</p>
+          <button
+            onClick={() => navigate('/plans')}
+            className="text-xs font-medium text-brand-purple px-4 py-2 rounded-xl bg-brand-purple/10 active:scale-95 transition-transform"
+          >
+            Выбрать тариф
+          </button>
+        </div>
       )}
     </div>
   );
