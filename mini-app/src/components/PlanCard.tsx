@@ -6,13 +6,18 @@ interface Props {
   popular?: boolean;
   current?: boolean;
   savingsPct?: number;
+  personalDiscount?: number;
 }
 
-export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props) {
+export function PlanCard({ plan, onSelect, popular, current, savingsPct, personalDiscount }: Props) {
   const trafficLabel =
     plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ трафика` : 'Безлимитный трафик';
 
-  const pricePerDay = (plan.price / plan.durationDays).toFixed(1);
+  const discountedPrice = personalDiscount && personalDiscount > 0
+    ? Math.round(plan.price * (1 - personalDiscount / 100))
+    : null;
+  const displayPrice = discountedPrice ?? plan.price;
+  const pricePerDay = (displayPrice / plan.durationDays).toFixed(1);
 
   const features = [
     trafficLabel,
@@ -21,10 +26,12 @@ export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props
     'VLESS+Reality',
   ];
 
-  /* Anchor price: show a fake "original" price that's ~30% higher when there are savings */
-  const anchorPrice = savingsPct && savingsPct > 0
-    ? Math.round(plan.price / (1 - savingsPct / 100))
-    : null;
+  /* Anchor price: show original price when personal discount or savings */
+  const anchorPrice = discountedPrice
+    ? plan.price
+    : savingsPct && savingsPct > 0
+      ? Math.round(plan.price / (1 - savingsPct / 100))
+      : null;
 
   const cardBg = current
     ? 'bg-gradient-to-br from-[#D4F7E8] to-[#C1F0DB]'
@@ -83,7 +90,7 @@ export function PlanCard({ plan, onSelect, popular, current, savingsPct }: Props
                 {anchorPrice} ₽
               </span>
             )}
-            <span className="text-3xl font-black text-[#3D2C4E]">{plan.price} ₽</span>
+            <span className="text-3xl font-black text-[#3D2C4E]">{displayPrice} ₽</span>
           </div>
           <div className="text-xs font-semibold text-[#6B5A7A] mt-0.5">{pricePerDay} ₽/день</div>
         </div>

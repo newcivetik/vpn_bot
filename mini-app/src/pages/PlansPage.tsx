@@ -11,8 +11,14 @@ export function PlansPage() {
   const [plans, setPlans] = useState<PlanDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [personalDiscount, setPersonalDiscount] = useState<{
+    discountPercent: number;
+    bonusDays: number;
+    reason?: string;
+    expiresAt?: string;
+  } | null>(null);
   const { subscription } = useUserStore();
-  const { haptic } = useTelegram();
+  const { haptic, initData } = useTelegram();
   const navigate = useNavigate();
 
   const loadPlans = () => {
@@ -30,7 +36,12 @@ export function PlansPage() {
 
   useEffect(() => {
     loadPlans();
-  }, []);
+    if (initData) {
+      api.getPersonalDiscount(initData)
+        .then((d) => setPersonalDiscount(d))
+        .catch(() => {});
+    }
+  }, [initData]);
 
   const handleSelect = (plan: PlanDTO) => {
     haptic?.selectionChanged();
@@ -81,6 +92,23 @@ export function PlansPage() {
         </p>
       </div>
 
+      {personalDiscount && personalDiscount.discountPercent > 0 && (
+        <div className="bg-gradient-to-r from-[#C1F0DB] to-[#A8E6CF] rounded-3xl p-4 animate-fade-in">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🎁</span>
+            <span className="font-bold text-[#2D8B5E] text-sm">Персональная скидка {personalDiscount.discountPercent}%</span>
+          </div>
+          {personalDiscount.reason && (
+            <div className="text-xs text-[#2D8B5E]/80">{personalDiscount.reason}</div>
+          )}
+          {personalDiscount.expiresAt && (
+            <div className="text-xs text-[#2D8B5E]/60 mt-1">
+              До {new Date(personalDiscount.expiresAt).toLocaleDateString('ru-RU')}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-4">
         {(() => {
           const sortedPlans = [...plans].sort((a, b) => b.price - a.price);
@@ -108,6 +136,7 @@ export function PlansPage() {
                   popular={i === bestValueIdx}
                   current={subscription?.plan.id === plan.id}
                   savingsPct={savingsPct}
+                  personalDiscount={personalDiscount?.discountPercent}
                 />
               </div>
             );
