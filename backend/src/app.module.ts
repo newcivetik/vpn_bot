@@ -57,8 +57,6 @@ import { PersonalDiscount } from './promo/personal-discount.entity';
           PersonalDiscount,
         ],
         synchronize: false,
-        migrationsRun: true,
-        migrations: [__dirname + '/../migrations/*{.ts,.js}'],
         logging: config.get('NODE_ENV') !== 'production',
       }),
     }),
