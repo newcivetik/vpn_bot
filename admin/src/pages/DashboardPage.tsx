@@ -1,23 +1,38 @@
-import { useEffect, useState } from 'react';
-import { Users, CreditCard, DollarSign, Star, UserPlus, Server, AlertTriangle, Activity, TrendingUp, UserMinus } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useEffect, useState, useCallback } from 'react';
+import { Users, CreditCard, DollarSign, Star, UserPlus, Server, AlertTriangle, Activity, TrendingUp, UserMinus, RefreshCw } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { Header } from '../components/Header.tsx';
 import { StatsCard } from '../components/StatsCard.tsx';
 import { adminApi } from '../api/client.ts';
-import type { DashboardStats, RevenueDataPoint, UserGrowthDataPoint, Server as ServerType } from '../api/types.ts';
+import type { DashboardStats, RevenueDataPoint, UserGrowthDataPoint, SubscriptionChartDataPoint, Server as ServerType } from '../api/types.ts';
 
 export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [revenue, setRevenue] = useState<RevenueDataPoint[]>([]);
   const [growth, setGrowth] = useState<UserGrowthDataPoint[]>([]);
   const [servers, setServers] = useState<ServerType[]>([]);
+  const [subChart, setSubChart] = useState<SubscriptionChartDataPoint[]>([]);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadAll = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.allSettled([
+      adminApi.getDashboard().then(setStats),
+      adminApi.getRevenueChart(30).then(setRevenue),
+      adminApi.getUserGrowth(30).then(setGrowth),
+      adminApi.getServers().then(setServers),
+      adminApi.getSubscriptionChart(30).then(setSubChart),
+    ]);
+    setLastRefresh(new Date());
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
-    adminApi.getDashboard().then(setStats);
-    adminApi.getRevenueChart(30).then(setRevenue);
-    adminApi.getUserGrowth(30).then(setGrowth);
-    adminApi.getServers().then(setServers);
-  }, []);
+    loadAll();
+    const interval = setInterval(loadAll, 60000);
+    return () => clearInterval(interval);
+  }, [loadAll]);
 
   if (!stats) {
     return (
@@ -50,6 +65,12 @@ export function DashboardPage() {
     <>
       <Header title="Dashboard" />
       <div className="p-6 space-y-6 overflow-auto">
+        <div className="flex items-center justify-end gap-2 text-xs text-slate-400">
+          <span>Обновлено: {lastRefresh.toLocaleTimeString('ru-RU')}</span>
+          <button onClick={loadAll} disabled={refreshing} className="p-1 rounded hover:bg-slate-100">
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Пользователи"
@@ -139,6 +160,22 @@ export function DashboardPage() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Subscription activity chart */}
+        {subChart.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-200 p-5 animate-slide-up">
+            <h3 className="text-sm font-semibold text-slate-700 mb-4">Подписки (30 дней)</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={subChart}>
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Area type="monotone" dataKey="total" name="Всего" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} strokeWidth={2} />
+                <Area type="monotone" dataKey="active" name="Активных" stroke="#22c55e" fill="#22c55e" fillOpacity={0.15} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         )}
 

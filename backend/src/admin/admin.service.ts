@@ -185,6 +185,30 @@ export class AdminService {
       );
   }
 
+  async getSubscriptionChart(days: number) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const rows = await this.subRepo
+      .createQueryBuilder('s')
+      .select("TO_CHAR(s.createdAt, 'YYYY-MM-DD')", 'date')
+      .addSelect('COUNT(*)', 'total')
+      .addSelect(
+        `SUM(CASE WHEN s.status = '${SubscriptionStatus.ACTIVE}' THEN 1 ELSE 0 END)`,
+        'active',
+      )
+      .where('s.createdAt >= :since', { since })
+      .groupBy("TO_CHAR(s.createdAt, 'YYYY-MM-DD')")
+      .orderBy('date')
+      .getRawMany();
+
+    return rows.map((r) => ({
+      date: r.date,
+      total: Number(r.total),
+      active: Number(r.active),
+    }));
+  }
+
   // ─── Users ─────────────────────────────────────────────
 
   async getUsers(page: number, limit: number, search?: string) {

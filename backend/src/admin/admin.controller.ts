@@ -74,6 +74,12 @@ export class AdminController {
     return this.adminService.getUserGrowthChart(Number(days) || 30);
   }
 
+  @Get('dashboard/subscription-chart')
+  @UseGuards(AdminAuthGuard)
+  getSubscriptionChart(@Query('days') days?: string) {
+    return this.adminService.getSubscriptionChart(Number(days) || 30);
+  }
+
   // ─── Users ────────────────────────────────────────────
 
   @Get('users')

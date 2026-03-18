@@ -7,7 +7,7 @@ import { Modal } from '../components/Modal.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Server, ServerHealth } from '../api/types.ts';
-import { Plus, Activity } from 'lucide-react';
+import { Plus, Activity, RefreshCw } from 'lucide-react';
 import { toast } from '../components/Toast.tsx';
 
 const emptyServer = { name: '', host: '', port: 443, apiPort: 2096, username: '', password: '', inboundId: 1, location: 'Нидерланды', maxClients: 100 };
@@ -21,6 +21,7 @@ export function ServersPage() {
   const [health, setHealth] = useState<Record<number, ServerHealth>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [checkingAll, setCheckingAll] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -57,6 +58,14 @@ export function ServersPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const checkAllHealth = async () => {
+    setCheckingAll(true);
+    const active = servers.filter((s) => s.isActive);
+    await Promise.allSettled(active.map((s) => checkHealth(s.id)));
+    setCheckingAll(false);
+    toast(`Проверено ${active.length} серверов`);
   };
 
   const handleDelete = async () => {
@@ -118,12 +127,22 @@ export function ServersPage() {
     <>
       <Header title="Серверы" />
       <div className="p-6 space-y-4">
-        <button
-          onClick={() => { setEditServer(emptyServer); setIsNew(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-        >
-          <Plus size={16} /> Добавить сервер
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { setEditServer(emptyServer); setIsNew(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+          >
+            <Plus size={16} /> Добавить сервер
+          </button>
+          <button
+            onClick={checkAllHealth}
+            disabled={checkingAll}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={checkingAll ? 'animate-spin' : ''} />
+            {checkingAll ? 'Проверка...' : 'Проверить все'}
+          </button>
+        </div>
         <DataTable columns={columns} data={servers} loading={loading} />
       </div>
 

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Copy, QrCode, ShoppingBag, HelpCircle } from 'lucide-react';
+import { Copy, QrCode, ShoppingBag, Globe } from 'lucide-react';
 import { useTelegram } from '../hooks/useTelegram';
 import { toast } from './Toast';
 
@@ -52,10 +52,10 @@ export function QuickActions({ connectionLink, onShowQR }: Props) {
       onClick: () => navigate('/plans'),
     },
     {
-      icon: HelpCircle,
-      label: 'Помощь',
+      icon: Globe,
+      label: 'Серверы',
       color: 'from-brand-green to-teal-500',
-      onClick: () => navigate('/help'),
+      onClick: () => navigate('/servers'),
     },
   ];
 

@@ -47,9 +47,25 @@ export function statusKeyboard(miniAppUrl: string): InlineKeyboard {
     .text('🌍 Сервер', 'server')
     .row()
     .text('📊 Трафик', 'traffic')
-    .webApp('🛒 Продлить', miniAppUrl)
+    .text('🔄 Продлить', 'renew')
     .row()
     .text('« Меню', 'menu');
+}
+
+export function renewKeyboard(
+  miniAppUrl: string,
+  currentPlanId?: number,
+): InlineKeyboard {
+  const kb = new InlineKeyboard()
+    .webApp(
+      '🛒 Продлить текущий',
+      `${miniAppUrl}/plans/${currentPlanId || ''}/pay`,
+    )
+    .row()
+    .webApp('📋 Все тарифы', miniAppUrl)
+    .row()
+    .text('« Меню', 'menu');
+  return kb;
 }
 
 export function serverKeyboard(

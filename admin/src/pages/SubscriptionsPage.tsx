@@ -8,7 +8,8 @@ import { Modal } from '../components/Modal.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Subscription, Plan } from '../api/types.ts';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
+import { SearchInput } from '../components/SearchInput.tsx';
 import { toast } from '../components/Toast.tsx';
 
 export function SubscriptionsPage() {
@@ -16,6 +17,7 @@ export function SubscriptionsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   const [extendId, setExtendId] = useState<number | null>(null);
@@ -32,11 +34,12 @@ export function SubscriptionsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await adminApi.getSubscriptions(page, 20, status || undefined);
+    const userId = search ? (isNaN(Number(search)) ? undefined : Number(search)) : undefined;
+    const res = await adminApi.getSubscriptions(page, 20, status || undefined, userId);
     setData(res.data);
     setTotal(res.total);
     setLoading(false);
-  }, [page, status]);
+  }, [page, status, search]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -100,6 +103,37 @@ export function SubscriptionsPage() {
     }
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const all = await adminApi.getSubscriptions(1, 50000, status || undefined);
+      const rows = [
+        ['ID', 'User', 'Plan', 'Server', 'Status', 'Expires', 'Traffic (GB)', 'Created'].join(','),
+        ...all.data.map((s) =>
+          [
+            s.id,
+            s.user?.username || s.user?.firstName || s.userId,
+            s.plan?.name || s.planId,
+            s.server?.location || s.serverId,
+            s.status,
+            new Date(s.expiresAt).toLocaleDateString('ru-RU'),
+            s.trafficUsedGB,
+            new Date(s.createdAt).toLocaleDateString('ru-RU'),
+          ].join(',')
+        ),
+      ].join('\n');
+      const blob = new Blob(['\uFEFF' + rows], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `subscriptions-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('CSV скачан');
+    } catch {
+      toast('Ошибка экспорта', 'error');
+    }
+  };
+
   const columns: Column<Subscription>[] = [
     { key: 'id', header: 'ID' },
     {
@@ -144,12 +178,26 @@ export function SubscriptionsPage() {
     <>
       <Header title="Подписки" />
       <div className="p-6 space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={openGrant}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
           >
             <Plus size={16} /> Выдать подписку
+          </button>
+          <div className="max-w-[200px]">
+            <SearchInput
+              value={search}
+              onChange={(v) => { setSearch(v); setPage(1); }}
+              placeholder="User ID..."
+            />
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm hover:bg-slate-200"
+          >
+            <Download size={14} />
+            CSV
           </button>
           <select
             value={status}

@@ -4,6 +4,7 @@ import type {
   DashboardStats,
   RevenueDataPoint,
   UserGrowthDataPoint,
+  SubscriptionChartDataPoint,
   User,
   Plan,
   Server,
@@ -52,6 +53,9 @@ export const adminApi = {
 
   getUserGrowth: (days = 30) =>
     api.get<UserGrowthDataPoint[]>(`/dashboard/user-growth?days=${days}`).then((r) => r.data),
+
+  getSubscriptionChart: (days = 30) =>
+    api.get<SubscriptionChartDataPoint[]>(`/dashboard/subscription-chart?days=${days}`).then((r) => r.data),
 
   getUsers: (page = 1, limit = 20, search?: string) =>
     api.get<PaginatedResponse<User>>('/users', { params: { page, limit, search } }).then((r) => r.data),

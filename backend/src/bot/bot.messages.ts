@@ -135,6 +135,20 @@ export const messages = {
     );
   },
 
+  renew: (planName: string, expiresDate: string, daysLeft: number) => {
+    const emoji = daysLeft <= 3 ? '⚠️' : '📋';
+    return (
+      `${emoji} Продление подписки\n\n` +
+      `🛡 Тариф: ${planName}\n` +
+      `📅 До: ${expiresDate}\n` +
+      `⏳ Осталось: ${daysLeft} дн.\n\n` +
+      `Выбери способ продления 👇`
+    );
+  },
+
+  noSubRenew:
+    '😔 У тебя нет активной подписки.\n\n' + 'Оформи новую подписку 👇',
+
   trafficWarning: (planName: string, usedGB: number, limitGB: number) => {
     const pct = Math.round((usedGB / limitGB) * 100);
     return (
@@ -144,6 +158,23 @@ export const messages = {
       `💡 Перейди на безлимитный тариф!`
     );
   },
+
+  account: (opts: {
+    name: string;
+    totalSubs: number;
+    referralCount: number;
+    bonusDays: number;
+    referralCode: string;
+    botUsername: string;
+  }) =>
+    `👤 Твой аккаунт\n\n` +
+    `📛 Имя: ${opts.name}\n` +
+    `📊 Всего подписок: ${opts.totalSubs}\n` +
+    `👥 Рефералов: ${opts.referralCount}\n` +
+    `🎁 Бонус дней: ${opts.bonusDays}\n\n` +
+    `🔗 Реферальная ссылка:\n` +
+    `\`https://t.me/${opts.botUsername}?start=ref_${opts.referralCode}\`\n\n` +
+    `Приглашай друзей и получай бонусные дни! 🚀`,
 
   trafficExhausted: (planName: string) =>
     `🚫 Лимит трафика исчерпан\n\n` +

@@ -28,6 +28,12 @@ export interface UserGrowthDataPoint {
   count: number;
 }
 
+export interface SubscriptionChartDataPoint {
+  date: string;
+  total: number;
+  active: number;
+}
+
 export interface User {
   id: number;
   telegramId: number;

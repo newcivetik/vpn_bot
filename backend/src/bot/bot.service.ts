@@ -20,6 +20,7 @@ import {
   backToMenuKeyboard,
   serverKeyboard,
   statusKeyboard,
+  renewKeyboard,
 } from './bot.keyboards';
 
 @Injectable()
@@ -41,6 +42,18 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.registerHandlers();
+
+    await this.bot.api.setMyCommands([
+      { command: 'start', description: 'Главное меню' },
+      { command: 'status', description: '📊 Статус подписки' },
+      { command: 'key', description: '🔑 Ключ подключения' },
+      { command: 'server', description: '🌍 Сменить сервер' },
+      { command: 'traffic', description: '📈 Трафик' },
+      { command: 'renew', description: '🔄 Продлить подписку' },
+      { command: 'account', description: '👤 Мой аккаунт' },
+      { command: 'referral', description: '🤝 Реферальная ссылка' },
+      { command: 'help', description: '❓ Помощь' },
+    ]);
 
     const webhookDomain = this.config.get<string>('WEBHOOK_DOMAIN');
     if (webhookDomain) {
@@ -114,6 +127,12 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
 
     // /traffic
     this.bot.command('traffic', (ctx) => this.handleTraffic(ctx));
+
+    // /renew
+    this.bot.command('renew', (ctx) => this.handleRenew(ctx));
+
+    // /account
+    this.bot.command('account', (ctx) => this.handleAccount(ctx));
 
     // /promo
     this.bot.command('promo', async (ctx) => {
@@ -221,6 +240,8 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         await this.handleServer(ctx);
       } else if (data === 'traffic') {
         await this.handleTraffic(ctx);
+      } else if (data === 'renew') {
+        await this.handleRenew(ctx);
       } else if (data === 'plans') {
         const plans = await this.planService.findAll();
         await ctx.editMessageText(messages.plans, {
@@ -396,6 +417,70 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         daysLeft,
       ),
       backToMenuKeyboard(),
+    );
+  }
+
+  private async handleRenew(ctx: any) {
+    const from = ctx.from || ctx.callbackQuery?.from;
+    if (!from) return;
+
+    const user = await this.userService.findByTelegramId(from.id);
+    const sub = user
+      ? await this.subscriptionService.getActiveSubscription(user.id)
+      : null;
+
+    const miniAppUrl = this.config.getOrThrow<string>('MINI_APP_URL');
+
+    if (!sub) {
+      const plans = await this.planService.findAll();
+      await this.sendOrEdit(ctx, messages.noSubRenew, plansKeyboard(plans));
+      return;
+    }
+
+    const expiresDate = new Date(sub.expiresAt).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const daysLeft = Math.max(
+      0,
+      Math.ceil((new Date(sub.expiresAt).getTime() - Date.now()) / 86400000),
+    );
+
+    await this.sendOrEdit(
+      ctx,
+      messages.renew(sub.plan.name, expiresDate, daysLeft),
+      renewKeyboard(miniAppUrl, sub.planId),
+    );
+  }
+
+  private async handleAccount(ctx: any) {
+    const from = ctx.from || ctx.callbackQuery?.from;
+    if (!from) return;
+
+    const user = await this.userService.findOrCreate({
+      telegramId: from.id,
+      username: from.username,
+      firstName: from.first_name,
+    });
+
+    const code = await this.userService.generateReferralCode(user.id);
+    const referralCount = await this.userService.getReferralCount(user.id);
+    const allSubs = await this.subscriptionService.getAllSubscriptions(user.id);
+    const botUsername = this.bot.botInfo?.username || 'bot';
+
+    await this.sendOrEdit(
+      ctx,
+      messages.account({
+        name: from.first_name || from.username || `User #${user.id}`,
+        totalSubs: allSubs.length,
+        referralCount,
+        bonusDays: user.referralBonusDays,
+        referralCode: code,
+        botUsername,
+      }),
+      backToMenuKeyboard(),
+      'Markdown',
     );
   }
 

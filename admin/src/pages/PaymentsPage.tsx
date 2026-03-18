@@ -7,6 +7,7 @@ import { Pagination } from '../components/Pagination.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Payment } from '../api/types.ts';
 import { Download } from 'lucide-react';
+import { SearchInput } from '../components/SearchInput.tsx';
 import { toast } from '../components/Toast.tsx';
 
 export function PaymentsPage() {
@@ -15,15 +16,17 @@ export function PaymentsPage() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
   const [method, setMethod] = useState('');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await adminApi.getPayments(page, 20, status || undefined, method || undefined);
+    const userId = search ? (isNaN(Number(search)) ? undefined : Number(search)) : undefined;
+    const res = await adminApi.getPayments(page, 20, status || undefined, method || undefined, userId);
     setData(res.data);
     setTotal(res.total);
     setLoading(false);
-  }, [page, status, method]);
+  }, [page, status, method, search]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -71,7 +74,14 @@ export function PaymentsPage() {
     <>
       <Header title="Платежи" />
       <div className="p-6 space-y-4">
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="max-w-[200px]">
+            <SearchInput
+              value={search}
+              onChange={(v) => { setSearch(v); setPage(1); }}
+              placeholder="User ID..."
+            />
+          </div>
           <select
             value={status}
             onChange={(e) => { setStatus(e.target.value); setPage(1); }}
