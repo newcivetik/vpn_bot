@@ -111,7 +111,40 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         }
       }
 
-      // New users get onboarding, returning users get welcome
+      // Grant 3-day trial for brand new users
+      if ((user as any).isNew) {
+        try {
+          const plans = await this.planService.findAll();
+          if (plans.length > 0) {
+            const trialPlan = plans[0]; // cheapest/first plan
+            const sub = await this.subscriptionService.createSubscription(
+              user.id,
+              trialPlan.id,
+            );
+            // Override expiry to 3 days instead of full plan duration
+            const trialExpiry = new Date();
+            trialExpiry.setDate(trialExpiry.getDate() + 3);
+            sub.expiresAt = trialExpiry;
+            await this.subscriptionService.updateExpiry(sub.id, trialExpiry);
+
+            this.logger.log(
+              `Trial subscription granted to new user #${user.id}`,
+            );
+
+            await ctx.reply(
+              messages.welcome(from.first_name) +
+                '\n\n🎁 Тебе подарок — 3 дня бесплатного VPN!\n' +
+                'Скопируй ключ командой /key и подключайся.',
+              { reply_markup: mainMenuKeyboard(miniAppUrl) },
+            );
+            return;
+          }
+        } catch (e) {
+          this.logger.error(`Failed to create trial subscription: ${e}`);
+        }
+      }
+
+      // Returning users
       const activeSub = await this.subscriptionService.getActiveSubscription(
         user.id,
       );

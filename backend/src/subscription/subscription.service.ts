@@ -271,6 +271,10 @@ export class SubscriptionService {
     return sub;
   }
 
+  async updateExpiry(subscriptionId: number, expiresAt: Date): Promise<void> {
+    await this.subRepo.update(subscriptionId, { expiresAt });
+  }
+
   async getExpiringSubscriptions(
     daysBeforeExpiry: number,
   ): Promise<Subscription[]> {

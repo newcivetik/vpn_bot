@@ -19,18 +19,19 @@ export class UserService {
     username?: string;
     firstName?: string;
     languageCode?: string;
-  }): Promise<User> {
+  }): Promise<User & { isNew?: boolean }> {
     let user = await this.findByTelegramId(data.telegramId);
     if (!user) {
       user = this.userRepo.create(data);
       user = await this.userRepo.save(user);
+      return Object.assign(user, { isNew: true });
     } else {
       // Обновляем данные при каждом входе
       if (data.username) user.username = data.username;
       if (data.firstName) user.firstName = data.firstName;
       user = await this.userRepo.save(user);
+      return Object.assign(user, { isNew: false });
     }
-    return user;
   }
 
   async findById(id: number): Promise<User | null> {
