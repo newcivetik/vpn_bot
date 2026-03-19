@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -17,6 +23,7 @@ export class SupportService {
     private readonly ticketRepo: Repository<SupportTicket>,
     @InjectRepository(SupportMessage)
     private readonly messageRepo: Repository<SupportMessage>,
+    @Inject(forwardRef(() => BotService))
     private readonly botService: BotService,
   ) {}
 
