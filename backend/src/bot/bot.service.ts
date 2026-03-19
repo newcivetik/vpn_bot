@@ -743,7 +743,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
   }
 
   getBotUsername(): string {
-    return this.bot.botInfo?.username || 'sellwhy_vpn_bot';
+    return this.bot.botInfo?.username || 'sellwhyvpn_bot';
   }
 
   async sendNotification(telegramId: number, text: string): Promise<void> {
