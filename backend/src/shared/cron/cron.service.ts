@@ -5,6 +5,7 @@ import { ServerService } from '../../server/server.service';
 import { VpnService } from '../../vpn/vpn.service';
 import { BotService } from '../../bot/bot.service';
 import { messages } from '../../bot/bot.messages';
+import { AdminNotifyService } from '../admin-notify/admin-notify.service';
 
 @Injectable()
 export class CronService {
@@ -17,6 +18,7 @@ export class CronService {
     private readonly serverService: ServerService,
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
+    private readonly adminNotify: AdminNotifyService,
   ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -31,6 +33,7 @@ export class CronService {
         await this.subscriptionService.deactivateExpired();
       if (count > 0) {
         this.logger.log(`Деактивировано ${count} истёкших подписок`);
+        this.adminNotify.subscriptionExpired(count).catch(() => {});
         for (const sub of deactivated) {
           try {
             await this.botService.sendNotification(
@@ -142,6 +145,9 @@ export class CronService {
           this.logger.error(
             `Сервер ${server.location} (${server.host}) не отвечает!`,
           );
+          this.adminNotify
+            .serverDown(server.location, server.host)
+            .catch(() => {});
         }
       }
     } catch (e) {

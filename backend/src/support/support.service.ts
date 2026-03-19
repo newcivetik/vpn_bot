@@ -13,6 +13,7 @@ import {
   TicketStatus,
 } from './support-ticket.entity';
 import { BotService } from '../bot/bot.service';
+import { AdminNotifyService } from '../shared/admin-notify/admin-notify.service';
 
 @Injectable()
 export class SupportService {
@@ -25,6 +26,7 @@ export class SupportService {
     private readonly messageRepo: Repository<SupportMessage>,
     @Inject(forwardRef(() => BotService))
     private readonly botService: BotService,
+    private readonly adminNotify: AdminNotifyService,
   ) {}
 
   async createTicket(
@@ -47,6 +49,18 @@ export class SupportService {
     await this.messageRepo.save(message);
 
     this.logger.log(`Ticket #${ticket.id} created by user #${userId}`);
+
+    // Notify admin about new ticket
+    const ticketWithUser = await this.ticketRepo.findOne({
+      where: { id: ticket.id },
+      relations: ['user'],
+    });
+    const userName =
+      ticketWithUser?.user?.firstName ||
+      ticketWithUser?.user?.username ||
+      `User #${userId}`;
+    this.adminNotify.newTicket(ticket.id, userName, text).catch(() => {});
+
     return ticket;
   }
 
@@ -84,6 +98,19 @@ export class SupportService {
 
     ticket.updatedAt = new Date();
     await this.ticketRepo.save(ticket);
+
+    // Notify admin about new message
+    const ticketWithUser = await this.ticketRepo.findOne({
+      where: { id: ticket.id },
+      relations: ['user'],
+    });
+    const userName =
+      ticketWithUser?.user?.firstName ||
+      ticketWithUser?.user?.username ||
+      `User #${userId}`;
+    this.adminNotify
+      .newTicketMessage(ticket.id, userName, text)
+      .catch(() => {});
 
     return { ticket, message };
   }

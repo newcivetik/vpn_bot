@@ -16,6 +16,7 @@ import { BotService } from '../bot/bot.service';
 import { messages } from '../bot/bot.messages';
 import { User } from '../user/user.entity';
 import { Plan } from '../plan/plan.entity';
+import { AdminNotifyService } from '../shared/admin-notify/admin-notify.service';
 
 @Injectable()
 export class PaymentService {
@@ -30,6 +31,7 @@ export class PaymentService {
     @Inject(forwardRef(() => BotService))
     private readonly botService: BotService,
     private readonly dataSource: DataSource,
+    private readonly adminNotify: AdminNotifyService,
   ) {}
 
   async createStarsPayment(
@@ -273,6 +275,20 @@ export class PaymentService {
         user.telegramId,
         messages.paymentSuccessNotification(plan.name, expiresDate),
       );
+
+      // Notify admin about payment
+      const payment = await this.paymentRepo.findOne({
+        where: { subscriptionId },
+      });
+      const userName = user.firstName || user.username || `User #${userId}`;
+      this.adminNotify
+        .newPayment(
+          userName,
+          payment?.amount || 0,
+          payment?.method || 'unknown',
+          plan.name,
+        )
+        .catch(() => {});
     } catch (e) {
       this.logger.error(`Ошибка уведомления об оплате: ${e}`);
     }

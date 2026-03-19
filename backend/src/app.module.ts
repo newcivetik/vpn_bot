@@ -26,6 +26,7 @@ import { PromoUsage } from './promo/promo-usage.entity';
 import { PersonalDiscount } from './promo/personal-discount.entity';
 import { SupportTicket, SupportMessage } from './support/support-ticket.entity';
 import { SupportModule } from './support/support.module';
+import { AdminNotifyModule } from './shared/admin-notify/admin-notify.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { SupportModule } from './support/support.module';
     PromoModule,
     AdminModule,
     SupportModule,
+    AdminNotifyModule,
   ],
   providers: [CronService],
 })

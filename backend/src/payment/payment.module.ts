@@ -6,6 +6,7 @@ import { PaymentController } from './payment.controller';
 import { SubscriptionModule } from '../subscription/subscription.module';
 import { PromoModule } from '../promo/promo.module';
 import { BotModule } from '../bot/bot.module';
+import { AdminNotifyModule } from '../shared/admin-notify/admin-notify.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { BotModule } from '../bot/bot.module';
     forwardRef(() => SubscriptionModule),
     forwardRef(() => BotModule),
     PromoModule,
+    AdminNotifyModule,
   ],
   providers: [PaymentService],
   controllers: [PaymentController],

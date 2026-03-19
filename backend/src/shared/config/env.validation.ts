@@ -35,6 +35,9 @@ export const envValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().required().min(16),
   ADMIN_APP_URL: Joi.string().optional().allow(''),
 
+  // Admin Telegram notifications
+  ADMIN_TELEGRAM_ID: Joi.number().optional(),
+
   // Webhook
   WEBHOOK_SECRET: Joi.string().optional().default(''),
 
