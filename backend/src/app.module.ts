@@ -26,6 +26,7 @@ import { PromoUsage } from './promo/promo-usage.entity';
 import { PersonalDiscount } from './promo/personal-discount.entity';
 import { SupportTicket, SupportMessage } from './support/support-ticket.entity';
 import { AdminLog } from './admin/admin-log.entity';
+import { AdminSettings } from './admin/admin-settings.entity';
 import { SupportModule } from './support/support.module';
 import { AdminNotifyModule } from './shared/admin-notify/admin-notify.module';
 
@@ -62,6 +63,7 @@ import { AdminNotifyModule } from './shared/admin-notify/admin-notify.module';
           SupportTicket,
           SupportMessage,
           AdminLog,
+          AdminSettings,
         ],
         synchronize: false,
         logging: config.get('NODE_ENV') !== 'production',

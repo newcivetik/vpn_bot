@@ -12,6 +12,7 @@ import {
   Shield,
   MessageCircle,
   ScrollText,
+  Lock,
 } from 'lucide-react';
 
 const links = [
@@ -26,6 +27,7 @@ const links = [
   { to: '/support', icon: MessageCircle, label: 'Поддержка' },
   { to: '/broadcast', icon: Megaphone, label: 'Рассылка' },
   { to: '/logs', icon: ScrollText, label: 'Логи' },
+  { to: '/security', icon: Lock, label: 'Безопасность' },
 ];
 
 export function Sidebar() {

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Copy, QrCode, ShoppingBag, Globe } from 'lucide-react';
+import { Copy, QrCode, ShoppingBag, Globe, MessageCircle } from 'lucide-react';
 import { useTelegram } from '../hooks/useTelegram';
 import { toast } from './Toast';
 
@@ -60,6 +60,13 @@ export function QuickActions({ connectionLink, onShowQR }: Props) {
       bg: 'bg-gradient-to-br from-[#D4F7E8] to-[#C1F0DB]',
       iconColor: 'text-[#5BAF8B]',
       onClick: () => navigate('/servers'),
+    },
+    {
+      icon: MessageCircle,
+      label: 'Поддержка',
+      bg: 'bg-gradient-to-br from-[#E4E8FA] to-[#D5DAFA]',
+      iconColor: 'text-[#7B82B8]',
+      onClick: () => navigate('/support'),
     },
   ];
 

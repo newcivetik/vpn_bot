@@ -122,6 +122,18 @@ export const api = {
       },
     ),
 
+  getSupportTicket: (initData: string) =>
+    request<any>('/support/ticket', {
+      headers: authHeaders(initData),
+    }),
+
+  sendSupportMessage: (text: string, initData: string) =>
+    request<any>('/support/ticket', {
+      method: 'POST',
+      headers: authHeaders(initData),
+      body: JSON.stringify({ text }),
+    }),
+
   getServers: () => request<ServerDTO[]>('/servers'),
 
   changeServer: (serverId: number, initData: string) =>

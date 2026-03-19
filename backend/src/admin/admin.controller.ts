@@ -64,9 +64,61 @@ export class AdminController {
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
       throw new UnauthorizedException('Invalid password');
     }
+
+    // Check if 2FA is enabled
+    const settings = await this.adminService.getAdminSettings();
+    if (settings.totpEnabled && settings.totpSecret) {
+      if (!dto.totpCode) {
+        return { requiresTwoFactor: true };
+      }
+      const valid = await this.adminService.verifyTotp(
+        settings.totpSecret,
+        dto.totpCode,
+      );
+      if (!valid) {
+        throw new UnauthorizedException('Неверный код 2FA');
+      }
+    }
+
     const token = await this.jwtService.signAsync({ role: 'admin' });
     this.adminService.logAction('login', {}, dto['ip'] || 'unknown');
     return { token };
+  }
+
+  // ─── 2FA ─────────────────────────────────────────────
+
+  @Get('2fa/status')
+  @UseGuards(AdminAuthGuard)
+  async get2faStatus() {
+    const settings = await this.adminService.getAdminSettings();
+    return { enabled: settings.totpEnabled };
+  }
+
+  @Post('2fa/setup')
+  @UseGuards(AdminAuthGuard)
+  async setup2fa() {
+    const { secret, uri } = await this.adminService.setupTotp();
+    const QRCode = await import('qrcode');
+    const qrDataUrl = await QRCode.toDataURL(uri);
+    return { secret, uri, qrDataUrl };
+  }
+
+  @Post('2fa/enable')
+  @UseGuards(AdminAuthGuard)
+  async enable2fa(@Body() body: { code: string }) {
+    const success = await this.adminService.enableTotp(body.code);
+    if (!success) throw new UnauthorizedException('Неверный код');
+    this.adminService.logAction('enable_2fa', {});
+    return { enabled: true };
+  }
+
+  @Post('2fa/disable')
+  @UseGuards(AdminAuthGuard)
+  async disable2fa(@Body() body: { code: string }) {
+    const success = await this.adminService.disableTotp(body.code);
+    if (!success) throw new UnauthorizedException('Неверный код');
+    this.adminService.logAction('disable_2fa', {});
+    return { enabled: false };
   }
 
   // ─── Dashboard ────────────────────────────────────────

@@ -211,6 +211,19 @@ export class SupportService {
     });
   }
 
+  async getUserTicketWithMessages(
+    userId: number,
+  ): Promise<SupportTicket | null> {
+    return this.ticketRepo.findOne({
+      where: [
+        { userId, status: TicketStatus.OPEN },
+        { userId, status: TicketStatus.IN_PROGRESS },
+      ],
+      relations: ['messages'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async getOpenTicketForUser(userId: number): Promise<SupportTicket | null> {
     return this.ticketRepo.findOne({
       where: [

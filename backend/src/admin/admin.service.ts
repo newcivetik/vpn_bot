@@ -21,6 +21,7 @@ import { Plan } from '../plan/plan.entity';
 import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
 import { AdminLog } from './admin-log.entity';
+import { AdminSettings } from './admin-settings.entity';
 import { VpnService } from '../vpn/vpn.service';
 import { BotService } from '../bot/bot.service';
 import { SubscriptionService } from '../subscription/subscription.service';
@@ -43,6 +44,8 @@ export class AdminService {
     private readonly promoRepo: Repository<PromoCode>,
     @InjectRepository(AdminLog)
     private readonly logRepo: Repository<AdminLog>,
+    @InjectRepository(AdminSettings)
+    private readonly settingsRepo: Repository<AdminSettings>,
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
     private readonly subscriptionService: SubscriptionService,
@@ -694,5 +697,70 @@ export class AdminService {
       conversionRate,
       retentionRate,
     };
+  }
+
+  // ─── 2FA / TOTP ───────────────────────────────────────
+
+  async getAdminSettings(): Promise<AdminSettings> {
+    let settings = await this.settingsRepo.findOne({ where: { id: 1 } });
+    if (!settings) {
+      settings = this.settingsRepo.create({ id: 1, totpEnabled: false });
+      await this.settingsRepo.save(settings);
+    }
+    return settings;
+  }
+
+  async setupTotp(): Promise<{ secret: string; uri: string }> {
+    const { TOTP, Secret } = await import('otpauth');
+    const secret = new Secret({ size: 20 });
+    const totp = new TOTP({
+      issuer: 'SellWhyVPN',
+      label: 'Admin',
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret,
+    });
+    const uri = totp.toString();
+    // Store the secret temporarily (not enabled yet)
+    const settings = await this.getAdminSettings();
+    settings.totpSecret = secret.base32;
+    await this.settingsRepo.save(settings);
+    return { secret: secret.base32, uri };
+  }
+
+  async enableTotp(code: string): Promise<boolean> {
+    const settings = await this.getAdminSettings();
+    if (!settings.totpSecret) return false;
+    const valid = await this.verifyTotp(settings.totpSecret, code);
+    if (!valid) return false;
+    settings.totpEnabled = true;
+    await this.settingsRepo.save(settings);
+    return true;
+  }
+
+  async disableTotp(code: string): Promise<boolean> {
+    const settings = await this.getAdminSettings();
+    if (!settings.totpSecret || !settings.totpEnabled) return false;
+    const valid = await this.verifyTotp(settings.totpSecret, code);
+    if (!valid) return false;
+    settings.totpEnabled = false;
+    settings.totpSecret = null;
+    await this.settingsRepo.save(settings);
+    return true;
+  }
+
+  async verifyTotp(secret: string, code: string): Promise<boolean> {
+    const { TOTP, Secret } = await import('otpauth');
+    const totp = new TOTP({
+      issuer: 'SellWhyVPN',
+      label: 'Admin',
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: Secret.fromBase32(secret),
+    });
+    const delta = totp.validate({ token: code, window: 1 });
+    return delta !== null;
   }
 }

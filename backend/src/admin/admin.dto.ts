@@ -13,6 +13,10 @@ import { Type } from 'class-transformer';
 export class LoginDto {
   @IsString()
   password: string;
+
+  @IsOptional()
+  @IsString()
+  totpCode?: string;
 }
 
 export class PaginationQuery {

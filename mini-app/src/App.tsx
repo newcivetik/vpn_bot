@@ -9,6 +9,7 @@ const PaymentPage = lazy(() => import('./pages/PaymentPage').then((m) => ({ defa
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const HelpPage = lazy(() => import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })));
 const ServerPage = lazy(() => import('./pages/ServerPage').then((m) => ({ default: m.ServerPage })));
+const SupportPage = lazy(() => import('./pages/SupportPage').then((m) => ({ default: m.SupportPage })));
 
 function PageLoader() {
   return (
@@ -40,6 +41,7 @@ function App() {
             <Route path="/servers" element={<ServerPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/help" element={<HelpPage />} />
+            <Route path="/support" element={<SupportPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

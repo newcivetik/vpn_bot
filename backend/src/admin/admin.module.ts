@@ -13,6 +13,7 @@ import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
 import { PersonalDiscount } from '../promo/personal-discount.entity';
 import { AdminLog } from './admin-log.entity';
+import { AdminSettings } from './admin-settings.entity';
 import { VpnModule } from '../vpn/vpn.module';
 import { BotModule } from '../bot/bot.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
@@ -38,6 +39,7 @@ import { SupportModule } from '../support/support.module';
       PromoCode,
       PersonalDiscount,
       AdminLog,
+      AdminSettings,
     ]),
     VpnModule,
     forwardRef(() => BotModule),
@@ -47,5 +49,6 @@ import { SupportModule } from '../support/support.module';
   ],
   controllers: [AdminController],
   providers: [AdminService, AdminAuthGuard],
+  exports: [AdminService],
 })
 export class AdminModule {}

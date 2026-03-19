@@ -17,6 +17,7 @@ import { PaymentService } from '../payment/payment.service';
 import { BotService } from '../bot/bot.service';
 import { ServerService } from '../server/server.service';
 import { PromoService } from '../promo/promo.service';
+import { SupportService } from '../support/support.service';
 import { validateTelegramWebAppData } from '../shared/guards/telegram-auth';
 
 @Controller('api')
@@ -31,6 +32,8 @@ export class SubscriptionController {
     private readonly botService: BotService,
     private readonly serverService: ServerService,
     private readonly promoService: PromoService,
+    @Inject(forwardRef(() => SupportService))
+    private readonly supportService: SupportService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -269,6 +272,40 @@ export class SubscriptionController {
       reason: discount.reason,
       expiresAt: discount.expiresAt,
     };
+  }
+
+  // ─── Support (mini-app) ──────────────────────────────
+
+  @Get('support/ticket')
+  async getSupportTicket(
+    @Headers('x-init-data') headerInitData: string,
+    @Query('initData') queryInitData: string,
+  ) {
+    const initData = headerInitData || queryInitData;
+    const telegramUser = this.validateAndExtractUser(initData);
+    const user = await this.userService.findByTelegramId(telegramUser.id);
+    if (!user) return null;
+
+    const ticket = await this.supportService.getUserTicketWithMessages(user.id);
+    return ticket;
+  }
+
+  @Post('support/ticket')
+  async sendSupportMessage(
+    @Headers('x-init-data') headerInitData: string,
+    @Body() body: { text: string; initData?: string },
+  ) {
+    const telegramUser = this.validateAndExtractUser(
+      headerInitData || body.initData || '',
+    );
+    const user = await this.userService.findOrCreate({
+      telegramId: telegramUser.id,
+      username: telegramUser.username,
+      firstName: telegramUser.first_name,
+    });
+
+    const result = await this.supportService.addUserMessage(user.id, body.text);
+    return result;
   }
 
   private sanitizeSubscription(sub: any) {
