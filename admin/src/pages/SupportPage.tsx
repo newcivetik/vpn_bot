@@ -2,6 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { adminApi } from '../api/client.ts';
 import type { SupportTicket } from '../api/types.ts';
 
+const REPLY_TEMPLATES = [
+  { label: '🔄 Перезапустить', text: 'Попробуйте закрыть и заново открыть приложение Hiddify. Если не помогло — удалите профиль VPN и добавьте ключ заново через /key.' },
+  { label: '🌍 Сменить сервер', text: 'Попробуйте сменить сервер — отправьте команду /server в бот и выберите другую локацию. Иногда определённые серверы работают лучше в зависимости от вашего провайдера.' },
+  { label: '🔑 Новый ключ', text: 'Отправьте команду /key в бот, чтобы получить актуальный ключ подключения. Скопируйте его и вставьте в Hiddify заново.' },
+  { label: '📱 Инструкция', text: 'Отправьте команду /help в бот — там есть пошаговая инструкция по настройке для вашего устройства (iPhone, Android, Windows, Mac).' },
+  { label: '⏳ Ожидание', text: 'Спасибо за обращение! Мы проверяем вашу проблему и ответим в ближайшее время.' },
+  { label: '✅ Решено', text: 'Проблема должна быть решена. Проверьте подключение и напишите, если что-то ещё не работает!' },
+];
+
 const statusLabels: Record<string, string> = {
   open: 'Открыт',
   in_progress: 'В работе',
@@ -220,6 +229,19 @@ export function SupportPage() {
             {/* Reply input */}
             {selectedTicket.status !== 'closed' && (
               <div className="p-4 bg-white border-t border-slate-200">
+                {/* Quick reply templates */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {REPLY_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.label}
+                      onClick={() => setReplyText(tpl.text)}
+                      className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                      title={tpl.text}
+                    >
+                      {tpl.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex gap-2">
                   <textarea
                     value={replyText}

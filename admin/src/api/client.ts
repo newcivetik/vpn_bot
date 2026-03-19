@@ -47,8 +47,8 @@ api.interceptors.response.use(
 );
 
 export const adminApi = {
-  login: (password: string) =>
-    api.post<{ token: string }>('/login', { password }).then((r) => r.data),
+  login: (password: string, totpCode?: string) =>
+    api.post<{ token?: string; requiresTwoFactor?: boolean }>('/login', { password, totpCode }).then((r) => r.data),
 
   getDashboard: () =>
     api.get<DashboardStats>('/dashboard').then((r) => r.data),
@@ -160,4 +160,17 @@ export const adminApi = {
   // Funnel
   getFunnel: (days = 30) =>
     api.get<FunnelData>(`/dashboard/funnel?days=${days}`).then((r) => r.data),
+
+  // 2FA
+  get2FAStatus: () =>
+    api.get<{ enabled: boolean }>('/2fa/status').then((r) => r.data),
+
+  setup2FA: () =>
+    api.post<{ secret: string; uri: string; qrDataUrl: string }>('/2fa/setup').then((r) => r.data),
+
+  enable2FA: (code: string) =>
+    api.post<{ enabled: boolean }>('/2fa/enable', { code }).then((r) => r.data),
+
+  disable2FA: (code: string) =>
+    api.post<{ enabled: boolean }>('/2fa/disable', { code }).then((r) => r.data),
 };

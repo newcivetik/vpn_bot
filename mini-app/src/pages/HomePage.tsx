@@ -30,7 +30,8 @@ export function HomePage() {
         .then(setSubscription)
         .catch((e) => {
           console.error('Failed to load subscription:', e);
-          setError('Не удалось загрузить подписку');
+          // For auth errors (new users, expired initData) — show normal screen without subscription
+          setSubscription(null);
         })
         .finally(() => setLoading(false));
     } else {
