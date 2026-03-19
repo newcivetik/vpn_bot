@@ -17,6 +17,8 @@ import type {
   BroadcastResult,
   SupportTicket,
   SupportMessage,
+  AdminLog,
+  FunnelData,
 } from './types.ts';
 
 const api = axios.create({
@@ -147,4 +149,12 @@ export const adminApi = {
 
   closeTicket: (id: number) =>
     api.post<SupportTicket>(`/support/tickets/${id}/close`).then((r) => r.data),
+
+  // Logs
+  getLogs: (page = 1, limit = 50) =>
+    api.get<PaginatedResponse<AdminLog>>('/logs', { params: { page, limit } }).then((r) => r.data),
+
+  // Funnel
+  getFunnel: (days = 30) =>
+    api.get<FunnelData>(`/dashboard/funnel?days=${days}`).then((r) => r.data),
 };

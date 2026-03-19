@@ -13,6 +13,7 @@ import { PromosPage } from './pages/PromosPage.tsx';
 import { BroadcastPage } from './pages/BroadcastPage.tsx';
 import { SupportPage } from './pages/SupportPage.tsx';
 import { PersonalDiscountsPage } from './pages/PersonalDiscountsPage.tsx';
+import { AdminLogsPage } from './pages/AdminLogsPage.tsx';
 import type { ReactNode } from 'react';
 
 function isTokenExpired(token: string): boolean {
@@ -52,6 +53,7 @@ export function App() {
         <Route path="/personal-discounts" element={<PrivateRoute><PersonalDiscountsPage /></PrivateRoute>} />
         <Route path="/support" element={<PrivateRoute><SupportPage /></PrivateRoute>} />
         <Route path="/broadcast" element={<PrivateRoute><BroadcastPage /></PrivateRoute>} />
+        <Route path="/logs" element={<PrivateRoute><AdminLogsPage /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   );

@@ -7,7 +7,8 @@ import { Pagination } from '../components/Pagination.tsx';
 import { SearchInput } from '../components/SearchInput.tsx';
 import { adminApi } from '../api/client.ts';
 import type { User } from '../api/types.ts';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel } from '../utils/exportExcel.ts';
 import { toast } from '../components/Toast.tsx';
 
 export function UsersPage() {
@@ -98,6 +99,24 @@ export function UsersPage() {
           >
             <Download size={14} />
             CSV
+          </button>
+          <button
+            onClick={async () => {
+              const all = await adminApi.getUsers(1, 10000);
+              exportToExcel(all.data, [
+                { key: 'id', header: 'ID' },
+                { key: 'telegramId', header: 'Telegram ID' },
+                { key: 'username', header: 'Username' },
+                { key: 'firstName', header: 'Имя' },
+                { key: 'referralCode', header: 'Реф. код' },
+                { key: 'referralBonusDays', header: 'Бонус дней' },
+                { key: 'createdAt', header: 'Дата' },
+              ], 'users');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm hover:bg-green-100"
+          >
+            <FileSpreadsheet size={14} />
+            Excel
           </button>
         </div>
         {error && (

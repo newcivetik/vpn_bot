@@ -12,6 +12,7 @@ import { Plan } from '../plan/plan.entity';
 import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
 import { PersonalDiscount } from '../promo/personal-discount.entity';
+import { AdminLog } from './admin-log.entity';
 import { VpnModule } from '../vpn/vpn.module';
 import { BotModule } from '../bot/bot.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
@@ -36,6 +37,7 @@ import { SupportModule } from '../support/support.module';
       Server,
       PromoCode,
       PersonalDiscount,
+      AdminLog,
     ]),
     VpnModule,
     forwardRef(() => BotModule),

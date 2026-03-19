@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, L
 import { Header } from '../components/Header.tsx';
 import { StatsCard } from '../components/StatsCard.tsx';
 import { adminApi } from '../api/client.ts';
-import type { DashboardStats, RevenueDataPoint, UserGrowthDataPoint, SubscriptionChartDataPoint, Server as ServerType } from '../api/types.ts';
+import type { DashboardStats, RevenueDataPoint, UserGrowthDataPoint, SubscriptionChartDataPoint, Server as ServerType, FunnelData } from '../api/types.ts';
 
 export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -12,6 +12,7 @@ export function DashboardPage() {
   const [growth, setGrowth] = useState<UserGrowthDataPoint[]>([]);
   const [servers, setServers] = useState<ServerType[]>([]);
   const [subChart, setSubChart] = useState<SubscriptionChartDataPoint[]>([]);
+  const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
 
@@ -23,6 +24,7 @@ export function DashboardPage() {
       adminApi.getUserGrowth(30).then(setGrowth),
       adminApi.getServers().then(setServers),
       adminApi.getSubscriptionChart(30).then(setSubChart),
+      adminApi.getFunnel(30).then(setFunnel),
     ]);
     setLastRefresh(new Date());
     setRefreshing(false);
@@ -159,6 +161,33 @@ export function DashboardPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Funnel */}
+        {funnel && (
+          <div className="bg-white rounded-xl border border-slate-200 p-5 animate-slide-up">
+            <h3 className="text-sm font-semibold text-slate-700 mb-4">Воронка (30 дней)</h3>
+            <div className="space-y-3">
+              {[
+                { label: 'Регистрация', value: funnel.registered, pct: 100, color: 'bg-blue-500' },
+                { label: 'Покупка', value: funnel.purchased, pct: funnel.conversionRate, color: 'bg-green-500' },
+                { label: 'Продление', value: funnel.renewed, pct: funnel.retentionRate, color: 'bg-purple-500' },
+              ].map((step) => (
+                <div key={step.label} className="flex items-center gap-3">
+                  <span className="text-sm text-slate-600 w-28">{step.label}</span>
+                  <div className="flex-1 h-6 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all flex items-center justify-end pr-2 ${step.color}`}
+                      style={{ width: `${Math.max(step.pct, 5)}%` }}
+                    >
+                      <span className="text-xs text-white font-medium">{step.value}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-500 w-12 text-right">{step.pct}%</span>
+                </div>
+              ))}
             </div>
           </div>
         )}

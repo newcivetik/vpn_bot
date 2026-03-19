@@ -159,6 +159,22 @@ export interface SupportMessage {
   createdAt: string;
 }
 
+export interface AdminLog {
+  id: number;
+  action: string;
+  details: Record<string, any> | null;
+  ip: string | null;
+  createdAt: string;
+}
+
+export interface FunnelData {
+  registered: number;
+  purchased: number;
+  renewed: number;
+  conversionRate: number;
+  retentionRate: number;
+}
+
 export interface BroadcastResult {
   sent: number;
   failed: number;

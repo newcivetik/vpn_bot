@@ -8,7 +8,8 @@ import { Modal } from '../components/Modal.tsx';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Subscription, Plan } from '../api/types.ts';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel } from '../utils/exportExcel.ts';
 import { SearchInput } from '../components/SearchInput.tsx';
 import { toast } from '../components/Toast.tsx';
 
@@ -198,6 +199,29 @@ export function SubscriptionsPage() {
           >
             <Download size={14} />
             CSV
+          </button>
+          <button
+            onClick={async () => {
+              const all = await adminApi.getSubscriptions(1, 10000, status || undefined);
+              exportToExcel(all.data.map((s: Subscription) => ({
+                ...s,
+                userName: s.user?.firstName || s.user?.username || '',
+                planName: s.plan?.name || '',
+                serverLocation: s.server?.location || '',
+              })), [
+                { key: 'id', header: 'ID' },
+                { key: 'userName', header: 'Пользователь' },
+                { key: 'planName', header: 'Тариф' },
+                { key: 'serverLocation', header: 'Сервер' },
+                { key: 'status', header: 'Статус' },
+                { key: 'expiresAt', header: 'Истекает' },
+                { key: 'trafficUsedGB', header: 'Трафик (ГБ)' },
+              ], 'subscriptions');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm hover:bg-green-100"
+          >
+            <FileSpreadsheet size={14} />
+            Excel
           </button>
           <select
             value={status}

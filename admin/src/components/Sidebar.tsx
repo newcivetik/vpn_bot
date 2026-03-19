@@ -11,6 +11,7 @@ import {
   Megaphone,
   Shield,
   MessageCircle,
+  ScrollText,
 } from 'lucide-react';
 
 const links = [
@@ -24,6 +25,7 @@ const links = [
   { to: '/personal-discounts', icon: Gift, label: 'Перс. скидки' },
   { to: '/support', icon: MessageCircle, label: 'Поддержка' },
   { to: '/broadcast', icon: Megaphone, label: 'Рассылка' },
+  { to: '/logs', icon: ScrollText, label: 'Логи' },
 ];
 
 export function Sidebar() {

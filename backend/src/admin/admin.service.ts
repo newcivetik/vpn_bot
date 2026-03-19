@@ -20,6 +20,7 @@ import {
 import { Plan } from '../plan/plan.entity';
 import { Server } from '../server/server.entity';
 import { PromoCode } from '../promo/promo.entity';
+import { AdminLog } from './admin-log.entity';
 import { VpnService } from '../vpn/vpn.service';
 import { BotService } from '../bot/bot.service';
 import { SubscriptionService } from '../subscription/subscription.service';
@@ -40,6 +41,8 @@ export class AdminService {
     @InjectRepository(Server) private readonly serverRepo: Repository<Server>,
     @InjectRepository(PromoCode)
     private readonly promoRepo: Repository<PromoCode>,
+    @InjectRepository(AdminLog)
+    private readonly logRepo: Repository<AdminLog>,
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
     private readonly subscriptionService: SubscriptionService,
@@ -613,5 +616,77 @@ export class AdminService {
     }
 
     return { sent, failed };
+  }
+
+  // ─── Admin Logs ─────────────────────────────────────
+
+  async logAction(
+    action: string,
+    details?: Record<string, any>,
+    ip?: string,
+  ): Promise<void> {
+    const log = this.logRepo.create({ action, details, ip });
+    await this.logRepo.save(log);
+  }
+
+  async getActionLogs(page: number, limit: number) {
+    const [data, total] = await this.logRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { data, total };
+  }
+
+  // ─── Funnel Analytics ──────────────────────────────
+
+  async getFunnelAnalytics(days: number) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    // Users registered in period
+    const registered = await this.userRepo.count({
+      where: { createdAt: MoreThanOrEqual(since) },
+    });
+
+    // Users who made at least one payment (purchased)
+    const purchasedResult = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('COUNT(DISTINCT p.userId)', 'cnt')
+      .innerJoin('users', 'u', 'u.id = p.userId')
+      .where('p.status = :status', { status: PaymentStatus.PAID })
+      .andWhere('u.createdAt >= :since', { since })
+      .getRawOne();
+    const purchased = Number(purchasedResult?.cnt || 0);
+
+    // Users who made 2+ payments (renewed)
+    const renewedResult = await this.paymentRepo
+      .createQueryBuilder('p')
+      .select('COUNT(*)', 'cnt')
+      .from((qb) => {
+        return qb
+          .select('p2.userId')
+          .from(Payment, 'p2')
+          .innerJoin('users', 'u', 'u.id = p2.userId')
+          .where('p2.status = :status', { status: PaymentStatus.PAID })
+          .andWhere('u.createdAt >= :since', { since })
+          .groupBy('p2.userId')
+          .having('COUNT(p2.id) >= 2');
+      }, 'renewers')
+      .getRawOne();
+    const renewed = Number(renewedResult?.cnt || 0);
+
+    const conversionRate =
+      registered > 0 ? Math.round((purchased / registered) * 100) : 0;
+    const retentionRate =
+      purchased > 0 ? Math.round((renewed / purchased) * 100) : 0;
+
+    return {
+      registered,
+      purchased,
+      renewed,
+      conversionRate,
+      retentionRate,
+    };
   }
 }

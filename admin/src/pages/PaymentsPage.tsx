@@ -6,7 +6,8 @@ import { StatusBadge } from '../components/StatusBadge.tsx';
 import { Pagination } from '../components/Pagination.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Payment } from '../api/types.ts';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel } from '../utils/exportExcel.ts';
 import { SearchInput } from '../components/SearchInput.tsx';
 import { toast } from '../components/Toast.tsx';
 
@@ -108,6 +109,27 @@ export function PaymentsPage() {
           >
             <Download size={14} />
             CSV
+          </button>
+          <button
+            onClick={async () => {
+              const all = await adminApi.getPayments(1, 10000, status || undefined, method || undefined);
+              exportToExcel(all.data.map((p: Payment) => ({
+                ...p,
+                userName: p.user?.firstName || p.user?.username || '',
+              })), [
+                { key: 'id', header: 'ID' },
+                { key: 'userName', header: 'Пользователь' },
+                { key: 'amount', header: 'Сумма' },
+                { key: 'method', header: 'Метод' },
+                { key: 'status', header: 'Статус' },
+                { key: 'externalId', header: 'External ID' },
+                { key: 'createdAt', header: 'Дата' },
+              ], 'payments');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm hover:bg-green-100"
+          >
+            <FileSpreadsheet size={14} />
+            Excel
           </button>
         </div>
         <DataTable columns={columns} data={data} loading={loading} />

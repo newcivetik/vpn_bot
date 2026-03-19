@@ -7,10 +7,12 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
   UnauthorizedException,
   ParseIntPipe,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -63,6 +65,7 @@ export class AdminController {
       throw new UnauthorizedException('Invalid password');
     }
     const token = await this.jwtService.signAsync({ role: 'admin' });
+    this.adminService.logAction('login', {}, dto['ip'] || 'unknown');
     return { token };
   }
 
@@ -90,6 +93,20 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   getSubscriptionChart(@Query('days') days?: string) {
     return this.adminService.getSubscriptionChart(Number(days) || 30);
+  }
+
+  @Get('dashboard/funnel')
+  @UseGuards(AdminAuthGuard)
+  getFunnel(@Query('days') days?: string) {
+    return this.adminService.getFunnelAnalytics(Number(days) || 30);
+  }
+
+  // ─── Admin Logs ──────────────────────────────────────
+
+  @Get('logs')
+  @UseGuards(AdminAuthGuard)
+  getLogs(@Query() query: PaginationQuery) {
+    return this.adminService.getActionLogs(query.page || 1, query.limit || 50);
   }
 
   // ─── Users ────────────────────────────────────────────
@@ -125,23 +142,38 @@ export class AdminController {
 
   @Post('subscriptions/grant')
   @UseGuards(AdminAuthGuard)
-  grantSubscription(@Body() dto: CreateSubscriptionDto) {
-    return this.adminService.grantSubscription(dto.userId, dto.planId);
+  async grantSubscription(@Body() dto: CreateSubscriptionDto) {
+    const result = await this.adminService.grantSubscription(
+      dto.userId,
+      dto.planId,
+    );
+    this.adminService.logAction('grant_subscription', {
+      userId: dto.userId,
+      planId: dto.planId,
+    });
+    return result;
   }
 
   @Post('subscriptions/:id/extend')
   @UseGuards(AdminAuthGuard)
-  extendSubscription(
+  async extendSubscription(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ExtendSubscriptionDto,
   ) {
-    return this.adminService.extendSubscription(id, dto.days);
+    const result = await this.adminService.extendSubscription(id, dto.days);
+    this.adminService.logAction('extend_subscription', {
+      subscriptionId: id,
+      days: dto.days,
+    });
+    return result;
   }
 
   @Post('subscriptions/:id/cancel')
   @UseGuards(AdminAuthGuard)
-  cancelSubscription(@Param('id', ParseIntPipe) id: number) {
-    return this.adminService.cancelSubscription(id);
+  async cancelSubscription(@Param('id', ParseIntPipe) id: number) {
+    const result = await this.adminService.cancelSubscription(id);
+    this.adminService.logAction('cancel_subscription', { subscriptionId: id });
+    return result;
   }
 
   // ─── Plans ────────────────────────────────────────────
@@ -301,27 +333,36 @@ export class AdminController {
 
   @Post('support/tickets/:id/reply')
   @UseGuards(AdminAuthGuard)
-  replyTicket(
+  async replyTicket(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ReplyTicketDto,
   ) {
-    return this.supportService.replyFromAdmin(id, dto.text);
+    const result = await this.supportService.replyFromAdmin(id, dto.text);
+    this.adminService.logAction('reply_ticket', { ticketId: id });
+    return result;
   }
 
   @Post('support/tickets/:id/close')
   @UseGuards(AdminAuthGuard)
-  closeTicket(@Param('id', ParseIntPipe) id: number) {
-    return this.supportService.closeTicket(id);
+  async closeTicket(@Param('id', ParseIntPipe) id: number) {
+    const result = await this.supportService.closeTicket(id);
+    this.adminService.logAction('close_ticket', { ticketId: id });
+    return result;
   }
 
   // ─── Broadcast ────────────────────────────────────────
 
   @Post('broadcast')
   @UseGuards(AdminAuthGuard)
-  broadcast(@Body() dto: BroadcastDto) {
-    return this.adminService.broadcastMessage(
+  async broadcast(@Body() dto: BroadcastDto) {
+    const result = await this.adminService.broadcastMessage(
       dto.text,
       dto.onlyActive || false,
     );
+    this.adminService.logAction('broadcast', {
+      onlyActive: dto.onlyActive,
+      ...result,
+    });
+    return result;
   }
 }
