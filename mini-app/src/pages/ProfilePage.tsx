@@ -18,6 +18,7 @@ export function ProfilePage() {
     isReturning: boolean;
     totalSubscriptions: number;
     notifyBeforeExpiry: boolean;
+    botUsername?: string;
   } | null>(null);
   const [history, setHistory] = useState<SubscriptionDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,9 +48,8 @@ export function ProfilePage() {
       : `${traffic.toFixed(1)} ГБ`
     : '—';
 
-  const botUsername = (tg as any)?.initDataUnsafe?.bot?.username;
   const referralLink = profile?.referralCode
-    ? `https://t.me/${botUsername || 'bot'}?start=ref_${profile.referralCode}`
+    ? `https://t.me/${profile.botUsername || 'sellwhy_vpn_bot'}?start=ref_${profile.referralCode}`
     : '';
 
   const handleCopyReferral = async () => {

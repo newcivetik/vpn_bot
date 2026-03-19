@@ -101,6 +101,7 @@ export const api = {
       isReturning: boolean;
       totalSubscriptions: number;
       notifyBeforeExpiry: boolean;
+      botUsername?: string;
     } | null>('/profile', {
       headers: authHeaders(initData),
     }),

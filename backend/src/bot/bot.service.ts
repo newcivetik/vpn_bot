@@ -742,6 +742,10 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     this.supportMode.delete(telegramId);
   }
 
+  getBotUsername(): string {
+    return this.bot.botInfo?.username || 'sellwhy_vpn_bot';
+  }
+
   async sendNotification(telegramId: number, text: string): Promise<void> {
     try {
       await this.bot.api.sendMessage(telegramId, text);

@@ -234,6 +234,7 @@ export class SubscriptionController {
       isReturning,
       totalSubscriptions: allSubs.length,
       notifyBeforeExpiry: user.notifyBeforeExpiry,
+      botUsername: this.botService.getBotUsername(),
     };
   }
 
