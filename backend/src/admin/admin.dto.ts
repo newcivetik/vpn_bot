@@ -257,12 +257,26 @@ export class CreateSubscriptionDto {
 
   @IsInt()
   planId: number;
+
+  @IsOptional()
+  @IsBoolean()
+  notify?: boolean = true;
 }
 
 export class ExtendSubscriptionDto {
   @IsInt()
   @Min(1)
   days: number;
+
+  @IsOptional()
+  @IsBoolean()
+  notify?: boolean = true;
+}
+
+export class CancelSubscriptionDto {
+  @IsOptional()
+  @IsBoolean()
+  notify?: boolean = true;
 }
 
 export class BroadcastDto {

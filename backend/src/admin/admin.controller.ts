@@ -30,6 +30,7 @@ import {
   UpdatePromoDto,
   CreateSubscriptionDto,
   ExtendSubscriptionDto,
+  CancelSubscriptionDto,
   BroadcastDto,
   SubscriptionFilterQuery,
   PaymentFilterQuery,
@@ -198,6 +199,7 @@ export class AdminController {
     const result = await this.adminService.grantSubscription(
       dto.userId,
       dto.planId,
+      dto.notify !== false,
     );
     this.adminService.logAction('grant_subscription', {
       userId: dto.userId,
@@ -212,7 +214,11 @@ export class AdminController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ExtendSubscriptionDto,
   ) {
-    const result = await this.adminService.extendSubscription(id, dto.days);
+    const result = await this.adminService.extendSubscription(
+      id,
+      dto.days,
+      dto.notify !== false,
+    );
     this.adminService.logAction('extend_subscription', {
       subscriptionId: id,
       days: dto.days,
@@ -222,8 +228,14 @@ export class AdminController {
 
   @Post('subscriptions/:id/cancel')
   @UseGuards(AdminAuthGuard)
-  async cancelSubscription(@Param('id', ParseIntPipe) id: number) {
-    const result = await this.adminService.cancelSubscription(id);
+  async cancelSubscription(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CancelSubscriptionDto,
+  ) {
+    const result = await this.adminService.cancelSubscription(
+      id,
+      dto.notify !== false,
+    );
     this.adminService.logAction('cancel_subscription', { subscriptionId: id });
     return result;
   }

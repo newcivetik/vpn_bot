@@ -5,7 +5,6 @@ import type { Column } from '../components/DataTable.tsx';
 import { StatusBadge } from '../components/StatusBadge.tsx';
 import { Pagination } from '../components/Pagination.tsx';
 import { Modal } from '../components/Modal.tsx';
-import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Subscription, Plan } from '../api/types.ts';
 import { Plus, Download, FileSpreadsheet } from 'lucide-react';
@@ -33,6 +32,11 @@ export function SubscriptionsPage() {
   const [granting, setGranting] = useState(false);
   const [grantError, setGrantError] = useState('');
 
+  // Notify checkboxes
+  const [grantNotify, setGrantNotify] = useState(true);
+  const [extendNotify, setExtendNotify] = useState(true);
+  const [cancelNotify, setCancelNotify] = useState(true);
+
   const load = useCallback(async () => {
     setLoading(true);
     const userId = search ? (isNaN(Number(search)) ? undefined : Number(search)) : undefined;
@@ -50,7 +54,7 @@ export function SubscriptionsPage() {
     if (!extendId || extending) return;
     setExtending(true);
     try {
-      await adminApi.extendSubscription(extendId, Number(extendDays));
+      await adminApi.extendSubscription(extendId, Number(extendDays), extendNotify);
       setExtendId(null);
       toast(`Подписка #${extendId} продлена на ${extendDays} дн.`);
       load();
@@ -65,7 +69,7 @@ export function SubscriptionsPage() {
   const handleCancel = async () => {
     if (!cancelId) return;
     try {
-      await adminApi.cancelSubscription(cancelId);
+      await adminApi.cancelSubscription(cancelId, cancelNotify);
       toast(`Подписка #${cancelId} отменена`);
       setCancelId(null);
       load();
@@ -91,7 +95,7 @@ export function SubscriptionsPage() {
     setGranting(true);
     setGrantError('');
     try {
-      await adminApi.grantSubscription(Number(grantUserId), Number(grantPlanId));
+      await adminApi.grantSubscription(Number(grantUserId), Number(grantPlanId), grantNotify);
       setShowGrant(false);
       setGrantUserId('');
       toast('Подписка выдана');
@@ -282,6 +286,15 @@ export function SubscriptionsPage() {
               ))}
             </select>
           </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={grantNotify}
+              onChange={(e) => setGrantNotify(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300"
+            />
+            <span className="text-sm text-slate-600">Уведомить пользователя в Telegram</span>
+          </label>
           {grantError && (
             <p className="text-sm text-red-600">{grantError}</p>
           )}
@@ -302,25 +315,55 @@ export function SubscriptionsPage() {
           </>
         }
       >
-        <label className="block text-sm text-slate-600 mb-2">Количество дней</label>
-        <input
-          type="number"
-          value={extendDays}
-          onChange={(e) => setExtendDays(e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-          min={1}
-        />
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm text-slate-600 mb-2">Количество дней</label>
+            <input
+              type="number"
+              value={extendDays}
+              onChange={(e) => setExtendDays(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              min={1}
+            />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={extendNotify}
+              onChange={(e) => setExtendNotify(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300"
+            />
+            <span className="text-sm text-slate-600">Уведомить пользователя в Telegram</span>
+          </label>
+        </div>
       </Modal>
 
-      <ConfirmDialog
-        open={cancelId !== null}
+      <Modal
         title="Отменить подписку"
-        message="Подписка будет отменена, VPN-клиент отключён. Продолжить?"
-        onConfirm={handleCancel}
-        onCancel={() => setCancelId(null)}
-        confirmLabel="Отменить подписку"
-        danger
-      />
+        open={cancelId !== null}
+        onClose={() => setCancelId(null)}
+        footer={
+          <>
+            <button onClick={() => setCancelId(null)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg">Назад</button>
+            <button onClick={handleCancel} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">
+              Отменить подписку
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-slate-700">Подписка будет отменена, VPN-клиент отключён. Продолжить?</p>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={cancelNotify}
+              onChange={(e) => setCancelNotify(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300"
+            />
+            <span className="text-sm text-slate-600">Уведомить пользователя в Telegram</span>
+          </label>
+        </div>
+      </Modal>
     </>
   );
 }

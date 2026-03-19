@@ -298,30 +298,34 @@ export class AdminService {
     return { data, total };
   }
 
-  async grantSubscription(userId: number, planId: number) {
+  async grantSubscription(userId: number, planId: number, notify = true) {
     const sub = await this.subscriptionService.createSubscription(
       userId,
       planId,
     );
 
-    // Notify user via bot
-    const user = await this.userRepo.findOne({ where: { id: userId } });
-    const plan = await this.planRepo.findOne({ where: { id: planId } });
-    if (user && plan) {
-      const expiresDate = new Date(sub.expiresAt).toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-      this.botService
-        .sendNotification(
-          user.telegramId,
-          `🎁 Вам выдана подписка!\n\n` +
-            `▸ Тариф: ${plan.name}\n` +
-            `▸ Активна до: ${expiresDate}\n\n` +
-            `Скопируй ключ командой /key и подключайся!`,
-        )
-        .catch(() => {});
+    if (notify) {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      const plan = await this.planRepo.findOne({ where: { id: planId } });
+      if (user && plan) {
+        const expiresDate = new Date(sub.expiresAt).toLocaleDateString(
+          'ru-RU',
+          {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          },
+        );
+        this.botService
+          .sendNotification(
+            user.telegramId,
+            `🎁 Вам выдана подписка!\n\n` +
+              `▸ Тариф: ${plan.name}\n` +
+              `▸ Активна до: ${expiresDate}\n\n` +
+              `Скопируй ключ командой /key и подключайся!`,
+          )
+          .catch(() => {});
+      }
     }
 
     this.logger.log(
@@ -330,10 +334,10 @@ export class AdminService {
     return sub;
   }
 
-  async extendSubscription(id: number, days: number) {
+  async extendSubscription(id: number, days: number, notify = true) {
     const sub = await this.subRepo.findOne({
       where: { id },
-      relations: ['server'],
+      relations: ['server', 'user', 'plan'],
     });
     if (!sub) throw new NotFoundException('Subscription not found');
 
@@ -353,13 +357,31 @@ export class AdminService {
 
     await this.subRepo.save(sub);
     this.logger.log(`Subscription #${id} extended by ${days} days`);
+
+    if (notify && sub.user) {
+      const expiresDate = new Date(newExpiry).toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      this.botService
+        .sendNotification(
+          sub.user.telegramId,
+          `✅ Подписка продлена!\n\n` +
+            `▸ Тариф: ${sub.plan?.name || '—'}\n` +
+            `▸ +${days} дн.\n` +
+            `▸ Активна до: ${expiresDate}`,
+        )
+        .catch(() => {});
+    }
+
     return sub;
   }
 
-  async cancelSubscription(id: number) {
+  async cancelSubscription(id: number, notify = true) {
     const sub = await this.subRepo.findOne({
       where: { id },
-      relations: ['server'],
+      relations: ['server', 'user', 'plan'],
     });
     if (!sub) throw new NotFoundException('Subscription not found');
 
@@ -372,6 +394,18 @@ export class AdminService {
     );
     await this.subRepo.save(sub);
     this.logger.log(`Subscription #${id} cancelled`);
+
+    if (notify && sub.user) {
+      this.botService
+        .sendNotification(
+          sub.user.telegramId,
+          `❌ Подписка отменена\n\n` +
+            `▸ Тариф: ${sub.plan?.name || '—'}\n\n` +
+            `VPN-соединение отключено. Оформи новую подписку, чтобы продолжить.`,
+        )
+        .catch(() => {});
+    }
+
     return sub;
   }
 
