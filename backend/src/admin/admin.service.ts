@@ -303,6 +303,27 @@ export class AdminService {
       userId,
       planId,
     );
+
+    // Notify user via bot
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const plan = await this.planRepo.findOne({ where: { id: planId } });
+    if (user && plan) {
+      const expiresDate = new Date(sub.expiresAt).toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      this.botService
+        .sendNotification(
+          user.telegramId,
+          `🎁 Вам выдана подписка!\n\n` +
+            `▸ Тариф: ${plan.name}\n` +
+            `▸ Активна до: ${expiresDate}\n\n` +
+            `Скопируй ключ командой /key и подключайся!`,
+        )
+        .catch(() => {});
+    }
+
     this.logger.log(
       `Admin granted subscription #${sub.id} to user #${userId}, plan #${planId}`,
     );
