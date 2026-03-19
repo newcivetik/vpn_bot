@@ -411,15 +411,15 @@ export class AdminService {
     if (!server) throw new NotFoundException('Server not found');
 
     try {
-      // Try to login to 3X-UI panel
-      const url = `https://${server.host}:${server.apiPort}/login`;
+      const url = `https://${server.host}:${server.apiPort}/`;
       const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `username=${encodeURIComponent(server.username)}&password=${encodeURIComponent(server.password)}`,
+        method: 'GET',
         signal: AbortSignal.timeout(5000),
       });
-      return { online: res.ok, clientCount: server.currentClients };
+      return {
+        online: res.ok || res.status === 302,
+        clientCount: server.currentClients,
+      };
     } catch {
       return { online: false, clientCount: server.currentClients };
     }

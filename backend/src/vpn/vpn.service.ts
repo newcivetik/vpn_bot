@@ -170,13 +170,12 @@ export class VpnService {
     server: Server,
   ): Promise<{ online: boolean; version?: string }> {
     try {
-      const result = await this.apiCall<any>(
-        server,
-        '/server/status',
-        undefined,
-        'POST',
-      );
-      return { online: result.success, version: result.obj?.xray?.version };
+      const url = `https://${server.host}:${server.apiPort}/`;
+      const res = await fetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+      return { online: res.ok || res.status === 302 };
     } catch {
       return { online: false };
     }
