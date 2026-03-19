@@ -24,6 +24,7 @@ import {
   serverKeyboard,
   statusKeyboard,
   renewKeyboard,
+  deviceSelectionKeyboard,
 } from './bot.keyboards';
 
 @Injectable()
@@ -269,6 +270,22 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         await this.handleYokassaPayment(ctx, data);
       } else if (data.startsWith('change_server:')) {
         await this.handleChangeServer(ctx, data);
+      } else if (data === 'help_ios') {
+        await ctx.editMessageText(messages.helpIos, {
+          reply_markup: backToMenuKeyboard(),
+        });
+      } else if (data === 'help_android') {
+        await ctx.editMessageText(messages.helpAndroid, {
+          reply_markup: backToMenuKeyboard(),
+        });
+      } else if (data === 'help_windows') {
+        await ctx.editMessageText(messages.helpWindows, {
+          reply_markup: backToMenuKeyboard(),
+        });
+      } else if (data === 'help_mac') {
+        await ctx.editMessageText(messages.helpMac, {
+          reply_markup: backToMenuKeyboard(),
+        });
       } else if (data === 'support') {
         await this.handleSupportStart(ctx);
       } else if (data === 'support_cancel') {
@@ -426,6 +443,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         expiresDate,
         trafficLimit,
         sub.server.location,
+        sub.plan.maxDevices,
       ),
       statusKeyboard(miniAppUrl),
     );
@@ -454,7 +472,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handleHelp(ctx: any) {
-    await this.sendOrEdit(ctx, messages.help, backToMenuKeyboard());
+    await this.sendOrEdit(ctx, messages.help, deviceSelectionKeyboard());
   }
 
   private async handleTraffic(ctx: any) {

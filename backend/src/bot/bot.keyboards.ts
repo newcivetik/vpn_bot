@@ -15,8 +15,9 @@ export function plansKeyboard(plans: Plan[]): InlineKeyboard {
   for (const plan of plans) {
     const trafficLabel =
       plan.trafficLimitGB > 0 ? `${plan.trafficLimitGB} ГБ` : '∞';
+    const devicesLabel = plan.maxDevices > 1 ? ` · 👨‍👩‍👧‍👦 ${plan.maxDevices}` : '';
     kb.text(
-      `${plan.name} — ${plan.price}₽ · ${trafficLabel}`,
+      `${plan.name} — ${plan.price}₽ · ${trafficLabel}${devicesLabel}`,
       `buy_stars:${plan.id}`,
     ).row();
   }
@@ -62,6 +63,17 @@ export function renewKeyboard(
     .row()
     .text('← Меню', 'menu');
   return kb;
+}
+
+export function deviceSelectionKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('📱 iPhone / iPad', 'help_ios')
+    .text('🤖 Android', 'help_android')
+    .row()
+    .text('💻 Windows', 'help_windows')
+    .text('🍎 macOS', 'help_mac')
+    .row()
+    .text('← Меню', 'menu');
 }
 
 export function serverKeyboard(

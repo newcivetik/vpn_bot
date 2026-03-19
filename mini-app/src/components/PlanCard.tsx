@@ -19,9 +19,16 @@ export function PlanCard({ plan, onSelect, popular, current, savingsPct, persona
   const displayPrice = discountedPrice ?? plan.price;
   const pricePerDay = (displayPrice / plan.durationDays).toFixed(1);
 
+  const deviceLabel =
+    plan.maxDevices === 1
+      ? '1 устройство'
+      : plan.maxDevices < 5
+        ? `${plan.maxDevices} устройства`
+        : `${plan.maxDevices} устройств`;
+
   const features = [
     trafficLabel,
-    `${plan.maxDevices} устройств`,
+    plan.maxDevices > 1 ? `👨‍👩‍👧‍👦 ${deviceLabel}` : deviceLabel,
     `${plan.durationDays} дней`,
     'VLESS+Reality',
   ];
