@@ -49,7 +49,7 @@ export function ProfilePage() {
     : '—';
 
   const referralLink = profile?.referralCode
-    ? `https://t.me/${profile.botUsername || 'sellwhy_vpn_bot'}?start=ref_${profile.referralCode}`
+    ? `https://t.me/${profile.botUsername || 'sellwhyvpn_bot'}?start=ref_${profile.referralCode}`
     : '';
 
   const handleCopyReferral = async () => {
