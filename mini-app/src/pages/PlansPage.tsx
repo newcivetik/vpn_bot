@@ -144,15 +144,6 @@ export function PlansPage() {
         })()}
       </div>
 
-      {/* Trial CTA card */}
-      <div
-        className="bg-gradient-to-br from-[#FFF8EE] to-[#FFE8CC] rounded-3xl p-5 text-center shadow-[0_8px_32px_rgba(100,60,120,0.10)] animate-slide-up"
-        style={{ animationDelay: `${plans.length * 80 + 80}ms`, animationFillMode: 'both' }}
-      >
-        <div className="text-3xl mb-2">🎁</div>
-        <div className="text-base font-extrabold text-[#3D2C4E]">Попробуй бесплатно 3 дня!</div>
-        <div className="text-xs font-semibold text-[#6B5A7A] mt-1">Оцени скорость, потом реши</div>
-      </div>
     </div>
   );
 }

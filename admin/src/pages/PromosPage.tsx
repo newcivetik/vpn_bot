@@ -34,6 +34,22 @@ export function PromosPage() {
 
   const handleSave = async () => {
     if (!editPromo) return;
+    if (!editPromo.code || editPromo.code.length < 3 || editPromo.code.length > 20) {
+      toast('Код должен быть от 3 до 20 символов', 'error');
+      return;
+    }
+    if (!/^[A-Z0-9]+$/.test(editPromo.code)) {
+      toast('Код может содержать только буквы и цифры', 'error');
+      return;
+    }
+    if ((editPromo.discountPercent || 0) === 0 && (editPromo.bonusDays || 0) === 0) {
+      toast('Укажите скидку или бонусные дни', 'error');
+      return;
+    }
+    if (editPromo.expiresAt && new Date(editPromo.expiresAt) <= new Date()) {
+      toast('Дата истечения должна быть в будущем', 'error');
+      return;
+    }
     try {
       if (isNew) {
         await adminApi.createPromo(editPromo);

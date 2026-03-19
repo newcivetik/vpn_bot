@@ -20,23 +20,19 @@ export function ProfilePage() {
     notifyBeforeExpiry: boolean;
   } | null>(null);
   const [history, setHistory] = useState<SubscriptionDTO[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const user = tg?.initDataUnsafe?.user;
     if (user?.first_name) setFirstName(user.first_name);
 
     if (initData) {
-      if (!subscription) {
-        api.getSubscription(initData).then(setSubscription).catch((e) => {
-          console.error('Failed to load subscription:', e);
-        });
-      }
-      api.getProfile(initData).then(setProfile).catch((e) => {
-        console.error('Failed to load profile:', e);
-      });
-      api.getSubscriptions(initData).then(setHistory).catch((e) => {
-        console.error('Failed to load history:', e);
-      });
+      setLoading(true);
+      Promise.allSettled([
+        !subscription ? api.getSubscription(initData).then(setSubscription) : Promise.resolve(),
+        api.getProfile(initData).then(setProfile),
+        api.getSubscriptions(initData).then(setHistory),
+      ]).finally(() => setLoading(false));
     }
   }, [initData, tg, subscription, setSubscription, setFirstName]);
 
@@ -80,6 +76,16 @@ export function ProfilePage() {
     const url = encodeURIComponent(referralLink);
     tg?.openTelegramLink(`https://t.me/share/url?url=${url}&text=${text}`);
   };
+
+  if (loading && !profile) {
+    return (
+      <div className="p-4 pb-4 space-y-4">
+        <div className="bg-gradient-to-br from-[#F0E4FA] to-[#D0EAFF] rounded-[32px] p-8 text-center animate-pulse h-48" />
+        <div className="bg-white rounded-3xl p-5 animate-pulse h-24" />
+        <div className="bg-white rounded-3xl p-5 animate-pulse h-32" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 pb-4 space-y-4">

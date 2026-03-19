@@ -30,7 +30,7 @@ import {
 export class BotService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
   private readonly logger = new Logger(BotService.name);
-  private supportMode = new Set<number>(); // telegramIds in support mode
+  private supportMode = new Map<number, NodeJS.Timeout>(); // telegramId -> timeout
 
   constructor(
     private readonly config: ConfigService,
@@ -273,7 +273,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         await this.handleSupportStart(ctx);
       } else if (data === 'support_cancel') {
         const from = ctx.callbackQuery?.from;
-        if (from) this.supportMode.delete(from.id);
+        if (from) this.clearSupportMode(from.id);
         await ctx.editMessageText(messages.menu, {
           reply_markup: mainMenuKeyboard(miniAppUrl),
         });
@@ -353,7 +353,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       if (!user) return;
 
       await this.supportService.addUserMessage(user.id, ctx.message.text);
-      this.supportMode.delete(from.id);
+      this.clearSupportMode(from.id);
 
       await ctx.reply(
         '✅ Сообщение отправлено в поддержку!\n\n' +
@@ -661,7 +661,17 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     const from = ctx.callbackQuery?.from || ctx.from;
     if (!from) return;
 
-    this.supportMode.add(from.id);
+    // Clear existing timeout if re-entering support mode
+    this.clearSupportMode(from.id);
+
+    // Auto-expire support mode after 5 minutes
+    const timeout = setTimeout(
+      () => {
+        this.supportMode.delete(from.id);
+      },
+      5 * 60 * 1000,
+    );
+    this.supportMode.set(from.id, timeout);
 
     const cancelKeyboard = new InlineKeyboard().text(
       '❌ Отмена',
@@ -673,6 +683,12 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         'Опиши проблему или задай вопрос — мы ответим в ближайшее время.',
       { reply_markup: cancelKeyboard },
     );
+  }
+
+  private clearSupportMode(telegramId: number) {
+    const timeout = this.supportMode.get(telegramId);
+    if (timeout) clearTimeout(timeout);
+    this.supportMode.delete(telegramId);
   }
 
   async sendNotification(telegramId: number, text: string): Promise<void> {

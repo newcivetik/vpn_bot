@@ -8,39 +8,60 @@ import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { adminApi } from '../api/client.ts';
 import type { Plan } from '../api/types.ts';
 import { Plus } from 'lucide-react';
+import { toast } from '../components/Toast.tsx';
 
 const emptyPlan = { name: '', slug: '', price: 0, priceStars: 0, trafficLimitGB: 0, durationDays: 30, maxDevices: 1, sortOrder: 0 };
 
 export function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [editPlan, setEditPlan] = useState<Partial<Plan> | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const load = () => {
     setLoading(true);
-    adminApi.getPlans().then((p) => { setPlans(p); setLoading(false); });
+    setError('');
+    adminApi.getPlans()
+      .then((p) => { setPlans(p); })
+      .catch((e) => { setError(e.message || 'Ошибка загрузки'); })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
   const handleSave = async () => {
     if (!editPlan) return;
-    if (isNew) {
-      await adminApi.createPlan(editPlan);
-    } else {
-      await adminApi.updatePlan(editPlan.id!, editPlan);
+    setSaving(true);
+    try {
+      if (isNew) {
+        await adminApi.createPlan(editPlan);
+      } else {
+        await adminApi.updatePlan(editPlan.id!, editPlan);
+      }
+      setEditPlan(null);
+      toast(isNew ? 'Тариф создан' : 'Тариф обновлён');
+      load();
+    } catch (e: any) {
+      toast(e.message || 'Ошибка сохранения', 'error');
+    } finally {
+      setSaving(false);
     }
-    setEditPlan(null);
-    load();
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await adminApi.deletePlan(deleteId);
-    setDeleteId(null);
-    load();
+    try {
+      await adminApi.deletePlan(deleteId);
+      setDeleteId(null);
+      toast('Тариф удалён');
+      load();
+    } catch (e: any) {
+      toast(e.message || 'Ошибка удаления', 'error');
+      setDeleteId(null);
+    }
   };
 
   const columns: Column<Plan>[] = [
@@ -87,6 +108,12 @@ export function PlansPage() {
         >
           <Plus size={16} /> Создать тариф
         </button>
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 rounded-lg p-3 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={load} className="text-red-700 underline text-xs">Повторить</button>
+          </div>
+        )}
         <DataTable columns={columns} data={plans} loading={loading} />
       </div>
 
@@ -97,7 +124,7 @@ export function PlansPage() {
         footer={
           <>
             <button onClick={() => setEditPlan(null)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg">Отмена</button>
-            <button onClick={handleSave} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">Сохранить</button>
+            <button onClick={handleSave} disabled={saving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg disabled:opacity-50">{saving ? 'Сохранение...' : 'Сохранить'}</button>
           </>
         }
       >

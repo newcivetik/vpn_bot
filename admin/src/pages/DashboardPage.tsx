@@ -15,10 +15,12 @@ export function DashboardPage() {
   const [funnel, setFunnel] = useState<FunnelData | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   const loadAll = useCallback(async () => {
     setRefreshing(true);
-    await Promise.allSettled([
+    setError('');
+    const results = await Promise.allSettled([
       adminApi.getDashboard().then(setStats),
       adminApi.getRevenueChart(30).then(setRevenue),
       adminApi.getUserGrowth(30).then(setGrowth),
@@ -26,6 +28,10 @@ export function DashboardPage() {
       adminApi.getSubscriptionChart(30).then(setSubChart),
       adminApi.getFunnel(30).then(setFunnel),
     ]);
+    const failed = results.filter((r) => r.status === 'rejected');
+    if (failed.length === results.length) {
+      setError('Не удалось загрузить данные');
+    }
     setLastRefresh(new Date());
     setRefreshing(false);
   }, []);
@@ -41,21 +47,25 @@ export function DashboardPage() {
       <>
         <Header title="Dashboard" />
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-24 animate-pulse" />
-            ))}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-24 animate-pulse" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-72 animate-pulse" />
-            ))}
-          </div>
+          {error ? (
+            <div className="text-center py-20">
+              <div className="text-red-500 text-lg mb-2">{error}</div>
+              <button onClick={loadAll} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Повторить</button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-24 animate-pulse" />
+                ))}
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 h-24 animate-pulse" />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </>
     );

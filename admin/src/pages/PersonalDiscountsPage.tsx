@@ -36,6 +36,17 @@ export function PersonalDiscountsPage() {
       toast('Укажите ID пользователя', 'error');
       return;
     }
+    if (editDiscount.discountPercent === 0 && editDiscount.bonusDays === 0) {
+      toast('Укажите скидку или бонусные дни', 'error');
+      return;
+    }
+    if (editDiscount.expiresAt) {
+      const expires = new Date(editDiscount.expiresAt);
+      if (expires <= new Date()) {
+        toast('Дата истечения должна быть в будущем', 'error');
+        return;
+      }
+    }
     try {
       await adminApi.createPersonalDiscount({
         userId: editDiscount.userId,
@@ -149,7 +160,7 @@ export function PersonalDiscountsPage() {
           </div>
           <div>
             <label className="block text-sm text-slate-600 mb-1">Действует до</label>
-            <input type="date" value={editDiscount?.expiresAt ?? ''} onChange={(e) => setEditDiscount({ ...editDiscount!, expiresAt: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
+            <input type="date" value={editDiscount?.expiresAt ?? ''} min={new Date().toISOString().split('T')[0]} onChange={(e) => setEditDiscount({ ...editDiscount!, expiresAt: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
           </div>
           <p className="text-xs text-slate-400">Пользователь получит уведомление в боте о скидке</p>
         </div>
