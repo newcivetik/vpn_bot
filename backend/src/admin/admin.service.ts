@@ -341,11 +341,17 @@ export class AdminService {
     });
     if (!sub) throw new NotFoundException('Subscription not found');
 
-    const newExpiry = new Date(sub.expiresAt);
+    const wasInactive =
+      sub.status === SubscriptionStatus.EXPIRED ||
+      sub.status === SubscriptionStatus.CANCELLED;
+
+    // If subscription was inactive, extend from now; otherwise from current expiry
+    const base = wasInactive ? new Date() : new Date(sub.expiresAt);
+    const newExpiry = new Date(base);
     newExpiry.setDate(newExpiry.getDate() + days);
     sub.expiresAt = newExpiry;
 
-    if (sub.status === SubscriptionStatus.EXPIRED) {
+    if (wasInactive) {
       sub.status = SubscriptionStatus.ACTIVE;
       await this.vpnService.toggleClient(
         sub.server,
