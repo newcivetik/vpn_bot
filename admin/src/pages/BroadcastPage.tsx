@@ -9,6 +9,7 @@ const MAX_MESSAGE_LENGTH = 4096;
 
 export function BroadcastPage() {
   const [text, setText] = useState('');
+  const [sendToUsers, setSendToUsers] = useState(true);
   const [onlyActive, setOnlyActive] = useState(false);
   const [postToChannel, setPostToChannel] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -22,7 +23,14 @@ export function BroadcastPage() {
     setSending(true);
     setError(null);
     try {
-      const res = await adminApi.broadcast(text.trim(), onlyActive, postToChannel);
+      let res: BroadcastResult;
+      if (sendToUsers) {
+        res = await adminApi.broadcast(text.trim(), onlyActive, postToChannel);
+      } else {
+        // Only channel
+        const { success } = await adminApi.postToChannel(text.trim());
+        res = { sent: 0, failed: success ? 0 : 1, total: 0 };
+      }
       setResult(res);
       setText('');
     } catch (e) {
@@ -70,16 +78,27 @@ export function BroadcastPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input
               type="checkbox"
-              checked={onlyActive}
-              onChange={(e) => setOnlyActive(e.target.checked)}
+              checked={sendToUsers}
+              onChange={(e) => setSendToUsers(e.target.checked)}
               className="rounded"
             />
-            Только с активной подпиской
+            Отправить пользователям
           </label>
+          {sendToUsers && (
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={onlyActive}
+                onChange={(e) => setOnlyActive(e.target.checked)}
+                className="rounded"
+              />
+              Только с активной подпиской
+            </label>
+          )}
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input
               type="checkbox"
@@ -110,7 +129,7 @@ export function BroadcastPage() {
 
         <button
           onClick={() => setConfirm(true)}
-          disabled={!text.trim() || sending || isOverLimit}
+          disabled={!text.trim() || sending || isOverLimit || (!sendToUsers && !postToChannel)}
           className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           <Send size={16} />
@@ -128,10 +147,12 @@ export function BroadcastPage() {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
             <CheckCircle size={20} className="text-green-600 mt-0.5" />
             <div className="text-sm">
-              <div className="font-medium text-green-800">Рассылка завершена</div>
+              <div className="font-medium text-green-800">
+                {result.total > 0 ? 'Рассылка завершена' : 'Опубликовано в канал'}
+              </div>
               <div className="text-green-700 mt-1">
-                Отправлено: {result.sent} / {result.total}
-                {result.failed > 0 && ` (ошибок: ${result.failed})`}
+                {result.total > 0 && <>Отправлено: {result.sent} / {result.total}</>}
+                {result.total > 0 && result.failed > 0 && ` (ошибок: ${result.failed})`}
               </div>
             </div>
           </div>
@@ -141,7 +162,7 @@ export function BroadcastPage() {
       <ConfirmDialog
         open={confirm}
         title="Подтверждение рассылки"
-        message={`Отправить сообщение ${onlyActive ? 'пользователям с активной подпиской' : 'всем пользователям'}?${postToChannel ? '\n+ Опубликовать в канал @sellwhy' : ''}`}
+        message={`${sendToUsers ? `Отправить сообщение ${onlyActive ? 'пользователям с активной подпиской' : 'всем пользователям'}` : ''}${sendToUsers && postToChannel ? '\n+ ' : ''}${postToChannel ? 'Опубликовать в канал @sellwhy' : ''}`}
         onConfirm={handleSend}
         onCancel={() => setConfirm(false)}
         confirmLabel="Отправить"
