@@ -5,13 +5,13 @@ import { getLocationFlag, getLoadEmoji, getLoadLabel } from './bot.messages';
 
 export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
   return new InlineKeyboard()
-    .webApp('🛒 Магазин', miniAppUrl)
-    .text('🌍 Сервер', 'server')
+    .webApp('Тарифы', miniAppUrl)
+    .text('Сервер', 'server')
     .row()
-    .text('📊 Статус', 'status')
-    .text('🔑 Ключ', 'key')
+    .text('Статус', 'status')
+    .text('Ключ', 'key')
     .row()
-    .text('❓ Помощь', 'help');
+    .text('Помощь', 'help');
 }
 
 export function plansKeyboard(plans: Plan[]): InlineKeyboard {
@@ -24,32 +24,32 @@ export function plansKeyboard(plans: Plan[]): InlineKeyboard {
       `buy_stars:${plan.id}`,
     ).row();
   }
-  kb.text('« Назад', 'menu');
+  kb.text('← Назад', 'menu');
   return kb;
 }
 
 export function paymentMethodKeyboard(planId: number): InlineKeyboard {
   return new InlineKeyboard()
-    .text('⭐ Telegram Stars', `pay_stars:${planId}`)
+    .text('Telegram Stars', `pay_stars:${planId}`)
     .row()
-    .text('💳 Карта / СБП', `pay_yokassa:${planId}`)
+    .text('Карта / СБП', `pay_yokassa:${planId}`)
     .row()
-    .text('« Назад', 'plans');
+    .text('← Назад', 'plans');
 }
 
 export function backToMenuKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().text('« Меню', 'menu');
+  return new InlineKeyboard().text('← Меню', 'menu');
 }
 
 export function statusKeyboard(miniAppUrl: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text('🔑 Ключ', 'key')
-    .text('🌍 Сервер', 'server')
+    .text('Ключ', 'key')
+    .text('Сервер', 'server')
     .row()
-    .text('📊 Трафик', 'traffic')
-    .text('🔄 Продлить', 'renew')
+    .text('Трафик', 'traffic')
+    .text('Продлить', 'renew')
     .row()
-    .text('« Меню', 'menu');
+    .text('← Меню', 'menu');
 }
 
 export function renewKeyboard(
@@ -58,13 +58,13 @@ export function renewKeyboard(
 ): InlineKeyboard {
   const kb = new InlineKeyboard()
     .webApp(
-      '🛒 Продлить текущий',
+      'Продлить текущий',
       `${miniAppUrl}/plans/${currentPlanId || ''}/pay`,
     )
     .row()
-    .webApp('📋 Все тарифы', miniAppUrl)
+    .webApp('Все тарифы', miniAppUrl)
     .row()
-    .text('« Меню', 'menu');
+    .text('← Меню', 'menu');
   return kb;
 }
 

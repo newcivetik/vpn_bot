@@ -1,18 +1,28 @@
 export const messages = {
-  welcome: (name?: string) =>
-    `Привет${name ? `, ${name}` : ''}! 👋\n\n` +
-    `Я — твой VPN-бот 🛡\n` +
-    `Быстрый и невидимый VLESS+Reality.\n\n` +
-    `🔐 Провайдер не видит VPN\n` +
-    `⚡ Высокая скорость\n` +
-    `📱 До 5 устройств\n\n` +
-    `Выбирай действие 👇`,
+  // ─── Приветствие ──────────────────────────────────────
 
-  menu: '🛡 VPN-бот\n\nЧто делаем? 👇',
+  welcome: (name?: string) =>
+    `С возвращением${name ? `, ${name}` : ''}! 👋\n\n` +
+    `Рад тебя видеть. Твой VPN готов к работе.\n\n` +
+    `Выбирай, что нужно 👇`,
+
+  onboarding: (name?: string) =>
+    `Привет${name ? `, ${name}` : ''}! 👋\n\n` +
+    `Добро пожаловать в SellWhy VPN — быстрый и незаметный.\n\n` +
+    `Что я умею:\n` +
+    `🛒  Подобрать тариф\n` +
+    `🌍  Выбрать сервер в нужной стране\n` +
+    `🔑  Выдать ключ подключения\n` +
+    `📊  Показать статус и трафик\n\n` +
+    `Подключение занимает пару минут — начнём? 👇`,
+
+  menu: 'SellWhy VPN\n\nЧем могу помочь? 👇',
+
+  // ─── Подписка ─────────────────────────────────────────
 
   noSubscription:
-    '😔 У тебя пока нет подписки.\n\n' +
-    'Выбери тариф и подключись за пару минут! 🚀',
+    'У тебя пока нет активной подписки.\n\n' +
+    'Подключение занимает 2 минуты — выбери подходящий тариф 👇',
 
   status: (
     planName: string,
@@ -20,93 +30,126 @@ export const messages = {
     traffic: string,
     server: string,
   ) =>
-    `📊 Твоя подписка\n\n` +
-    `🛡 Тариф: ${planName}\n` +
-    `📅 До: ${expiresDate}\n` +
-    `📈 Трафик: ${traffic}\n` +
-    `🌍 Сервер: ${server}\n\n` +
-    `Твой щит работает ✅`,
+    `Твоя подписка\n\n` +
+    `▸ Тариф: ${planName}\n` +
+    `▸ Действует до: ${expiresDate}\n` +
+    `▸ Трафик: ${traffic}\n` +
+    `▸ Сервер: ${server}\n\n` +
+    `Всё работает, подключение активно ✅`,
+
+  // ─── Ключ ─────────────────────────────────────────────
 
   key: (connectionLink: string) =>
-    `🔑 Твой ключ подключения:\n\n` +
+    `Твой ключ подключения:\n\n` +
     `\`${connectionLink}\`\n\n` +
-    `📱 Вставь его в Hiddify\n` +
-    `💡 Не знаешь как? Жми /help`,
+    `Скопируй и вставь в приложение Hiddify.\n` +
+    `Нужна помощь с настройкой? Нажми /help`,
 
-  noKey: '😔 У тебя нет активного ключа.\n\nСначала оформи подписку! 🚀',
+  noKey:
+    'У тебя пока нет ключа подключения.\n\n' +
+    'Он появится после оформления подписки 👇',
+
+  // ─── Помощь ───────────────────────────────────────────
 
   help:
-    '📖 Как подключиться\n\n' +
-    '1️⃣ Купи подписку — через бота или мини-приложение\n\n' +
-    '2️⃣ Скопируй ключ — /key или в мини-приложении\n\n' +
-    '3️⃣ Скачай Hiddify:\n' +
-    '   📱 iPhone → App Store\n' +
-    '   🤖 Android → Google Play\n' +
-    '   💻 Windows/Mac → hiddify.com\n\n' +
-    '4️⃣ Открой Hiddify → ➕ → вставь ключ\n\n' +
-    '5️⃣ Нажми «Подключить» — готово! 🎉\n\n' +
-    '🔐 VLESS+Reality — невидим для провайдера',
+    'Как подключиться за 5 шагов\n\n' +
+    '1. Оформи подписку — через бота или приложение\n\n' +
+    '2. Скопируй ключ — командой /key\n\n' +
+    '3. Установи Hiddify:\n' +
+    '   iPhone — App Store\n' +
+    '   Android — Google Play\n' +
+    '   Windows / Mac — hiddify.com\n\n' +
+    '4. Открой Hiddify → нажми + → вставь ключ\n\n' +
+    '5. Нажми «Подключить» — готово!\n\n' +
+    'Используется протокол VLESS+Reality — провайдер не видит VPN-соединение.',
 
-  plans: '🛒 Тарифы\n\nВыбери подходящий 👇',
+  // ─── Тарифы и оплата ──────────────────────────────────
 
-  selectPayment: '💰 Выбери способ оплаты 👇',
+  plans: 'Доступные тарифы\n\nВыбери подходящий вариант 👇',
+
+  selectPayment: 'Выбери удобный способ оплаты 👇',
 
   paymentSuccess: (connectionLink: string) =>
-    '🎉 Оплата прошла!\n\n' +
-    `🔑 Твой ключ:\n\n\`${connectionLink}\`\n\n` +
-    '📱 Скопируй и вставь в Hiddify\n' +
-    '❓ Как подключить → /help',
+    'Оплата прошла успешно! ✅\n\n' +
+    `Твой ключ подключения:\n\n\`${connectionLink}\`\n\n` +
+    'Скопируй его и вставь в Hiddify.\n' +
+    'Инструкция по настройке — /help',
 
   yokassaPay: (planName: string, price: number) =>
-    `💳 Оплата: ${planName} — ${price}₽\n\n` +
-    `Нажми кнопку для перехода к оплате 👇`,
+    `Оплата картой\n\n` +
+    `▸ Тариф: ${planName}\n` +
+    `▸ Сумма: ${price} ₽\n\n` +
+    `Нажми кнопку ниже для перехода к оплате 👇`,
 
   yokassaError:
-    '😔 Ошибка создания платежа.\nПопробуй позже или выбери оплату Stars.',
+    'Не удалось создать платёж. Попробуй чуть позже или выбери оплату через Telegram Stars.',
 
-  serverSelect: '🌍 Выбор сервера\n\nВыбери сервер 👇',
+  // ─── Серверы ──────────────────────────────────────────
+
+  serverSelect: 'Выбор сервера\n\nНажми на нужную локацию 👇',
 
   serverChanged: (location: string) =>
-    `✅ Сервер изменён!\n\n🌍 Новый сервер: ${location}\n\n` +
-    `🔑 Твой ключ обновлён — скопируй его заново: /key`,
+    `Сервер успешно изменён ✅\n\n` +
+    `▸ Новая локация: ${location}\n\n` +
+    `Ключ обновлён — скопируй его заново командой /key`,
 
-  serverChangeError: '😔 Не удалось сменить сервер. Попробуй позже.',
+  serverChangeError:
+    'Не удалось сменить сервер. Попробуй ещё раз через пару минут.',
+
+  serverIssue: (currentLocation: string, suggestedLocation: string) =>
+    `Мы заметили нестабильную работу сервера ${currentLocation}.\n\n` +
+    `Рекомендуем переключиться на ${suggestedLocation} — он работает стабильно.\n\n` +
+    `Сменить сервер → /server`,
+
+  // ─── Уведомления об истечении ─────────────────────────
 
   expiryNotification: (
     planName: string,
     daysLeft: number,
     pluralDays: string,
   ) => {
-    const emoji = daysLeft <= 1 ? '🚨' : daysLeft <= 3 ? '⚠️' : '📢';
-    const urgency =
-      daysLeft <= 1
-        ? 'Последний день!'
-        : daysLeft <= 3
-          ? 'Осталось совсем немного'
-          : 'Скоро истекает';
+    if (daysLeft <= 1) {
+      return (
+        `Подписка «${planName}» заканчивается сегодня.\n\n` +
+        `Продли сейчас, чтобы не потерять доступ к VPN 👇`
+      );
+    }
+    if (daysLeft <= 3) {
+      return (
+        `Подписка «${planName}» заканчивается через ${daysLeft} ${pluralDays}.\n\n` +
+        `Рекомендуем продлить заранее — так не будет перерыва в работе VPN 👇`
+      );
+    }
     return (
-      `${emoji} ${urgency}\n\n` +
-      `Подписка «${planName}» заканчивается через ${daysLeft} ${pluralDays}.\n\n` +
-      `💰 Продли сейчас со скидкой 15%!\n` +
-      `Используй промокод RENEW15 при оплате 🎁`
+      `Напоминание: подписка «${planName}» заканчивается через ${daysLeft} ${pluralDays}.\n\n` +
+      `Можешь продлить в любое время через бота или приложение 👇`
     );
   },
 
-  serverIssue: (currentLocation: string, suggestedLocation: string) =>
-    `⚡ Заметили проблему с сервером ${currentLocation}\n\n` +
-    `Рекомендуем переключиться на ${suggestedLocation} — он работает стабильно.\n\n` +
-    `Переключить → /server`,
+  subscriptionExpired: (planName: string) =>
+    `Подписка «${planName}» завершилась.\n\n` +
+    `VPN-соединение отключено. Чтобы вернуть доступ, оформи новую подписку 👇`,
 
-  onboarding: (name?: string) =>
-    `🎉 Добро пожаловать${name ? `, ${name}` : ''}!\n\n` +
-    `Я помогу тебе настроить безопасный VPN за 2 минуты.\n\n` +
-    `Вот что умею:\n` +
-    `🛒 Магазин — выбрать тариф\n` +
-    `🌍 Сервер — сменить локацию\n` +
-    `📊 Статус — проверить подписку\n` +
-    `🔑 Ключ — скопировать конфиг\n` +
-    `❓ Помощь — инструкция по настройке\n\n` +
-    `Начни с выбора тарифа 👇`,
+  // ─── Продление ────────────────────────────────────────
+
+  renew: (planName: string, expiresDate: string, daysLeft: number) => {
+    const note =
+      daysLeft <= 3
+        ? 'Рекомендуем продлить заранее.'
+        : 'Можешь продлить в любое время.';
+    return (
+      `Продление подписки\n\n` +
+      `▸ Тариф: ${planName}\n` +
+      `▸ Действует до: ${expiresDate}\n` +
+      `▸ Осталось: ${daysLeft} дн.\n\n` +
+      `${note} Выбери способ продления 👇`
+    );
+  },
+
+  noSubRenew:
+    'У тебя нет активной подписки.\n\n' + 'Оформи новую — выбери тариф 👇',
+
+  // ─── Трафик ───────────────────────────────────────────
 
   trafficStatus: (
     planName: string,
@@ -116,48 +159,41 @@ export const messages = {
   ) => {
     if (limitGB <= 0) {
       return (
-        `📊 Трафик\n\n` +
-        `🛡 Тариф: ${planName}\n` +
-        `📈 Использовано: ${usedGB.toFixed(1)} ГБ\n` +
-        `♾ Безлимитный\n` +
-        `📅 Осталось: ${daysLeft} дн.`
+        `Использование трафика\n\n` +
+        `▸ Тариф: ${planName}\n` +
+        `▸ Использовано: ${usedGB.toFixed(1)} ГБ\n` +
+        `▸ Лимит: безлимитный\n` +
+        `▸ Осталось дней: ${daysLeft}`
       );
     }
     const pct = Math.round((usedGB / limitGB) * 100);
     const filled = Math.round(pct / 10);
     const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
     return (
-      `📊 Трафик\n\n` +
-      `🛡 Тариф: ${planName}\n` +
-      `📈 ${usedGB.toFixed(1)} / ${limitGB} ГБ (${pct}%)\n` +
-      `[${bar}]\n` +
-      `📅 Осталось: ${daysLeft} дн.`
+      `Использование трафика\n\n` +
+      `▸ Тариф: ${planName}\n` +
+      `▸ ${usedGB.toFixed(1)} из ${limitGB} ГБ (${pct}%)\n` +
+      `  [${bar}]\n` +
+      `▸ Осталось дней: ${daysLeft}`
     );
   },
-
-  renew: (planName: string, expiresDate: string, daysLeft: number) => {
-    const emoji = daysLeft <= 3 ? '⚠️' : '📋';
-    return (
-      `${emoji} Продление подписки\n\n` +
-      `🛡 Тариф: ${planName}\n` +
-      `📅 До: ${expiresDate}\n` +
-      `⏳ Осталось: ${daysLeft} дн.\n\n` +
-      `Выбери способ продления 👇`
-    );
-  },
-
-  noSubRenew:
-    '😔 У тебя нет активной подписки.\n\n' + 'Оформи новую подписку 👇',
 
   trafficWarning: (planName: string, usedGB: number, limitGB: number) => {
     const pct = Math.round((usedGB / limitGB) * 100);
     return (
-      `⚠️ Трафик почти исчерпан\n\n` +
-      `Подписка «${planName}»: ${usedGB.toFixed(1)} из ${limitGB} ГБ (${pct}%)\n\n` +
+      `Внимание: трафик почти исчерпан\n\n` +
+      `Подписка «${planName}»: использовано ${usedGB.toFixed(1)} из ${limitGB} ГБ (${pct}%).\n\n` +
       `Когда лимит будет достигнут, VPN отключится.\n` +
-      `💡 Перейди на безлимитный тариф!`
+      `Рекомендуем перейти на безлимитный тариф 👇`
     );
   },
+
+  trafficExhausted: (planName: string) =>
+    `Лимит трафика исчерпан\n\n` +
+    `Подписка «${planName}» приостановлена.\n\n` +
+    `Оформи новую подписку, чтобы продолжить пользоваться VPN 👇`,
+
+  // ─── Аккаунт ──────────────────────────────────────────
 
   account: (opts: {
     name: string;
@@ -167,30 +203,22 @@ export const messages = {
     referralCode: string;
     botUsername: string;
   }) =>
-    `👤 Твой аккаунт\n\n` +
-    `📛 Имя: ${opts.name}\n` +
-    `📊 Всего подписок: ${opts.totalSubs}\n` +
-    `👥 Рефералов: ${opts.referralCount}\n` +
-    `🎁 Бонус дней: ${opts.bonusDays}\n\n` +
-    `🔗 Реферальная ссылка:\n` +
+    `Твой аккаунт\n\n` +
+    `▸ Имя: ${opts.name}\n` +
+    `▸ Подписок: ${opts.totalSubs}\n` +
+    `▸ Приглашённых друзей: ${opts.referralCount}\n` +
+    `▸ Бонусных дней: ${opts.bonusDays}\n\n` +
+    `Реферальная ссылка:\n` +
     `\`https://t.me/${opts.botUsername}?start=ref_${opts.referralCode}\`\n\n` +
-    `Приглашай друзей и получай бонусные дни! 🚀`,
+    `Приглашай друзей — за каждого получишь бонусные дни!`,
 
-  trafficExhausted: (planName: string) =>
-    `🚫 Лимит трафика исчерпан\n\n` +
-    `Подписка «${planName}» отключена.\n\n` +
-    `Оформи новую подписку, чтобы продолжить 👇`,
-
-  subscriptionExpired: (planName: string) =>
-    `😔 Подписка «${planName}» истекла\n\n` +
-    `VPN отключён. Продли подписку, чтобы вернуть доступ!\n\n` +
-    `💰 Используй промокод RENEW15 для скидки 15% 🎁`,
+  // ─── Уведомления ──────────────────────────────────────
 
   paymentSuccessNotification: (planName: string, expiresDate: string) =>
-    `✅ Оплата прошла!\n\n` +
-    `🛡 Тариф: ${planName}\n` +
-    `📅 Активна до: ${expiresDate}\n\n` +
-    `Подключение готово — наслаждайся VPN! 🚀`,
+    `Оплата получена ✅\n\n` +
+    `▸ Тариф: ${planName}\n` +
+    `▸ Активна до: ${expiresDate}\n\n` +
+    `VPN подключён и готов к работе.`,
 
   personalDiscountNotification: (
     discountPercent: number,
@@ -198,13 +226,13 @@ export const messages = {
     reason?: string,
     expiresDate?: string,
   ) => {
-    let text = `🎁 Персональное предложение!\n\n`;
+    let text = `Для тебя персональное предложение!\n\n`;
     if (discountPercent > 0)
-      text += `💰 Скидка ${discountPercent}% на следующую подписку\n`;
-    if (bonusDays > 0) text += `📅 +${bonusDays} бонусных дней\n`;
-    if (reason) text += `\n💬 ${reason}\n`;
-    if (expiresDate) text += `\n⏳ Действует до: ${expiresDate}`;
-    text += `\n\nОткрой приложение и оформи подписку! 👇`;
+      text += `▸ Скидка ${discountPercent}% на следующую подписку\n`;
+    if (bonusDays > 0) text += `▸ +${bonusDays} бонусных дней\n`;
+    if (reason) text += `\n${reason}\n`;
+    if (expiresDate) text += `\nПредложение действует до ${expiresDate}.`;
+    text += `\n\nОткрой приложение, чтобы воспользоваться 👇`;
     return text;
   },
 };
