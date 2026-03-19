@@ -5,13 +5,9 @@ import { getLocationFlag, getLoadEmoji, getLoadLabel } from './bot.messages';
 
 export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
   return new InlineKeyboard()
-    .webApp('Тарифы', miniAppUrl)
-    .text('Сервер', 'server')
+    .webApp('🛒 Тарифы', miniAppUrl)
     .row()
-    .text('Статус', 'status')
-    .text('Ключ', 'key')
-    .row()
-    .text('Помощь', 'help');
+    .text('💬 Поддержка', 'help');
 }
 
 export function plansKeyboard(plans: Plan[]): InlineKeyboard {
