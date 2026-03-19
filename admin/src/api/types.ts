@@ -140,6 +140,25 @@ export interface ServerHealth {
   clientCount: number;
 }
 
+export interface SupportTicket {
+  id: number;
+  userId: number;
+  status: 'open' | 'in_progress' | 'closed';
+  subject: string | null;
+  messages: SupportMessage[];
+  user?: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupportMessage {
+  id: number;
+  ticketId: number;
+  text: string;
+  fromAdmin: boolean;
+  createdAt: string;
+}
+
 export interface BroadcastResult {
   sent: number;
   failed: number;

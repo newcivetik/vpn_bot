@@ -7,7 +7,7 @@ export function mainMenuKeyboard(miniAppUrl: string): InlineKeyboard {
   return new InlineKeyboard()
     .webApp('🛒 Тарифы', miniAppUrl)
     .row()
-    .text('💬 Поддержка', 'help');
+    .text('💬 Поддержка', 'support');
 }
 
 export function plansKeyboard(plans: Plan[]): InlineKeyboard {

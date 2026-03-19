@@ -33,7 +33,10 @@ import {
   PaymentFilterQuery,
   CreatePersonalDiscountDto,
   PersonalDiscountFilterQuery,
+  ReplyTicketDto,
+  TicketFilterQuery,
 } from './admin.dto';
+import { SupportService } from '../support/support.service';
 
 @Controller('api/admin')
 export class AdminController {
@@ -41,6 +44,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly supportService: SupportService,
   ) {}
 
   // ─── Auth (no guard) ──────────────────────────────────
@@ -269,6 +273,45 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   deletePersonalDiscount(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deletePersonalDiscount(id);
+  }
+
+  // ─── Support Tickets ─────────────────────────────────
+
+  @Get('support/tickets')
+  @UseGuards(AdminAuthGuard)
+  getTickets(@Query() query: TicketFilterQuery) {
+    return this.supportService.getTickets(
+      query.page || 1,
+      query.limit || 20,
+      query.status,
+    );
+  }
+
+  @Get('support/tickets/count')
+  @UseGuards(AdminAuthGuard)
+  getOpenTicketCount() {
+    return this.supportService.getOpenTicketCount();
+  }
+
+  @Get('support/tickets/:id')
+  @UseGuards(AdminAuthGuard)
+  getTicket(@Param('id', ParseIntPipe) id: number) {
+    return this.supportService.getTicketById(id);
+  }
+
+  @Post('support/tickets/:id/reply')
+  @UseGuards(AdminAuthGuard)
+  replyTicket(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ReplyTicketDto,
+  ) {
+    return this.supportService.replyFromAdmin(id, dto.text);
+  }
+
+  @Post('support/tickets/:id/close')
+  @UseGuards(AdminAuthGuard)
+  closeTicket(@Param('id', ParseIntPipe) id: number) {
+    return this.supportService.closeTicket(id);
   }
 
   // ─── Broadcast ────────────────────────────────────────

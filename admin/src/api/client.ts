@@ -15,6 +15,8 @@ import type {
   PaginatedResponse,
   ServerHealth,
   BroadcastResult,
+  SupportTicket,
+  SupportMessage,
 } from './types.ts';
 
 const api = axios.create({
@@ -129,4 +131,20 @@ export const adminApi = {
 
   broadcast: (text: string, onlyActive = false) =>
     api.post<BroadcastResult>('/broadcast', { text, onlyActive }).then((r) => r.data),
+
+  // Support
+  getTickets: (page = 1, limit = 20, status?: string) =>
+    api.get<PaginatedResponse<SupportTicket>>('/support/tickets', { params: { page, limit, status } }).then((r) => r.data),
+
+  getOpenTicketCount: () =>
+    api.get<number>('/support/tickets/count').then((r) => r.data),
+
+  getTicket: (id: number) =>
+    api.get<SupportTicket>(`/support/tickets/${id}`).then((r) => r.data),
+
+  replyTicket: (id: number, text: string) =>
+    api.post<SupportMessage>(`/support/tickets/${id}/reply`, { text }).then((r) => r.data),
+
+  closeTicket: (id: number) =>
+    api.post<SupportTicket>(`/support/tickets/${id}/close`).then((r) => r.data),
 };

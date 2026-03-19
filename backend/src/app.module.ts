@@ -24,6 +24,8 @@ import { Payment } from './payment/payment.entity';
 import { PromoCode } from './promo/promo.entity';
 import { PromoUsage } from './promo/promo-usage.entity';
 import { PersonalDiscount } from './promo/personal-discount.entity';
+import { SupportTicket, SupportMessage } from './support/support-ticket.entity';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { PersonalDiscount } from './promo/personal-discount.entity';
           PromoCode,
           PromoUsage,
           PersonalDiscount,
+          SupportTicket,
+          SupportMessage,
         ],
         synchronize: false,
         logging: config.get('NODE_ENV') !== 'production',
@@ -70,6 +74,7 @@ import { PersonalDiscount } from './promo/personal-discount.entity';
     BotModule,
     PromoModule,
     AdminModule,
+    SupportModule,
   ],
   providers: [CronService],
 })

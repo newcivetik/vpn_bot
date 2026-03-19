@@ -313,6 +313,18 @@ export class SubscriptionFilterQuery extends PaginationQuery {
   userId?: number;
 }
 
+export class ReplyTicketDto {
+  @IsString()
+  @MinLength(1)
+  text: string;
+}
+
+export class TicketFilterQuery extends PaginationQuery {
+  @IsOptional()
+  @IsString()
+  status?: string;
+}
+
 export class PaymentFilterQuery extends PaginationQuery {
   @IsOptional()
   @IsString()

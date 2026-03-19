@@ -11,6 +11,7 @@ import { ServersPage } from './pages/ServersPage.tsx';
 import { PaymentsPage } from './pages/PaymentsPage.tsx';
 import { PromosPage } from './pages/PromosPage.tsx';
 import { BroadcastPage } from './pages/BroadcastPage.tsx';
+import { SupportPage } from './pages/SupportPage.tsx';
 import { PersonalDiscountsPage } from './pages/PersonalDiscountsPage.tsx';
 import type { ReactNode } from 'react';
 
@@ -49,6 +50,7 @@ export function App() {
         <Route path="/payments" element={<PrivateRoute><PaymentsPage /></PrivateRoute>} />
         <Route path="/promos" element={<PrivateRoute><PromosPage /></PrivateRoute>} />
         <Route path="/personal-discounts" element={<PrivateRoute><PersonalDiscountsPage /></PrivateRoute>} />
+        <Route path="/support" element={<PrivateRoute><SupportPage /></PrivateRoute>} />
         <Route path="/broadcast" element={<PrivateRoute><BroadcastPage /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>

@@ -14,6 +14,7 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import { PaymentService } from '../payment/payment.service';
 import { ServerService } from '../server/server.service';
 import { PromoService } from '../promo/promo.service';
+import { SupportService } from '../support/support.service';
 import { messages } from './bot.messages';
 import {
   mainMenuKeyboard,
@@ -29,6 +30,7 @@ import {
 export class BotService implements OnModuleInit, OnModuleDestroy {
   private bot: Bot;
   private readonly logger = new Logger(BotService.name);
+  private supportMode = new Set<number>(); // telegramIds in support mode
 
   constructor(
     private readonly config: ConfigService,
@@ -39,6 +41,8 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     private readonly paymentService: PaymentService,
     private readonly serverService: ServerService,
     private readonly promoService: PromoService,
+    @Inject(forwardRef(() => SupportService))
+    private readonly supportService: SupportService,
   ) {
     this.bot = new Bot(this.config.getOrThrow<string>('BOT_TOKEN'));
   }
@@ -265,6 +269,14 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         await this.handleYokassaPayment(ctx, data);
       } else if (data.startsWith('change_server:')) {
         await this.handleChangeServer(ctx, data);
+      } else if (data === 'support') {
+        await this.handleSupportStart(ctx);
+      } else if (data === 'support_cancel') {
+        const from = ctx.callbackQuery?.from;
+        if (from) this.supportMode.delete(from.id);
+        await ctx.editMessageText(messages.menu, {
+          reply_markup: mainMenuKeyboard(miniAppUrl),
+        });
       }
 
       await ctx.answerCallbackQuery();
@@ -329,6 +341,24 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
           parse_mode: 'Markdown',
           reply_markup: backToMenuKeyboard(),
         },
+      );
+    });
+
+    // Support: handle text messages from users in support mode
+    this.bot.on('message:text', async (ctx) => {
+      const from = ctx.from;
+      if (!from || !this.supportMode.has(from.id)) return;
+
+      const user = await this.userService.findByTelegramId(from.id);
+      if (!user) return;
+
+      await this.supportService.addUserMessage(user.id, ctx.message.text);
+      this.supportMode.delete(from.id);
+
+      await ctx.reply(
+        '✅ Сообщение отправлено в поддержку!\n\n' +
+          'Мы ответим в ближайшее время. Ответ придёт сюда, в бот.',
+        { reply_markup: backToMenuKeyboard() },
       );
     });
 
@@ -625,6 +655,24 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         .row()
         .text('« Назад', 'menu'),
     });
+  }
+
+  private async handleSupportStart(ctx: any) {
+    const from = ctx.callbackQuery?.from || ctx.from;
+    if (!from) return;
+
+    this.supportMode.add(from.id);
+
+    const cancelKeyboard = new InlineKeyboard().text(
+      '❌ Отмена',
+      'support_cancel',
+    );
+
+    await ctx.editMessageText(
+      '📝 Напиши своё сообщение в поддержку.\n\n' +
+        'Опиши проблему или задай вопрос — мы ответим в ближайшее время.',
+      { reply_markup: cancelKeyboard },
+    );
   }
 
   async sendNotification(telegramId: number, text: string): Promise<void> {

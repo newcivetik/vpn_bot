@@ -7,6 +7,7 @@ import { SubscriptionModule } from '../subscription/subscription.module';
 import { PaymentModule } from '../payment/payment.module';
 import { ServerModule } from '../server/server.module';
 import { PromoModule } from '../promo/promo.module';
+import { SupportModule } from '../support/support.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PromoModule } from '../promo/promo.module';
     forwardRef(() => PaymentModule),
     ServerModule,
     PromoModule,
+    forwardRef(() => SupportModule),
   ],
   providers: [BotService],
   controllers: [BotController],

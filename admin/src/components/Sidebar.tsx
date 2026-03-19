@@ -10,6 +10,7 @@ import {
   Gift,
   Megaphone,
   Shield,
+  MessageCircle,
 } from 'lucide-react';
 
 const links = [
@@ -21,6 +22,7 @@ const links = [
   { to: '/payments', icon: DollarSign, label: 'Платежи' },
   { to: '/promos', icon: Tag, label: 'Промокоды' },
   { to: '/personal-discounts', icon: Gift, label: 'Перс. скидки' },
+  { to: '/support', icon: MessageCircle, label: 'Поддержка' },
   { to: '/broadcast', icon: Megaphone, label: 'Рассылка' },
 ];
 
