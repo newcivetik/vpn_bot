@@ -71,14 +71,14 @@ export const adminApi = {
   getSubscriptions: (page = 1, limit = 20, status?: string, userId?: number) =>
     api.get<PaginatedResponse<Subscription>>('/subscriptions', { params: { page, limit, status, userId } }).then((r) => r.data),
 
-  grantSubscription: (userId: number, planId: number) =>
-    api.post<Subscription>('/subscriptions/grant', { userId, planId }).then((r) => r.data),
+  grantSubscription: (userId: number, planId: number, notify = true) =>
+    api.post<Subscription>('/subscriptions/grant', { userId, planId, notify }).then((r) => r.data),
 
-  extendSubscription: (id: number, days: number) =>
-    api.post<Subscription>(`/subscriptions/${id}/extend`, { days }).then((r) => r.data),
+  extendSubscription: (id: number, days: number, notify = true) =>
+    api.post<Subscription>(`/subscriptions/${id}/extend`, { days, notify }).then((r) => r.data),
 
-  cancelSubscription: (id: number) =>
-    api.post<Subscription>(`/subscriptions/${id}/cancel`).then((r) => r.data),
+  cancelSubscription: (id: number, notify = true) =>
+    api.post<Subscription>(`/subscriptions/${id}/cancel`, { notify }).then((r) => r.data),
 
   getPlans: () =>
     api.get<Plan[]>('/plans').then((r) => r.data),
