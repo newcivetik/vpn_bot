@@ -38,6 +38,9 @@ export const envValidationSchema = Joi.object({
   // Admin Telegram notifications
   ADMIN_TELEGRAM_ID: Joi.number().optional(),
 
+  // Channel for auto-posts
+  CHANNEL_USERNAME: Joi.string().optional().default(''),
+
   // Webhook
   WEBHOOK_SECRET: Joi.string().optional().default(''),
 

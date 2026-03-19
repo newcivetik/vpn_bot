@@ -359,10 +359,22 @@ export class AdminController {
       dto.text,
       dto.onlyActive || false,
     );
+    if (dto.postToChannel) {
+      await this.adminService.postToChannel(dto.text);
+    }
     this.adminService.logAction('broadcast', {
       onlyActive: dto.onlyActive,
+      postToChannel: dto.postToChannel,
       ...result,
     });
     return result;
+  }
+
+  @Post('channel/post')
+  @UseGuards(AdminAuthGuard)
+  async postToChannel(@Body() dto: { text: string }) {
+    const success = await this.adminService.postToChannel(dto.text);
+    this.adminService.logAction('channel_post', { success });
+    return { success };
   }
 }

@@ -10,6 +10,7 @@ const MAX_MESSAGE_LENGTH = 4096;
 export function BroadcastPage() {
   const [text, setText] = useState('');
   const [onlyActive, setOnlyActive] = useState(false);
+  const [postToChannel, setPostToChannel] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<BroadcastResult | null>(null);
@@ -21,7 +22,7 @@ export function BroadcastPage() {
     setSending(true);
     setError(null);
     try {
-      const res = await adminApi.broadcast(text.trim(), onlyActive);
+      const res = await adminApi.broadcast(text.trim(), onlyActive, postToChannel);
       setResult(res);
       setText('');
     } catch (e) {
@@ -79,6 +80,15 @@ export function BroadcastPage() {
             />
             Только с активной подпиской
           </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={postToChannel}
+              onChange={(e) => setPostToChannel(e.target.checked)}
+              className="rounded"
+            />
+            Опубликовать в канал @sellwhy
+          </label>
           <button
             onClick={() => setPreview(!preview)}
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
@@ -131,7 +141,7 @@ export function BroadcastPage() {
       <ConfirmDialog
         open={confirm}
         title="Подтверждение рассылки"
-        message={`Отправить сообщение ${onlyActive ? 'пользователям с активной подпиской' : 'всем пользователям'}?`}
+        message={`Отправить сообщение ${onlyActive ? 'пользователям с активной подпиской' : 'всем пользователям'}?${postToChannel ? '\n+ Опубликовать в канал @sellwhy' : ''}`}
         onConfirm={handleSend}
         onCancel={() => setConfirm(false)}
         confirmLabel="Отправить"

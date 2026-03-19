@@ -682,4 +682,25 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn(`Не удалось отправить уведомление ${telegramId}: ${e}`);
     }
   }
+
+  async postToChannel(
+    text: string,
+    channelUsername?: string,
+  ): Promise<boolean> {
+    const channel =
+      channelUsername || this.config.get<string>('CHANNEL_USERNAME');
+    if (!channel) {
+      this.logger.warn('CHANNEL_USERNAME not configured');
+      return false;
+    }
+    try {
+      const target = channel.startsWith('@') ? channel : `@${channel}`;
+      await this.bot.api.sendMessage(target, text, { parse_mode: 'HTML' });
+      this.logger.log(`Posted to channel ${target}`);
+      return true;
+    } catch (e) {
+      this.logger.error(`Failed to post to channel: ${e}`);
+      return false;
+    }
+  }
 }

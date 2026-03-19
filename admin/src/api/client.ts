@@ -131,8 +131,11 @@ export const adminApi = {
   deletePersonalDiscount: (id: number) =>
     api.delete(`/personal-discounts/${id}`),
 
-  broadcast: (text: string, onlyActive = false) =>
-    api.post<BroadcastResult>('/broadcast', { text, onlyActive }).then((r) => r.data),
+  broadcast: (text: string, onlyActive = false, postToChannel = false) =>
+    api.post<BroadcastResult>('/broadcast', { text, onlyActive, postToChannel }).then((r) => r.data),
+
+  postToChannel: (text: string) =>
+    api.post<{ success: boolean }>('/channel/post', { text }).then((r) => r.data),
 
   // Support
   getTickets: (page = 1, limit = 20, status?: string) =>

@@ -269,6 +269,10 @@ export class BroadcastDto {
   @IsOptional()
   @IsBoolean()
   onlyActive?: boolean = false;
+
+  @IsOptional()
+  @IsBoolean()
+  postToChannel?: boolean = false;
 }
 
 export class CreatePersonalDiscountDto {

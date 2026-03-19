@@ -618,6 +618,12 @@ export class AdminService {
     return { sent, failed };
   }
 
+  // ─── Channel Posts ──────────────────────────────────
+
+  async postToChannel(text: string): Promise<boolean> {
+    return this.botService.postToChannel(text);
+  }
+
   // ─── Admin Logs ─────────────────────────────────────
 
   async logAction(
