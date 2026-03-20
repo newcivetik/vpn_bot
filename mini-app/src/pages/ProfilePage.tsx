@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award, History, Bell, BellOff } from 'lucide-react';
+import { Calendar, Activity, HelpCircle, ChevronRight, Users, Copy, Gift, Award, History, Bell, BellOff, FileText } from 'lucide-react';
 import type { SubscriptionDTO } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useUserStore } from '../stores/userStore';
@@ -293,9 +293,9 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* Help menu */}
+      {/* Help & Terms menu */}
       <div
-        className="animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
+        className="space-y-2 animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]"
         style={{ animationDelay: '600ms' }}
       >
         <button
@@ -306,6 +306,16 @@ export function ProfilePage() {
             <HelpCircle size={18} className="text-green-500" />
           </div>
           <span className="flex-1 text-sm font-medium text-[#3D2C4E] text-left">Как подключиться</span>
+          <ChevronRight size={18} className="text-[#9B8AAB]" />
+        </button>
+        <button
+          onClick={() => navigate('/terms')}
+          className="w-full flex items-center gap-3 p-4 bg-white rounded-3xl shadow-[0_4px_20px_rgba(100,60,120,0.08)] active:opacity-80 transition-all hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(100,60,120,0.15)]"
+        >
+          <div className="w-9 h-9 rounded-xl bg-[#E8D5F5]/30 flex items-center justify-center">
+            <FileText size={18} className="text-[#9B8AAB]" />
+          </div>
+          <span className="flex-1 text-sm font-medium text-[#3D2C4E] text-left">Пользовательское соглашение</span>
           <ChevronRight size={18} className="text-[#9B8AAB]" />
         </button>
       </div>
