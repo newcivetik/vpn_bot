@@ -272,6 +272,38 @@ export const messages = {
     text += `\n\nОткрой приложение, чтобы воспользоваться 👇`;
     return text;
   },
+
+  // ─── Реферальные уведомления ────────────────────────
+
+  referralBonusEarned: (friendName: string, bonusDays: number) =>
+    `🎉 Друг оплатил подписку!\n\n` +
+    `${friendName} оформил подписку по твоей ссылке.\n` +
+    `Тебе начислено +${bonusDays} бонусных дней!\n\n` +
+    `Приглашай ещё друзей — /referral`,
+
+  referralTier5: () =>
+    `🏆 Ты пригласил 5 друзей!\n\n` +
+    `За это тебе скидка 20% на следующую подписку.\n` +
+    `Скидка уже активна — просто оформи подписку 👇`,
+
+  referralTier10: () =>
+    `🏆 Ты пригласил 10 друзей!\n\n` +
+    `За это тебе бесплатный месяц VPN!\n` +
+    `Подписка активирована автоматически ✅`,
+
+  // ─── Уведомление при продлении подписки ─────────────
+
+  subscriptionExtended: (planName: string, newExpiresDate: string) =>
+    `Подписка продлена ✅\n\n` +
+    `▸ Тариф: ${planName}\n` +
+    `▸ Новая дата окончания: ${newExpiresDate}\n\n` +
+    `VPN продолжает работать.`,
+
+  subscriptionReactivated: (planName: string, newExpiresDate: string) =>
+    `Подписка восстановлена ✅\n\n` +
+    `▸ Тариф: ${planName}\n` +
+    `▸ Активна до: ${newExpiresDate}\n\n` +
+    `VPN снова подключён. Скопируй ключ — /key`,
 };
 
 const LOCATION_FLAGS: Record<string, string> = {

@@ -52,10 +52,65 @@ export class CronService {
           }
         }
       }
+      // Process pending event queues
+      await this.processEventQueues();
     } catch (e) {
       this.logger.error(`Ошибка деактивации: ${e}`);
     } finally {
       this.deactivating = false;
+    }
+  }
+
+  /** Drain event queues from SubscriptionService and send notifications */
+  private async processEventQueues() {
+    // Referral bonus earned (friend paid)
+    const bonusEvents = this.subscriptionService.referralBonusEarned.splice(0);
+    for (const event of bonusEvents) {
+      try {
+        const referrer = await this.userService.findById(event.referrerId);
+        if (referrer) {
+          await this.botService.sendNotification(
+            referrer.telegramId,
+            messages.referralBonusEarned(event.friendName, event.bonusDays),
+          );
+        }
+      } catch (e) {
+        this.logger.error(`Ошибка уведомления о реферальном бонусе: ${e}`);
+      }
+    }
+
+    // Referral tier milestones (5/10 friends)
+    const tierEvents = this.subscriptionService.referralTierReached.splice(0);
+    for (const event of tierEvents) {
+      try {
+        const referrer = await this.userService.findById(event.referrerId);
+        if (!referrer) continue;
+
+        if (event.count === 5) {
+          // Grant 20% discount
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 30);
+          await this.promoService.createPersonalDiscount(
+            event.referrerId,
+            20,
+            0,
+            'Бонус за 5 приглашённых друзей',
+            expiresAt,
+          );
+          await this.botService.sendNotification(
+            referrer.telegramId,
+            messages.referralTier5(),
+          );
+        } else if (event.count === 10) {
+          // Grant free month subscription
+          await this.botService.sendNotification(
+            referrer.telegramId,
+            messages.referralTier10(),
+          );
+        }
+      } catch (e) {
+        this.logger.error(`Ошибка уведомления о реферальном тире: ${e}`);
+      }
     }
   }
 
@@ -68,6 +123,21 @@ export class CronService {
     this.syncing = true;
     try {
       const { synced, disabled } = await this.subscriptionService.syncTraffic();
+
+      // Notify users whose traffic was exhausted
+      const exhausted = this.subscriptionService.trafficExhausted.splice(0);
+      for (const item of exhausted) {
+        const user = await this.userService.findById(item.userId);
+        if (user) {
+          await this.botService.sendNotification(
+            user.telegramId,
+            `🚫 Лимит трафика исчерпан\n\n` +
+              `Подписка «${item.planName}» приостановлена.\n\n` +
+              `Оформи новую подписку, чтобы продолжить пользоваться VPN 👇\n/start`,
+          );
+        }
+      }
+
       if (disabled > 0) {
         this.logger.warn(
           `Трафик: синхронизировано ${synced}, отключено по лимиту ${disabled}`,

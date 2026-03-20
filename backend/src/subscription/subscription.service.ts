@@ -17,8 +17,18 @@ import { UserService } from '../user/user.service';
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
 
-  // Tier milestones reached during createSubscription — consumed by cron/bot
+  // Events for notification (consumed by cron/bot after method calls)
   public referralTierReached: { referrerId: number; count: number }[] = [];
+  public referralBonusEarned: {
+    referrerId: number;
+    friendName: string;
+    bonusDays: number;
+  }[] = [];
+  public trafficExhausted: {
+    subId: number;
+    userId: number;
+    planName: string;
+  }[] = [];
 
   constructor(
     @InjectRepository(Subscription)
@@ -81,6 +91,13 @@ export class SubscriptionService {
       this.logger.log(
         `Реферальный бонус ${bonusDays} дн. начислен пользователю #${user.referrerId}`,
       );
+
+      // Notify referrer about earned bonus
+      this.referralBonusEarned.push({
+        referrerId: user.referrerId,
+        friendName: user.firstName || user.username || 'Друг',
+        bonusDays,
+      });
 
       // Check referral tier milestones
       const referralCount = await this.userService.getReferralCount(
@@ -204,6 +221,12 @@ export class SubscriptionService {
                 this.logger.warn(
                   `Подписка #${sub.id} отключена: лимит трафика ${sub.plan.trafficLimitGB} ГБ исчерпан`,
                 );
+                // Store for notification by cron
+                this.trafficExhausted.push({
+                  subId: sub.id,
+                  userId: sub.userId,
+                  planName: sub.plan.name,
+                });
                 disabled++;
               }
             }
