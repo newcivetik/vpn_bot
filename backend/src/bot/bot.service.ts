@@ -111,37 +111,54 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         }
       }
 
-      // Grant 3-day trial for brand new users
+      // Grant trial for brand new users (7 days organic, 8 days via referral)
       if ((user as any).isNew) {
         try {
           const plans = await this.planService.findAll();
           if (plans.length > 0) {
-            const trialPlan = plans[0]; // cheapest/first plan
+            const trialPlan = plans[0];
             const sub = await this.subscriptionService.createSubscription(
               user.id,
               trialPlan.id,
             );
-            // Override expiry to 3 days instead of full plan duration
+            const isReferred = !!user.referrerId;
+            const trialDays = isReferred ? 8 : 7;
             const trialExpiry = new Date();
-            trialExpiry.setDate(trialExpiry.getDate() + 3);
+            trialExpiry.setDate(trialExpiry.getDate() + trialDays);
             sub.expiresAt = trialExpiry;
             await this.subscriptionService.updateExpiry(sub.id, trialExpiry);
 
             this.logger.log(
-              `Trial subscription granted to new user #${user.id}`,
+              `Trial ${trialDays}d granted to new user #${user.id}${isReferred ? ' (referred)' : ''}`,
             );
 
-            await ctx.reply(
-              messages.welcome(from.first_name) +
-                '\n\n🎁 Тебе подарок — 3 дня бесплатного VPN!\n' +
-                'Скопируй ключ командой /key и подключайся.',
-              { reply_markup: mainMenuKeyboard(miniAppUrl) },
-            );
+            const trialMsg = isReferred
+              ? `\n\n🎁 Тебе подарок — ${trialDays} дней бесплатного VPN!\n(+1 день бонус за приглашение)\nСкопируй ключ командой /key и подключайся.`
+              : `\n\n🎁 Тебе подарок — ${trialDays} дней бесплатного VPN!\nСкопируй ключ командой /key и подключайся.`;
+
+            await ctx.reply(messages.welcome(from.first_name) + trialMsg, {
+              reply_markup: mainMenuKeyboard(miniAppUrl),
+            });
+
+            // Notify referrer that friend joined
+            if (isReferred) {
+              const referrer = await this.userService.findById(
+                user.referrerId!,
+              );
+              if (referrer) {
+                const bonusDays = this.config.get('REFERRAL_BONUS_DAYS', 3);
+                this.sendNotification(
+                  referrer.telegramId,
+                  `👥 Друг присоединился!\n\n` +
+                    `${from.first_name || 'Новый пользователь'} подключился по твоей ссылке.\n` +
+                    `Тебе +${bonusDays} бонусных дней при первой покупке друга!`,
+                ).catch(() => {});
+              }
+            }
             return;
           }
         } catch (e) {
           this.logger.error(`Failed to create trial subscription: ${e}`);
-          // Fallback: send welcome without trial
           await ctx.reply(messages.welcome(from.first_name), {
             reply_markup: mainMenuKeyboard(miniAppUrl),
           });
@@ -227,16 +244,35 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       });
 
       const code = await this.userService.generateReferralCode(user.id);
-      const botUsername = this.bot.botInfo?.username || 'bot';
+      const botUsername = this.bot.botInfo?.username || 'sellwhyvpn_bot';
       const link = `https://t.me/${botUsername}?start=ref_${code}`;
       const count = await this.userService.getReferralCount(user.id);
+      const bonusDays = this.config.get('REFERRAL_BONUS_DAYS', 3);
+
+      // Referral tier progress
+      let tierProgress = '';
+      if (count < 5) {
+        tierProgress = `\n🏆 Прогресс: ${count}/5 до скидки 20%`;
+      } else if (count < 10) {
+        tierProgress = `\n🏆 Прогресс: ${count}/10 до бесплатного месяца`;
+      } else {
+        tierProgress = `\n🏆 Легенда! 10+ друзей приглашено`;
+      }
 
       await ctx.reply(
         `🤝 Твоя реферальная ссылка:\n\n\`${link}\`\n\n` +
           `👥 Приглашено: ${count}\n` +
-          `🎁 За каждого друга — ${this.config.get('REFERRAL_BONUS_DAYS', 3)} бонусных дня!\n\n` +
+          `🎁 За каждого друга — +${bonusDays} бонусных дней` +
+          tierProgress +
+          `\n\n` +
           `Отправь ссылку друзьям 👇`,
-        { parse_mode: 'Markdown' },
+        {
+          parse_mode: 'Markdown',
+          reply_markup: new InlineKeyboard()
+            .switchInline('📨 Поделиться', '')
+            .row()
+            .text('← Меню', 'menu'),
+        },
       );
     });
 
@@ -262,8 +298,11 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
             description: 'Отправить реферальную ссылку',
             input_message_content: {
               message_text:
-                `🛡 Быстрый и безопасный VPN!\n\n` +
-                `Подключайся по моей ссылке и получи бонус:\n${link}`,
+                `🛡 Надёжный VPN без логов\n\n` +
+                `✅ Высокая скорость\n` +
+                `✅ Провайдер не видит VPN\n` +
+                `✅ 7 дней бесплатно по моей ссылке\n\n` +
+                `Подключайся 👇\n${link}`,
             },
           },
         ],
