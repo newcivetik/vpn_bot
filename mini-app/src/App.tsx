@@ -10,6 +10,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ defa
 const HelpPage = lazy(() => import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })));
 const ServerPage = lazy(() => import('./pages/ServerPage').then((m) => ({ default: m.ServerPage })));
 const SupportPage = lazy(() => import('./pages/SupportPage').then((m) => ({ default: m.SupportPage })));
+const TermsPage = lazy(() => import('./pages/TermsPage').then((m) => ({ default: m.TermsPage })));
 
 function PageLoader() {
   return (
@@ -42,6 +43,7 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/support" element={<SupportPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
