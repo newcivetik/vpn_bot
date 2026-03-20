@@ -12,6 +12,7 @@ export class CronService {
   private readonly logger = new Logger(CronService.name);
   private deactivating = false;
   private syncing = false;
+  private serverDownSince = new Map<number, Date>(); // serverId -> first failure time
 
   constructor(
     private readonly subscriptionService: SubscriptionService,
@@ -135,6 +136,7 @@ export class CronService {
   }
 
   // Every 10 minutes: check server health
+  // Only notify on 3rd consecutive failure (30 min down), then every hour
   @Cron(CronExpression.EVERY_10_MINUTES)
   async checkServerHealth() {
     try {
@@ -142,12 +144,29 @@ export class CronService {
       for (const server of servers) {
         const health = await this.vpnService.checkServerHealth(server);
         if (!health.online) {
-          this.logger.error(
-            `Сервер ${server.location} (${server.host}) не отвечает!`,
-          );
-          this.adminNotify
-            .serverDown(server.location, server.host)
-            .catch(() => {});
+          const now = new Date();
+          if (!this.serverDownSince.has(server.id)) {
+            this.serverDownSince.set(server.id, now);
+          }
+          const downSince = this.serverDownSince.get(server.id)!;
+          const downMinutes = (now.getTime() - downSince.getTime()) / 60000;
+
+          // Notify after 30 min down, then every 60 min
+          if (downMinutes >= 30 && downMinutes % 60 < 10) {
+            this.logger.error(
+              `Сервер ${server.location} (${server.host}) не отвечает ${Math.round(downMinutes)} мин!`,
+            );
+            this.adminNotify
+              .serverDown(server.location, server.host)
+              .catch(() => {});
+          }
+        } else {
+          if (this.serverDownSince.has(server.id)) {
+            this.logger.log(
+              `Сервер ${server.location} (${server.host}) снова онлайн`,
+            );
+            this.serverDownSince.delete(server.id);
+          }
         }
       }
     } catch (e) {
