@@ -63,19 +63,21 @@ export class SubscriptionService {
       expiresAt,
     });
 
+    // Считаем предыдущие подписки ДО сохранения новой (fix race condition)
+    const previousSubs = user.referrerId
+      ? await this.subRepo.count({ where: { userId } })
+      : 0;
+
     const saved = await this.subRepo.save(subscription);
     await this.serverService.incrementClients(server.id);
 
     // Реферальный бонус — только при первой покупке
     const bonusDays = this.configService.get<number>('REFERRAL_BONUS_DAYS', 3);
-    if (user.referrerId && bonusDays > 0) {
-      const previousSubs = await this.subRepo.count({ where: { userId } });
-      if (previousSubs === 1) {
-        await this.userService.addReferralBonus(user.referrerId, bonusDays);
-        this.logger.log(
-          `Реферальный бонус ${bonusDays} дн. начислен пользователю #${user.referrerId}`,
-        );
-      }
+    if (user.referrerId && bonusDays > 0 && previousSubs === 0) {
+      await this.userService.addReferralBonus(user.referrerId, bonusDays);
+      this.logger.log(
+        `Реферальный бонус ${bonusDays} дн. начислен пользователю #${user.referrerId}`,
+      );
     }
 
     this.logger.log(

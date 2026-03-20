@@ -44,10 +44,17 @@ export class UserService {
 
     if (user.referralCode) return user.referralCode;
 
-    const code = this.createRandomCode(8);
-    user.referralCode = code;
-    await this.userRepo.save(user);
-    return code;
+    // Retry loop for uniqueness
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = this.createRandomCode(8);
+      const existing = await this.findByReferralCode(code);
+      if (!existing) {
+        user.referralCode = code;
+        await this.userRepo.save(user);
+        return code;
+      }
+    }
+    throw new Error('Не удалось сгенерировать уникальный реферальный код');
   }
 
   async findByReferralCode(code: string): Promise<User | null> {

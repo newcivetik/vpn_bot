@@ -141,6 +141,11 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
           }
         } catch (e) {
           this.logger.error(`Failed to create trial subscription: ${e}`);
+          // Fallback: send welcome without trial
+          await ctx.reply(messages.welcome(from.first_name), {
+            reply_markup: mainMenuKeyboard(miniAppUrl),
+          });
+          return;
         }
       }
 

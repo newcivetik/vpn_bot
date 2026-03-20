@@ -173,14 +173,17 @@ export class PaymentService {
       }),
     });
 
-    const yokassaPayment = await res.json();
-
     if (!res.ok) {
-      this.logger.error(`ЮKassa API ошибка: ${JSON.stringify(yokassaPayment)}`);
-      throw new BadRequestException(
-        `ЮKassa: ${yokassaPayment.description || 'Ошибка создания платежа'}`,
-      );
+      const errorBody = await res.text().catch(() => 'unknown error');
+      this.logger.error(`ЮKassa API ошибка (${res.status}): ${errorBody}`);
+      let description = 'Ошибка создания платежа';
+      try {
+        description = JSON.parse(errorBody).description || description;
+      } catch {}
+      throw new BadRequestException(`ЮKassa: ${description}`);
     }
+
+    const yokassaPayment = await res.json();
 
     saved.externalId = yokassaPayment.id;
     await this.paymentRepo.save(saved);

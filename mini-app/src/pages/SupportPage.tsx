@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import { api } from '../api/client';
+import { toast } from '../components/Toast';
 
 interface SupportMessage {
   id: number;
@@ -21,14 +22,16 @@ export function SupportPage() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadTicket = async () => {
     try {
       const data = await api.getSupportTicket(initData);
       setTicket(data);
+      setError(false);
     } catch {
-      // no ticket
+      if (loading) setError(true);
     } finally {
       setLoading(false);
     }
@@ -52,7 +55,7 @@ export function SupportPage() {
       setText('');
       await loadTicket();
     } catch {
-      // error
+      toast('Не удалось отправить сообщение');
     } finally {
       setSending(false);
     }
@@ -60,8 +63,25 @@ export function SupportPage() {
 
   if (loading) {
     return (
-      <div className="p-4">
-        <div className="h-32 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+      <div className="p-4 space-y-3">
+        <div className="h-12 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+        <div className="h-24 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+        <div className="h-16 bg-[#E8D5F5]/20 rounded-3xl animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-center py-12">
+        <p className="text-4xl mb-3">😔</p>
+        <p className="text-[#3D2C4E] font-bold">Не удалось загрузить</p>
+        <button
+          onClick={() => { setLoading(true); setError(false); loadTicket(); }}
+          className="mt-3 px-6 py-2 rounded-full bg-gradient-to-br from-[#C9A0F0] to-[#89B8F8] text-white text-sm font-bold"
+        >
+          Повторить
+        </button>
       </div>
     );
   }

@@ -57,11 +57,15 @@ export class VpnService {
 
     let res = await fetch(url, options);
 
-    // Если сессия истекла, перелогиниваемся
+    // Если сессия истекла, перелогиниваемся (одна попытка)
     if (res.status === 401 || res.status === 307) {
+      this.sessionCookies.delete(server.id);
       cookie = await this.login(server);
       options.headers = { ...(options.headers as any), Cookie: cookie };
       res = await fetch(url, options);
+      if (res.status === 401 || res.status === 307) {
+        throw new Error(`3X-UI auth failed after re-login: ${server.host}`);
+      }
     }
 
     return res.json();

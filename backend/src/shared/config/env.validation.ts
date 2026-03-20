@@ -31,7 +31,7 @@ export const envValidationSchema = Joi.object({
   YOKASSA_RETURN_URL: Joi.string().optional().allow(''),
 
   // Admin
-  ADMIN_PASSWORD: Joi.string().required().min(1),
+  ADMIN_PASSWORD: Joi.string().required().min(8),
   JWT_SECRET: Joi.string().required().min(16),
   ADMIN_APP_URL: Joi.string().optional().allow(''),
 
