@@ -18,14 +18,14 @@ const STEPS = [
   },
   {
     emoji: '📱',
-    title: 'Скачайте Hiddify',
-    text: 'iPhone: App Store, Android: Google Play, Windows/Mac: hiddify.com',
+    title: 'Скачайте Happ',
+    text: 'iPhone: App Store, Android: Google Play, Windows/Mac: happ.su',
     gradient: 'from-[#7DD4A8] to-[#5CC0C0]',
   },
   {
     emoji: '➕',
     title: 'Добавьте ключ',
-    text: 'Откройте Hiddify → нажмите + → вставьте ключ',
+    text: 'Откройте Happ → нажмите + → вставьте ключ',
     gradient: 'from-[#89B8F8] to-[#6BA3E8]',
   },
   {
@@ -97,18 +97,18 @@ export function HelpPage() {
       {/* Download links */}
       <div className="bg-white rounded-3xl p-5 shadow-[0_8px_32px_rgba(100,60,120,0.10)] animate-[bounceIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)_backwards]" style={{ animationDelay: '500ms' }}>
         <div className="text-sm font-extrabold text-[#3D2C4E] mb-3">
-          Скачать Hiddify
+          Скачать Happ
         </div>
         <div className="space-y-2">
           {[
-            { label: '📱 iPhone / iPad', url: 'https://apps.apple.com/app/hiddify-proxy-vpn/id6596777532' },
-            { label: '🤖 Android', url: 'https://play.google.com/store/apps/details?id=app.hiddify.com' },
-            { label: '💻 Windows / Mac / Linux', url: 'https://hiddify.com/app/' },
+            { label: '📱 iPhone / iPad', url: 'https://apps.apple.com/app/happ-proxy-utility/id6504287215' },
+            { label: '🤖 Android', url: 'https://play.google.com/store/apps/details?id=com.happproxy' },
+            { label: '💻 Windows / Mac / Linux', url: 'https://www.happ.su/main' },
           ].map(({ label, url }) => (
             <button
               key={url}
               onClick={() => tg?.openLink(url, { try_instant_view: false })}
-              aria-label={`Скачать Hiddify для ${label}`}
+              aria-label={`Скачать Happ для ${label}`}
               className="w-full flex items-center justify-between p-4 rounded-2xl bg-[#FFF8F0] hover:bg-[#E8D5F5]/20 transition-all active:opacity-80"
             >
               <span className="text-sm font-semibold text-[#3D2C4E]">{label}</span>

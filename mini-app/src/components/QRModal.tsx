@@ -44,7 +44,7 @@ export function QRModal({ connectionLink, onClose }: Props) {
         </div>
 
         <p className="text-xs font-semibold text-[#9B8AAB] text-center mt-4">
-          Отсканируйте в Hiddify или другом клиенте
+          Отсканируйте в Happ или другом клиенте
         </p>
       </div>
     </div>
