@@ -177,7 +177,7 @@ export class VpnService {
       const url = `https://${server.host}:${server.apiPort}/`;
       const res = await fetch(url, {
         method: 'GET',
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(10000),
       });
       return { online: res.ok || res.status === 302 };
     } catch {
