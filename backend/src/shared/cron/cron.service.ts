@@ -6,6 +6,8 @@ import { VpnService } from '../../vpn/vpn.service';
 import { BotService } from '../../bot/bot.service';
 import { messages } from '../../bot/bot.messages';
 import { AdminNotifyService } from '../admin-notify/admin-notify.service';
+import { PromoService } from '../../promo/promo.service';
+import { UserService } from '../../user/user.service';
 
 @Injectable()
 export class CronService {
@@ -20,6 +22,8 @@ export class CronService {
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
     private readonly adminNotify: AdminNotifyService,
+    private readonly promoService: PromoService,
+    private readonly userService: UserService,
   ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -171,6 +175,89 @@ export class CronService {
       }
     } catch (e) {
       this.logger.error(`Ошибка проверки здоровья серверов: ${e}`);
+    }
+  }
+
+  // Daily at 12:00 — offer 30% discount to users whose trial expired 2 days ago
+  @Cron('0 12 * * *')
+  async offerTrialDiscount() {
+    try {
+      const userIds = await this.subscriptionService.getTrialExpiredUsers(2);
+      let sent = 0;
+      for (const userId of userIds) {
+        const user = await this.userService.findById(userId);
+        if (!user) continue;
+
+        // Skip if already has active discount
+        const existing = await this.promoService.getActiveDiscount(userId);
+        if (existing) continue;
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 5);
+        await this.promoService.createPersonalDiscount(
+          userId,
+          30,
+          0,
+          'Скидка после пробного периода',
+          expiresAt,
+        );
+
+        await this.botService.sendNotification(
+          user.telegramId,
+          `⏰ Твой пробный период закончился\n\n` +
+            `Тебе понравилось? Продли со скидкой 30%!\n\n` +
+            `🎁 Скидка 30% на первую подписку\n` +
+            `⏳ Предложение действует 5 дней\n\n` +
+            `Оформи подписку — /start`,
+        );
+        sent++;
+      }
+      if (sent > 0) {
+        this.logger.log(`Отправлено ${sent} предложений после триала`);
+      }
+    } catch (e) {
+      this.logger.error(`Ошибка offerTrialDiscount: ${e}`);
+    }
+  }
+
+  // Daily at 14:00 — offer 25% discount to churned paid users (7 days ago)
+  @Cron('0 14 * * *')
+  async reactivateChurned() {
+    try {
+      const userIds = await this.subscriptionService.getChurnedUsers(7);
+      let sent = 0;
+      for (const userId of userIds) {
+        const user = await this.userService.findById(userId);
+        if (!user) continue;
+
+        const existing = await this.promoService.getActiveDiscount(userId);
+        if (existing) continue;
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+        await this.promoService.createPersonalDiscount(
+          userId,
+          25,
+          0,
+          'Скидка на возвращение',
+          expiresAt,
+        );
+
+        await this.botService.sendNotification(
+          user.telegramId,
+          `Мы скучаем! 🥺\n\n` +
+            `Давно не видели тебя. Вернись со скидкой!\n\n` +
+            `🎁 Скидка 25% на любую подписку\n` +
+            `⏳ Предложение действует 7 дней\n\n` +
+            `Выбрать тариф — /start`,
+        );
+        sent++;
+      }
+      if (sent > 0) {
+        this.logger.log(`Отправлено ${sent} предложений реактивации`);
+      }
+    } catch (e) {
+      this.logger.error(`Ошибка reactivateChurned: ${e}`);
     }
   }
 

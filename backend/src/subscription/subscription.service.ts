@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, LessThan, Repository } from 'typeorm';
+import { DataSource, LessThan, MoreThan, Between, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Subscription, SubscriptionStatus } from './subscription.entity';
 import { VpnService } from '../vpn/vpn.service';
@@ -16,6 +16,9 @@ import { UserService } from '../user/user.service';
 @Injectable()
 export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
+
+  // Tier milestones reached during createSubscription — consumed by cron/bot
+  public referralTierReached: { referrerId: number; count: number }[] = [];
 
   constructor(
     @InjectRepository(Subscription)
@@ -78,6 +81,17 @@ export class SubscriptionService {
       this.logger.log(
         `Реферальный бонус ${bonusDays} дн. начислен пользователю #${user.referrerId}`,
       );
+
+      // Check referral tier milestones
+      const referralCount = await this.userService.getReferralCount(
+        user.referrerId,
+      );
+      if (referralCount === 5 || referralCount === 10) {
+        this.referralTierReached.push({
+          referrerId: user.referrerId,
+          count: referralCount,
+        });
+      }
     }
 
     this.logger.log(
@@ -338,5 +352,59 @@ export class SubscriptionService {
       })
       .andWhere('s.trafficUsedGB < plan.trafficLimitGB')
       .getMany();
+  }
+
+  /**
+   * Users whose only subscription (trial) expired N days ago.
+   * Used for post-trial discount offers.
+   */
+  async getTrialExpiredUsers(daysAgo: number): Promise<number[]> {
+    const from = new Date();
+    from.setDate(from.getDate() - daysAgo - 1);
+    const to = new Date();
+    to.setDate(to.getDate() - daysAgo);
+
+    const results = await this.subRepo
+      .createQueryBuilder('s')
+      .select('s.userId', 'userId')
+      .where('s.status = :status', { status: SubscriptionStatus.EXPIRED })
+      .groupBy('s.userId')
+      .having('COUNT(s.id) = 1')
+      .andHaving('MAX(s."expiresAt") BETWEEN :from AND :to', { from, to })
+      .getRawMany();
+
+    return results.map((r: any) => r.userId);
+  }
+
+  /**
+   * Paid users whose last subscription expired N days ago (had >1 sub).
+   * Used for reactivation offers.
+   */
+  async getChurnedUsers(daysAgo: number): Promise<number[]> {
+    const from = new Date();
+    from.setDate(from.getDate() - daysAgo - 1);
+    const to = new Date();
+    to.setDate(to.getDate() - daysAgo);
+
+    // Users with >1 subscription (not just trial) who churned
+    const results = await this.subRepo
+      .createQueryBuilder('s')
+      .select('s.userId', 'userId')
+      .where('s.status IN (:...statuses)', {
+        statuses: [SubscriptionStatus.EXPIRED, SubscriptionStatus.CANCELLED],
+      })
+      .groupBy('s.userId')
+      .having('COUNT(s.id) > 1')
+      .andHaving('MAX(s."expiresAt") BETWEEN :from AND :to', { from, to })
+      .getRawMany();
+
+    // Filter out users who still have an active sub
+    const userIds = results.map((r: any) => r.userId);
+    const filtered: number[] = [];
+    for (const uid of userIds) {
+      const activeSub = await this.getActiveSubscription(uid);
+      if (!activeSub) filtered.push(uid);
+    }
+    return filtered;
   }
 }
