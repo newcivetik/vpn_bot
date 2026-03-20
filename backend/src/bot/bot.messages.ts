@@ -47,7 +47,7 @@ export const messages = {
   key: (connectionLink: string) =>
     `Твой ключ подключения:\n\n` +
     `\`${connectionLink}\`\n\n` +
-    `Скопируй и вставь в приложение Hiddify.\n` +
+    `Скопируй и вставь в приложение Happ.\n` +
     `Нужна помощь с настройкой? Нажми /help`,
 
   noKey:
@@ -60,9 +60,9 @@ export const messages = {
 
   helpIos:
     '📱 Подключение на iPhone / iPad\n\n' +
-    '1. Скачай Hiddify из App Store:\n' +
-    '   https://apps.apple.com/app/hiddify-proxy-vpn/id6596777532\n\n' +
-    '2. Открой Hiddify\n\n' +
+    '1. Скачай Happ из App Store:\n' +
+    '   https://apps.apple.com/app/happ-proxy-utility/id6504287215\n\n' +
+    '2. Открой Happ\n\n' +
     '3. Нажми + (добавить профиль)\n\n' +
     '4. Выбери «Добавить из буфера обмена»\n' +
     '   (предварительно скопируй ключ командой /key)\n\n' +
@@ -71,9 +71,9 @@ export const messages = {
 
   helpAndroid:
     '🤖 Подключение на Android\n\n' +
-    '1. Скачай Hiddify из Google Play:\n' +
-    '   https://play.google.com/store/apps/details?id=app.hiddify.com\n\n' +
-    '2. Открой Hiddify\n\n' +
+    '1. Скачай Happ из Google Play:\n' +
+    '   https://play.google.com/store/apps/details?id=com.happproxy\n\n' +
+    '2. Открой Happ\n\n' +
     '3. Нажми + (добавить профиль)\n\n' +
     '4. Выбери «Добавить из буфера обмена»\n' +
     '   (предварительно скопируй ключ командой /key)\n\n' +
@@ -82,10 +82,9 @@ export const messages = {
 
   helpWindows:
     '💻 Подключение на Windows\n\n' +
-    '1. Скачай Hiddify:\n' +
-    '   https://github.com/hiddify/hiddify-app/releases/latest\n' +
-    '   (файл Hiddify-Windows-Setup-x64.msix)\n\n' +
-    '2. Установи и открой Hiddify\n\n' +
+    '1. Скачай Happ:\n' +
+    '   https://github.com/Happ-proxy/happ-desktop/releases/latest\n\n' +
+    '2. Установи и открой Happ\n\n' +
     '3. Нажми + → «Добавить из буфера обмена»\n' +
     '   (предварительно скопируй ключ командой /key)\n\n' +
     '4. Нажми кнопку подключения — готово! ✅\n\n' +
@@ -93,10 +92,9 @@ export const messages = {
 
   helpMac:
     '🍎 Подключение на macOS\n\n' +
-    '1. Скачай Hiddify:\n' +
-    '   https://github.com/hiddify/hiddify-app/releases/latest\n' +
-    '   (файл Hiddify-MacOS.dmg)\n\n' +
-    '2. Установи и открой Hiddify\n\n' +
+    '1. Скачай Happ:\n' +
+    '   https://github.com/Happ-proxy/happ-desktop/releases/latest\n\n' +
+    '2. Установи и открой Happ\n\n' +
     '3. Нажми + → «Добавить из буфера обмена»\n' +
     '   (предварительно скопируй ключ командой /key)\n\n' +
     '4. Нажми кнопку подключения — готово! ✅\n\n' +
@@ -111,7 +109,7 @@ export const messages = {
   paymentSuccess: (connectionLink: string) =>
     'Оплата прошла успешно! ✅\n\n' +
     `Твой ключ подключения:\n\n\`${connectionLink}\`\n\n` +
-    'Скопируй его и вставь в Hiddify.\n' +
+    'Скопируй его и вставь в Happ.\n' +
     'Инструкция по настройке — /help',
 
   yokassaPay: (planName: string, price: number) =>
