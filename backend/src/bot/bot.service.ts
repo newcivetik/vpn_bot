@@ -311,8 +311,11 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     });
 
     // Callback queries
-    this.bot.on('callback_query:data', async (ctx) => {
+    this.bot.on('callback_query:data', async (ctx, next) => {
       const data = ctx.callbackQuery.data;
+
+      // Pass admin callbacks to AdminBotService
+      if (data.startsWith('admin_')) return next();
 
       if (data === 'menu') {
         await ctx.editMessageText(messages.menu, {
