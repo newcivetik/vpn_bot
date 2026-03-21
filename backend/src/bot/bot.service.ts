@@ -439,9 +439,9 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     });
 
     // Support: handle text messages from users in support mode
-    this.bot.on('message:text', async (ctx) => {
+    this.bot.on('message:text', async (ctx, next) => {
       const from = ctx.from;
-      if (!from || !this.supportMode.has(from.id)) return;
+      if (!from || !this.supportMode.has(from.id)) return next();
 
       const user = await this.userService.findByTelegramId(from.id);
       if (!user) return;
