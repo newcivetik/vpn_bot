@@ -37,7 +37,7 @@ export class AdminBotService implements OnModuleInit {
   }
 
   private isAdmin(fromId: number): boolean {
-    return !!this.adminTelegramId && fromId === this.adminTelegramId;
+    return !!this.adminTelegramId && fromId === Number(this.adminTelegramId);
   }
 
   async onModuleInit() {
