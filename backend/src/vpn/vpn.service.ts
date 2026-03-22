@@ -93,7 +93,7 @@ export class VpnService {
 
     const clientSettings = {
       id: clientId,
-      flow: '',
+      flow: 'xtls-rprx-vision',
       email,
       limitIp: options.maxDevices,
       totalGB: totalBytes,
