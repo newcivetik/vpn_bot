@@ -17,6 +17,7 @@ import { AdminSettings } from './admin-settings.entity';
 import { VpnModule } from '../vpn/vpn.module';
 import { BotModule } from '../bot/bot.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
+import { ServerModule } from '../server/server.module';
 import { PromoModule } from '../promo/promo.module';
 import { SupportModule } from '../support/support.module';
 
@@ -42,6 +43,7 @@ import { SupportModule } from '../support/support.module';
       AdminSettings,
     ]),
     VpnModule,
+    ServerModule,
     forwardRef(() => BotModule),
     forwardRef(() => SubscriptionModule),
     PromoModule,

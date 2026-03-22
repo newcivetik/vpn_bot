@@ -174,12 +174,25 @@ export class VpnService {
     server: Server,
   ): Promise<{ online: boolean; version?: string }> {
     try {
-      const url = `https://${server.host}:${server.apiPort}/`;
+      // Use login endpoint — more reliable than root URL
+      // Also tests that 3X-UI is actually responding to API calls
+      const url = `${this.getBaseUrl(server)}/login`;
       const res = await fetch(url, {
-        method: 'GET',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `username=${encodeURIComponent(server.username)}&password=${encodeURIComponent(server.password)}`,
         signal: AbortSignal.timeout(10000),
       });
-      return { online: res.ok || res.status === 302 };
+      if (res.ok || res.status === 302) {
+        // Cache session cookie from health check
+        const cookies = res.headers.getSetCookie?.() || [];
+        const sessionCookie = cookies.map((c) => c.split(';')[0]).join('; ');
+        if (sessionCookie) {
+          this.sessionCookies.set(server.id, sessionCookie);
+        }
+        return { online: true };
+      }
+      return { online: false };
     } catch {
       return { online: false };
     }

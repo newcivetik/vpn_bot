@@ -25,6 +25,7 @@ import { AdminSettings } from './admin-settings.entity';
 import { VpnService } from '../vpn/vpn.service';
 import { BotService } from '../bot/bot.service';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { ServerService } from '../server/server.service';
 import { PromoService } from '../promo/promo.service';
 import { messages } from '../bot/bot.messages';
 
@@ -49,6 +50,7 @@ export class AdminService {
     private readonly vpnService: VpnService,
     private readonly botService: BotService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly serverService: ServerService,
     private readonly promoService: PromoService,
   ) {}
 
@@ -391,13 +393,22 @@ export class AdminService {
     });
     if (!sub) throw new NotFoundException('Subscription not found');
 
+    // Only disable VPN client if subscription was active
+    if (sub.status === SubscriptionStatus.ACTIVE) {
+      try {
+        await this.vpnService.toggleClient(
+          sub.server,
+          sub.vpnClientId,
+          sub.vpnClientEmail,
+          false,
+        );
+        await this.serverService.decrementClients(sub.serverId);
+      } catch (e) {
+        this.logger.warn(`Failed to disable VPN client for sub #${id}: ${e}`);
+      }
+    }
+
     sub.status = SubscriptionStatus.CANCELLED;
-    await this.vpnService.toggleClient(
-      sub.server,
-      sub.vpnClientId,
-      sub.vpnClientEmail,
-      false,
-    );
     await this.subRepo.save(sub);
     this.logger.log(`Subscription #${id} cancelled`);
 
