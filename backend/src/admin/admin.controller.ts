@@ -240,6 +240,12 @@ export class AdminController {
     return result;
   }
 
+  @Post('subscriptions/:id/recreate')
+  @UseGuards(AdminAuthGuard)
+  recreateSubscription(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.recreateSubscription(id);
+  }
+
   // ─── Plans ────────────────────────────────────────────
 
   @Get('plans')

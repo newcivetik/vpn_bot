@@ -426,6 +426,62 @@ export class AdminService {
     return sub;
   }
 
+  async recreateSubscription(id: number) {
+    const sub = await this.subRepo.findOne({
+      where: { id },
+      relations: ['server', 'user', 'plan'],
+    });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    if (sub.status !== SubscriptionStatus.ACTIVE) {
+      throw new NotFoundException('Subscription is not active');
+    }
+
+    const remainingMs = new Date(sub.expiresAt).getTime() - Date.now();
+    if (remainingMs <= 0) {
+      throw new NotFoundException('Subscription already expired');
+    }
+
+    const remainingDays = Math.max(1, Math.ceil(remainingMs / 86400000));
+    const oldClientId = sub.vpnClientId;
+
+    // Delete broken client from 3X-UI
+    try {
+      await this.vpnService.deleteClient(sub.server, oldClientId);
+    } catch (e) {
+      this.logger.warn(`Failed to delete old client ${oldClientId}: ${e}`);
+    }
+
+    // Create fresh client
+    const vpnClient = await this.vpnService.createClient(sub.server, {
+      telegramId: sub.user.telegramId,
+      trafficLimitGB: sub.plan.trafficLimitGB,
+      expiryDays: remainingDays,
+      maxDevices: sub.plan.maxDevices,
+    });
+
+    // Update subscription record
+    sub.vpnClientId = vpnClient.clientId;
+    sub.vpnClientEmail = vpnClient.email;
+    sub.connectionLink = vpnClient.connectionLink;
+    sub.trafficUsedGB = 0;
+    await this.subRepo.save(sub);
+
+    // Send new key to user
+    try {
+      await this.botService.sendNotification(
+        sub.user.telegramId,
+        messages.key(vpnClient.connectionLink),
+      );
+    } catch (e) {
+      this.logger.warn(`Failed to send new key to user #${sub.userId}: ${e}`);
+    }
+
+    this.logger.log(
+      `Subscription #${id} recreated: old client ${oldClientId} → new ${vpnClient.clientId}`,
+    );
+    return sub;
+  }
+
   // ─── Plans ────────────────────────────────────────────
 
   async getAllPlans() {
