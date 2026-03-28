@@ -4,6 +4,7 @@ import {
   Repository,
   Like,
   Between,
+  In,
   MoreThanOrEqual,
   LessThanOrEqual,
 } from 'typeorm';
@@ -620,13 +621,16 @@ export class AdminService {
     return this.promoService.getPersonalDiscounts(page, limit, userId);
   }
 
-  async createPersonalDiscount(dto: {
-    userId: number;
-    discountPercent?: number;
-    bonusDays?: number;
-    reason?: string;
-    expiresAt?: string;
-  }) {
+  async createPersonalDiscount(
+    dto: {
+      userId: number;
+      discountPercent?: number;
+      bonusDays?: number;
+      reason?: string;
+      expiresAt?: string;
+    },
+    notify = true,
+  ) {
     const user = await this.userRepo.findOne({ where: { id: dto.userId } });
     if (!user) throw new NotFoundException('Пользователь не найден');
 
@@ -639,21 +643,23 @@ export class AdminService {
     );
 
     // Send notification to user
-    try {
-      const expiresDate = dto.expiresAt
-        ? new Date(dto.expiresAt).toLocaleDateString('ru-RU')
-        : undefined;
-      await this.botService.sendNotification(
-        user.telegramId,
-        messages.personalDiscountNotification(
-          dto.discountPercent || 0,
-          dto.bonusDays || 0,
-          dto.reason,
-          expiresDate,
-        ),
-      );
-    } catch (e) {
-      this.logger.error(`Ошибка отправки уведомления о скидке: ${e}`);
+    if (notify) {
+      try {
+        const expiresDate = dto.expiresAt
+          ? new Date(dto.expiresAt).toLocaleDateString('ru-RU')
+          : undefined;
+        await this.botService.sendNotification(
+          user.telegramId,
+          messages.personalDiscountNotification(
+            dto.discountPercent || 0,
+            dto.bonusDays || 0,
+            dto.reason,
+            expiresDate,
+          ),
+        );
+      } catch (e) {
+        this.logger.error(`Ошибка отправки уведомления о скидке: ${e}`);
+      }
     }
 
     this.logger.log(
@@ -664,6 +670,90 @@ export class AdminService {
 
   async deletePersonalDiscount(id: number) {
     await this.promoService.deletePersonalDiscount(id);
+  }
+
+  // ─── Bulk Actions ───────────────────────────────────────
+
+  async bulkGrantSubscriptions(
+    userIds: number[],
+    planId: number,
+    message?: string,
+  ) {
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const userId of userIds) {
+      try {
+        await this.grantSubscription(userId, planId, false);
+        if (message) {
+          const user = await this.userRepo.findOne({ where: { id: userId } });
+          if (user) {
+            await this.botService
+              .sendNotification(user.telegramId, message)
+              .catch(() => {});
+          }
+        }
+        sent++;
+      } catch (e) {
+        failed++;
+        errors.push(
+          `User #${userId}: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
+    this.logger.log(`Bulk grant: sent ${sent}, failed ${failed}`);
+    return { sent, failed, total: userIds.length, errors };
+  }
+
+  async bulkCreatePersonalDiscounts(
+    userIds: number[],
+    dto: {
+      discountPercent?: number;
+      bonusDays?: number;
+      reason?: string;
+      expiresAt?: string;
+    },
+    message?: string,
+  ) {
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const userId of userIds) {
+      try {
+        await this.createPersonalDiscount({ userId, ...dto }, false);
+        if (message) {
+          const user = await this.userRepo.findOne({ where: { id: userId } });
+          if (user) {
+            await this.botService
+              .sendNotification(user.telegramId, message)
+              .catch(() => {});
+          }
+        }
+        sent++;
+      } catch (e) {
+        failed++;
+        errors.push(
+          `User #${userId}: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
+    this.logger.log(`Bulk discounts: sent ${sent}, failed ${failed}`);
+    return { sent, failed, total: userIds.length, errors };
+  }
+
+  async bulkSendMessage(userIds: number[], text: string) {
+    const users = await this.userRepo.find({
+      where: { id: In(userIds) },
+    });
+    const result = await this.sendBatch(users, text);
+    this.logger.log(
+      `Bulk message: sent ${result.sent}, failed ${result.failed}`,
+    );
+    return { ...result, total: userIds.length };
   }
 
   // ─── Broadcast ────────────────────────────────────────

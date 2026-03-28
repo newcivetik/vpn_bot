@@ -3,6 +3,7 @@ import {
   IsInt,
   IsOptional,
   IsBoolean,
+  IsArray,
   Min,
   Max,
   IsDateString,
@@ -345,6 +346,58 @@ export class TicketFilterQuery extends PaginationQuery {
   @IsOptional()
   @IsString()
   status?: string;
+}
+
+export class BulkGrantSubscriptionDto {
+  @IsArray()
+  @IsInt({ each: true })
+  userIds: number[];
+
+  @IsInt()
+  planId: number;
+
+  @IsOptional()
+  @IsString()
+  message?: string;
+}
+
+export class BulkCreatePersonalDiscountDto {
+  @IsArray()
+  @IsInt({ each: true })
+  userIds: number[];
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number = 0;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  bonusDays?: number = 0;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @IsOptional()
+  @IsDateString()
+  expiresAt?: string;
+
+  @IsOptional()
+  @IsString()
+  message?: string;
+}
+
+export class BulkMessageDto {
+  @IsArray()
+  @IsInt({ each: true })
+  userIds: number[];
+
+  @IsString()
+  @MinLength(1)
+  text: string;
 }
 
 export class PaymentFilterQuery extends PaginationQuery {

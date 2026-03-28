@@ -19,6 +19,7 @@ import type {
   SupportMessage,
   AdminLog,
   FunnelData,
+  BulkResult,
 } from './types.ts';
 
 const api = axios.create({
@@ -130,6 +131,15 @@ export const adminApi = {
 
   deletePersonalDiscount: (id: number) =>
     api.delete(`/personal-discounts/${id}`),
+
+  bulkGrantSubscriptions: (userIds: number[], planId: number, message?: string) =>
+    api.post<BulkResult>('/bulk/grant-subscriptions', { userIds, planId, message }).then((r) => r.data),
+
+  bulkCreatePersonalDiscounts: (userIds: number[], opts: { discountPercent?: number; bonusDays?: number; reason?: string; expiresAt?: string; message?: string }) =>
+    api.post<BulkResult>('/bulk/personal-discounts', { userIds, ...opts }).then((r) => r.data),
+
+  bulkSendMessage: (userIds: number[], text: string) =>
+    api.post<BulkResult>('/bulk/message', { userIds, text }).then((r) => r.data),
 
   broadcast: (text: string, onlyActive = false, postToChannel = false) =>
     api.post<BroadcastResult>('/broadcast', { text, onlyActive, postToChannel }).then((r) => r.data),

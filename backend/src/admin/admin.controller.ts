@@ -36,6 +36,9 @@ import {
   PaymentFilterQuery,
   CreatePersonalDiscountDto,
   PersonalDiscountFilterQuery,
+  BulkGrantSubscriptionDto,
+  BulkCreatePersonalDiscountDto,
+  BulkMessageDto,
   ReplyTicketDto,
   TicketFilterQuery,
 } from './admin.dto';
@@ -375,6 +378,62 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   deletePersonalDiscount(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deletePersonalDiscount(id);
+  }
+
+  // ─── Bulk Actions ───────────────────────────────────────
+
+  @Post('bulk/grant-subscriptions')
+  @UseGuards(AdminAuthGuard)
+  async bulkGrantSubscriptions(@Body() dto: BulkGrantSubscriptionDto) {
+    const result = await this.adminService.bulkGrantSubscriptions(
+      dto.userIds,
+      dto.planId,
+      dto.message,
+    );
+    this.adminService.logAction('bulk_grant_subscriptions', {
+      userIds: dto.userIds,
+      planId: dto.planId,
+      hasMessage: !!dto.message,
+      ...result,
+    });
+    return result;
+  }
+
+  @Post('bulk/personal-discounts')
+  @UseGuards(AdminAuthGuard)
+  async bulkCreatePersonalDiscounts(
+    @Body() dto: BulkCreatePersonalDiscountDto,
+  ) {
+    const result = await this.adminService.bulkCreatePersonalDiscounts(
+      dto.userIds,
+      {
+        discountPercent: dto.discountPercent,
+        bonusDays: dto.bonusDays,
+        reason: dto.reason,
+        expiresAt: dto.expiresAt,
+      },
+      dto.message,
+    );
+    this.adminService.logAction('bulk_personal_discounts', {
+      userIds: dto.userIds,
+      hasMessage: !!dto.message,
+      ...result,
+    });
+    return result;
+  }
+
+  @Post('bulk/message')
+  @UseGuards(AdminAuthGuard)
+  async bulkSendMessage(@Body() dto: BulkMessageDto) {
+    const result = await this.adminService.bulkSendMessage(
+      dto.userIds,
+      dto.text,
+    );
+    this.adminService.logAction('bulk_message', {
+      userIds: dto.userIds,
+      ...result,
+    });
+    return result;
   }
 
   // ─── Support Tickets ─────────────────────────────────

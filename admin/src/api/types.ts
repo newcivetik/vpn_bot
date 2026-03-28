@@ -180,3 +180,10 @@ export interface BroadcastResult {
   failed: number;
   total: number;
 }
+
+export interface BulkResult {
+  sent: number;
+  failed: number;
+  total: number;
+  errors?: string[];
+}
